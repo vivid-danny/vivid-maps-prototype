@@ -1,7 +1,7 @@
 import type { SectionConfig, SectionData, Listing, Perk } from '../model/types';
 import { createSeededRandom, SeededRandom } from './seededRandom';
 import { generateSectionData } from './generateSectionData';
-import { hashString, parseSeatId } from '../domain/utils';
+import { hashString, parseSeatId } from '../behavior/utils';
 import seatViewImg from '../../../assets/seatView.png';
 
 /**

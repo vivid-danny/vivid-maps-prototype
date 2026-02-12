@@ -5,6 +5,7 @@ import type { HoverState, Listing, SeatMapModel, SelectionState } from '../model
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import type { SeatMapController } from './useSeatMapController';
+import { clearHover, getToggledSelection } from '../behavior/rules';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
@@ -66,28 +67,13 @@ export function useSeatMapPrototypeViewState({
   };
 
   const handleSelect = (newSelection: SelectionState) => {
-    const isClickingSection = newSelection.sectionId && !newSelection.rowId && newSelection.seatIds.length === 0;
-    const isClickingRow = newSelection.rowId && newSelection.seatIds.length === 0;
-    const isClickingSeat = newSelection.seatIds.length > 0;
+    const nextSelection = getToggledSelection(selection, newSelection);
 
-    let shouldDeselect = false;
-
-    if (isClickingSeat) {
-      shouldDeselect =
-        selection.listingId === newSelection.listingId &&
-        selection.seatIds.length === newSelection.seatIds.length &&
-        selection.seatIds.every((id) => newSelection.seatIds.includes(id));
-    } else if (isClickingRow) {
-      shouldDeselect = selection.rowId === newSelection.rowId;
-    } else if (isClickingSection) {
-      shouldDeselect = selection.sectionId === newSelection.sectionId;
-    }
-
-    if (shouldDeselect) {
+    if (nextSelection === EMPTY_SELECTION) {
       setSelection(EMPTY_SELECTION);
     } else {
-      setSelection(newSelection);
-      navigateToSelection(newSelection);
+      setSelection(nextSelection);
+      navigateToSelection(nextSelection);
     }
   };
 
@@ -117,7 +103,7 @@ export function useSeatMapPrototypeViewState({
         rowId: listing.rowId,
       });
     } else {
-      setHoverState(EMPTY_HOVER);
+      setHoverState(clearHover());
     }
   };
 

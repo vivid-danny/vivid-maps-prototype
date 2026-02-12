@@ -52,8 +52,10 @@ src/
         │   └── defaults.ts               # DEFAULT_SEAT_MAP_CONFIG
         ├── model/
         │   └── types.ts                  # Core domain types (SeatMapModel, etc.)
-        ├── domain/
-        │   └── utils.ts                  # Business logic utilities
+        ├── behavior/
+        │   ├── rules.ts                  # Selection/hover/visual state rules
+        │   ├── pins.ts                   # Pin visibility/overlay rules
+        │   └── utils.ts                  # Shared behavior utilities
         ├── mock/
         │   ├── generateSectionData.ts    # Config → SectionData
         │   ├── generateListings.ts       # SectionData → Listing[]

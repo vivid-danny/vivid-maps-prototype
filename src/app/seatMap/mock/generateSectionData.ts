@@ -1,6 +1,6 @@
 import type { SectionConfig, SectionData, SeatData } from '../model/types';
 import { createSeededRandom, SeededRandom } from './seededRandom';
-import { hashString, parseSeatIdNums } from '../domain/utils';
+import { hashString, parseSeatIdNums } from '../behavior/utils';
 
 // Generate section data from config using seeded randomization
 export function generateSectionData(
@@ -164,4 +164,3 @@ function generateListings(
 
   return listings;
 }
-
