@@ -57,7 +57,7 @@ src/
     └── seatMap/
         ├── config/                   # Configuration schema & defaults
         ├── model/                    # Core domain types
-        ├── domain/                   # Business logic utilities
+        ├── behavior/                 # Business logic rules and utilities
         ├── mock/                     # Deterministic data generation
         ├── state/                    # React hooks (config, controller, view state)
         └── components/              # Feature UI (SeatMapRoot, Controls, MapContainer)

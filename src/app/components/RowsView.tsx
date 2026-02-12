@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SectionData, SeatColors } from '../seatMap/model/types';
 import { SEAT_SIZE, ROW_GAP, PADDING, getSeatRowWidth, getSectionHeight } from './constants';
 import { useHoverIntent } from './useHoverIntent';
+import { getRowVisualState, isRowAvailable } from '../seatMap/behavior/rules';
 
 interface RowsViewProps {
   section: SectionData;
@@ -35,16 +36,28 @@ export function RowsView({
   const cornerRadius = barHeight / 2;
 
   const getRowColor = (rowId: string, isAvailable: boolean): string => {
-    if (!isAvailable) return seatColors.unavailable;
-    if (selectedRowId === rowId) return seatColors.selected;
-    if (pressedRowId === rowId) return seatColors.pressed;
-    // Combine local and external hover
-    if (localHoveredRowId === rowId || externalHoveredRowId === rowId) return seatColors.hover;
-    return seatColors.available;
-  };
+    const state = getRowVisualState({
+      rowId,
+      isAvailable,
+      selectedRowId,
+      pressedRowId,
+      localHoveredRowId,
+      externalHoveredRowId,
+    });
 
-  const isRowAvailable = (row: typeof section.rows[0]): boolean => {
-    return row.seats.some((seat) => seat.status === 'available');
+    switch (state) {
+      case 'unavailable':
+        return seatColors.unavailable;
+      case 'selected':
+        return seatColors.selected;
+      case 'pressed':
+        return seatColors.pressed;
+      case 'hover':
+        return seatColors.hover;
+      case 'available':
+      default:
+        return seatColors.available;
+    }
   };
 
   return (

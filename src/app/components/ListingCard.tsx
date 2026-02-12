@@ -28,7 +28,7 @@ const PERK_LABELS: Record<Perk, string> = {
   vip: 'VIP',
 };
 
-import { lightenColor } from '../seatMap/domain/utils';
+import { lightenColor } from '../seatMap/behavior/utils';
 
 export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
