@@ -174,15 +174,6 @@ export function PrototypeControls({
           />
         </div>
 
-        <div className="mb-6">
-          <button
-            onClick={onResetConfig}
-            className="w-full px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer transition-colors"
-          >
-            Reset
-          </button>
-        </div>
-
         {/* Map Settings */}
         <div className="mb-6 space-y-4">
           <label className="text-xs text-black font-bold block mb-2">Map Settings</label>
@@ -264,6 +255,15 @@ export function PrototypeControls({
               onChange={(value) => handleColorChange(key, value)}
             />
           ))}
+        </div>
+
+        <div className="mt-6">
+          <button
+            onClick={onResetConfig}
+            className="w-full px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer transition-colors"
+          >
+            Reset
+          </button>
         </div>
       </div>
     </div>
