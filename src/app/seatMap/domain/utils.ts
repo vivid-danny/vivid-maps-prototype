@@ -1,3 +1,5 @@
+import type { Perk } from '../model/types';
+
 // Shared utility functions
 
 // Darken a hex color by a fraction (0 = no change, 1 = black)
@@ -48,3 +50,17 @@ export function parseSeatIdNums(seatId: string): { rowNum: number; seatNum: numb
   if (!match) return null;
   return { rowNum: parseInt(match[1], 10), seatNum: parseInt(match[2], 10) };
 }
+
+// Format price from cents to dollars
+export function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(0)}`;
+}
+
+export const PERK_LABELS: Record<Perk, string> = {
+  aisle: 'Aisle',
+  front_of_section: 'Front Row',
+  ada_accessible: 'Accessible',
+  food_and_drink: 'Food & Drink',
+  super_seller: 'Super Seller',
+  vip: 'VIP',
+};

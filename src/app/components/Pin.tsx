@@ -20,9 +20,9 @@ export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#3
   const displayPrice = `$${Math.round(price / 100)}`;
   const inverseScale = (1 / currentScale) * (isSelected ? 1.875 : isHovered ? 1.5 : 1.25);
   const bgColor = isSelected ? darkenHex(selectedColor, 0.6) : isHovered ? darkenHex(hoverColor, 0.6) : '#1a1a2e';
-  const zIndex = isSelected ? 20 : isHovered ? 15 : 10;
+  const zIndex = isHovered ? 30 : isSelected ? 20 : 10;
   const showDealScore = dealScore !== undefined && dealScore > 7;
-  const showSeatView = (isSelected || isHovered) && seatViewUrl;
+  const showSeatView = isHovered && !isSelected && seatViewUrl;
 
   return (
     <div

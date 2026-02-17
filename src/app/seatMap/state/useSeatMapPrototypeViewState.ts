@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
-import type { HoverState, Listing, SeatMapModel, SelectionState } from '../model/types';
+import type { HoverState, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import type { SeatMapController } from './useSeatMapController';
@@ -26,6 +26,7 @@ export function useSeatMapPrototypeViewState({
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
   const [showControls, setShowControls] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('listings');
 
   const listings = model.listings;
 
@@ -92,8 +93,9 @@ export function useSeatMapPrototypeViewState({
   };
 
   const handleSelectFromPanel = (listing: Listing) => {
-    if (selection.listingId === listing.listingId) {
-      setSelection(EMPTY_SELECTION);
+    // If already viewing this listing's detail, go back to listings
+    if (viewMode === 'detail' && selection.listingId === listing.listingId) {
+      setViewMode('listings');
       return;
     }
 
@@ -105,7 +107,12 @@ export function useSeatMapPrototypeViewState({
     };
 
     setSelection(newSelection);
+    setViewMode('detail');
     navigateToSelection(newSelection);
+  };
+
+  const handleBackToListings = () => {
+    setViewMode('listings');
   };
 
   const handleHoverFromPanel = (listing: Listing | null) => {
@@ -131,6 +138,7 @@ export function useSeatMapPrototypeViewState({
     hoverState,
     currentScale,
     showControls,
+    viewMode,
     listings,
     selectedListing,
     listingsBySection,
@@ -139,6 +147,7 @@ export function useSeatMapPrototypeViewState({
     setSelection,
     handleSelect,
     handleSelectFromPanel,
+    handleBackToListings,
     handleHoverFromPanel,
     handleHoverFromMap,
   };
