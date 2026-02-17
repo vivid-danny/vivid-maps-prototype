@@ -1,6 +1,6 @@
 import type { Listing, SectionConfig, PinData } from '../model/types';
 import { createSeededRandom } from './seededRandom';
-import { hashString, parseSeatId } from '../domain/utils';
+import { hashString, parseSeatId } from '../behavior/utils';
 
 /**
  * Select up to 3 pins for a section using greedy selection with Chebyshev distance >= 2.

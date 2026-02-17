@@ -313,7 +313,7 @@ Restructured codebase from flat organization to domain-driven architecture with 
 - Created `seatMap/` feature folder with clear separation:
   - `config/` - Configuration schema and defaults
   - `model/` - Core domain types
-  - `domain/` - Business logic utilities
+  - `behavior/` - Business logic rules and utilities
   - `mock/` - Data generation (clearly labeled as temporary)
   - `state/` - React hooks for state management:
     - `useSeatMapConfig` - Config state management

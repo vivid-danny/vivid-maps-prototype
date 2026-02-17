@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SectionData, SeatColors, SeatData } from '../seatMap/model/types';
 import { SEAT_SIZE, SEAT_GAP, getSeatRowWidth, getSectionHeight, getSeatCenter } from './constants';
 import { useHoverIntent } from './useHoverIntent';
+import { getSeatVisualState, isSeatAvailable } from '../seatMap/behavior/rules';
 
 interface SeatsViewProps {
   section: SectionData;
@@ -49,21 +50,31 @@ export function SeatsView({
   });
 
   const getSeatColor = (seat: SeatData): string => {
-    if (seat.status !== 'available') return seatColors.unavailable;
+    const state = getSeatVisualState({
+      seat,
+      selectedListingId,
+      pressedListingId,
+      localHoveredListingId,
+      externalHoveredListingId,
+    });
 
-    // All available seats now have a listingId (grouped or solo)
-    const listingId = seat.listingId!;
-
-    if (selectedListingId === listingId) return seatColors.selected;
-    if (pressedListingId === listingId) return seatColors.pressed;
-    // Combine local and external hover - just compare listingId
-    if (localHoveredListingId === listingId) return seatColors.hover;
-    if (externalHoveredListingId === listingId) return seatColors.hover;
-    return seatColors.available;
+    switch (state) {
+      case 'unavailable':
+        return seatColors.unavailable;
+      case 'selected':
+        return seatColors.selected;
+      case 'pressed':
+        return seatColors.pressed;
+      case 'hover':
+        return seatColors.hover;
+      case 'available':
+      default:
+        return seatColors.available;
+    }
   };
 
   const handleMouseEnter = onListingHover ? (seat: SeatData) => {
-    if (seat.status !== 'available') return;
+    if (!isSeatAvailable(seat)) return;
     setLocalHoveredListingId(seat.listingId!);
     hoverIntent.enter(seat.listingId!);
   } : undefined;
@@ -75,7 +86,7 @@ export function SeatsView({
   } : undefined;
 
   const handleMouseDown = (seat: SeatData) => {
-    if (seat.status !== 'available') return;
+    if (!isSeatAvailable(seat)) return;
     setPressedListingId(seat.listingId!);
   };
 
@@ -84,7 +95,7 @@ export function SeatsView({
   };
 
   const handleClick = (seat: SeatData) => {
-    if (seat.status !== 'available') return;
+    if (!isSeatAvailable(seat)) return;
     // All available seats now have a listingId
     const listingId = seat.listingId!;
     const seatIds = listingToSeats.get(listingId) || [seat.seatId];
@@ -139,7 +150,7 @@ export function SeatsView({
       {section.rows.map((row, rowIndex) =>
         row.seats.slice(0, seatsPerRow).map((seat, seatIndex) => {
           const { cx, cy } = getSeatCenter(rowIndex, seatIndex);
-          const isAvailable = seat.status === 'available';
+          const isAvailable = isSeatAvailable(seat);
 
           return (
             <circle

@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
 import { useHoverIntent } from './useHoverIntent';
-import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/domain/utils';
+import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 
 interface ListingCardProps {
   listing: Listing;

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { darkenHex } from '../seatMap/domain/utils';
+import { darkenHex } from '../seatMap/behavior/utils';
 
 interface PinProps {
   price: number; // in cents

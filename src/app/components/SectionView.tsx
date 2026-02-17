@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SectionData, SeatColors } from '../seatMap/model/types';
 import { PADDING, getSeatRowWidth, getSectionHeight } from './constants';
 import { useHoverIntent } from './useHoverIntent';
+import { getSectionLabelVisualState, getSectionVisualState, isSectionAvailable } from '../seatMap/behavior/rules';
 
 interface SectionViewProps {
   section: SectionData;
@@ -33,10 +34,7 @@ export function SectionView({
   // Combine local and external hover states
   const isHovered = localHover || externalHover;
 
-  // Section is available if at least one seat in any row is available
-  const isAvailable = section.rows.some((row) =>
-    row.seats.some((seat) => seat.status === 'available')
-  );
+  const isAvailable = isSectionAvailable(section);
 
   // Calculate dimensions based on content using shared constants
   const width = getSeatRowWidth(seatsPerRow);
@@ -44,18 +42,31 @@ export function SectionView({
   const contentWidth = width - PADDING * 2;
   const contentHeight = height - PADDING * 2;
 
-  // Determine fill color based on state
+  const visualState = getSectionVisualState({
+    isAvailable,
+    isSelected,
+    isPressed,
+    isHovered,
+  });
+
   let fillColor: string;
-  if (!isAvailable) {
-    fillColor = seatColors.unavailable;
-  } else if (isSelected) {
-    fillColor = seatColors.selected;
-  } else if (isPressed) {
-    fillColor = seatColors.pressed;
-  } else if (isHovered) {
-    fillColor = seatColors.hover;
-  } else {
-    fillColor = seatColors.available;
+  switch (visualState) {
+    case 'unavailable':
+      fillColor = seatColors.unavailable;
+      break;
+    case 'selected':
+      fillColor = seatColors.selected;
+      break;
+    case 'pressed':
+      fillColor = seatColors.pressed;
+      break;
+    case 'hover':
+      fillColor = seatColors.hover;
+      break;
+    case 'available':
+    default:
+      fillColor = seatColors.available;
+      break;
   }
 
   const borderRadius = 2;
@@ -64,14 +75,25 @@ export function SectionView({
   const centerX = width / 2;
   const centerY = height / 2;
 
-  // Determine label color based on state
+  const labelVisualState = getSectionLabelVisualState({
+    isAvailable,
+    isSelected,
+    isPressed,
+    isHovered,
+  });
+
   let labelColor: string;
-  if (!isAvailable) {
-    labelColor = seatColors.labelUnavailable;
-  } else if (isSelected || isPressed || isHovered) {
-    labelColor = seatColors.labelSelected;
-  } else {
-    labelColor = seatColors.labelDefault;
+  switch (labelVisualState) {
+    case 'unavailable':
+      labelColor = seatColors.labelUnavailable;
+      break;
+    case 'active':
+      labelColor = seatColors.labelSelected;
+      break;
+    case 'default':
+    default:
+      labelColor = seatColors.labelDefault;
+      break;
   }
 
   // Label styling
