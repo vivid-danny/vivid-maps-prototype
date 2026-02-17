@@ -1,5 +1,5 @@
 import { Calendar, MapPin } from 'lucide-react';
-import type { EventInfo } from '../seatMap/model/types';
+import type { EventInfo } from '../../seatMap/model/types';
 
 interface TicketDetailEventInfoProps {
   eventInfo: EventInfo;

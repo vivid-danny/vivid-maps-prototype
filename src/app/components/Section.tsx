@@ -345,7 +345,7 @@ export function Section({
         left: `${config.x}px`,
         top: `${config.y}px`,
         overflow: 'visible',
-        zIndex: hoverPinData ? 50 : (selectedListing?.sectionId === config.sectionId ? 10 : undefined),
+        zIndex: hoverPinTarget ? 50 : (selectedListing?.sectionId === config.sectionId ? 10 : undefined),
       }}
     >
       {renderContent()}

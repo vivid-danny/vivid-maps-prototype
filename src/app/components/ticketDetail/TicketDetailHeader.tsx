@@ -1,22 +1,18 @@
 import { ArrowLeft } from 'lucide-react';
-import type { LayoutMode } from '../seatMap/model/types';
 
 interface TicketDetailHeaderProps {
   seatViewUrl: string;
   sectionLabel: string;
-  layoutMode: LayoutMode;
   onBack: () => void;
 }
 
-export function TicketDetailHeader({ seatViewUrl, sectionLabel, layoutMode, onBack }: TicketDetailHeaderProps) {
-  const isMobile = layoutMode === 'mobile';
-
+export function TicketDetailHeader({ seatViewUrl, sectionLabel, onBack }: TicketDetailHeaderProps) {
   return (
     <div className="relative w-full shrink-0">
       <img
         src={seatViewUrl}
         alt={`View from Section ${sectionLabel}`}
-        className={`w-full object-cover ${isMobile ? 'h-[180px]' : 'h-[200px] rounded-t'}`}
+        className="w-full object-cover h-[200px]"
       />
       <button
         onClick={onBack}

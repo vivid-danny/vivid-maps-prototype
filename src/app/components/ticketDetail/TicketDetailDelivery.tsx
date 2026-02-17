@@ -1,4 +1,4 @@
-import type { DeliveryInfo } from '../seatMap/model/types';
+import type { DeliveryInfo } from '../../seatMap/model/types';
 
 interface TicketDetailDeliveryProps {
   delivery: DeliveryInfo;

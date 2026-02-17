@@ -5,7 +5,7 @@ import { Section } from '../../components/Section';
 import { Venue } from '../../components/Venue';
 import { Stage } from '../../components/Stage';
 import { ListingsPanel } from '../../components/ListingsPanel';
-import { TicketDetail } from '../../components/TicketDetail';
+import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';

@@ -1,9 +1,8 @@
-import type { Perk, LayoutMode } from '../seatMap/model/types';
-import { PERK_LABELS } from '../seatMap/behavior/utils';
+import type { Perk } from '../../seatMap/model/types';
+import { PERK_LABELS } from '../../seatMap/behavior/utils';
 
 interface TicketDetailPerksProps {
   perks: Perk[];
-  layoutMode: LayoutMode;
 }
 
 const PERK_DESCRIPTIONS: Record<Perk, string> = {
@@ -15,16 +14,13 @@ const PERK_DESCRIPTIONS: Record<Perk, string> = {
   vip: 'VIP experience with premium amenities and exclusive access.',
 };
 
-export function TicketDetailPerks({ perks, layoutMode }: TicketDetailPerksProps) {
+export function TicketDetailPerks({ perks }: TicketDetailPerksProps) {
   if (perks.length === 0) return null;
-
-  const isMobile = layoutMode === 'mobile';
-  const header = isMobile ? 'Seat Features' : 'Seat Perks';
 
   return (
     <div className="p-6 border-t border-gray-100">
       <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-        {header}
+        Seat Perks
       </h4>
       <div className="mt-2 space-y-2">
         {perks.map((perk) => (

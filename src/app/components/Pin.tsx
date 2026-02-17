@@ -26,31 +26,27 @@ export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#3
 
   return (
     <div
+      className="flex flex-col items-center pointer-events-none absolute"
       style={{
-        position: 'absolute',
         left: x,
         top: y,
         '--pin-scale': inverseScale,
         transform: `translate(-50%, -100%) scale(var(--pin-scale))${isSelected ? ' translateY(-1px)' : ''}`,
         transformOrigin: 'center bottom',
-        pointerEvents: 'none',
         zIndex,
         animation: isSelected
           ? 'pinSelectedIn 300ms cubic-bezier(0.075, 0.82, 0.165, 1)'
           : isHovered
             ? 'pinHoverIn 200ms cubic-bezier(0.075, 0.82, 0.165, 1)'
             : undefined,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
       } as CSSProperties}
     >
       {/* Seat view card */}
       {showSeatView && (
-        <div style={{ width: 160, borderRadius: 6, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', marginBottom: 4 }}>
-          <div style={{ position: 'relative' }}>
-            <img src={seatViewUrl} style={{ width: '100%', display: 'block', aspectRatio: '16/10', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', top: 6, left: 6, background: '#fff', borderRadius: 2, padding: '2px 6px', fontSize: 8, lineHeight: '120%', fontWeight: 450, color: '#1a1a2e' }}>
+        <div className="w-[160px] rounded-md overflow-hidden shadow-md mb-1">
+          <div className="relative">
+            <img src={seatViewUrl} className="w-full block aspect-[16/10] object-cover" />
+            <div className="absolute top-1.5 left-1.5 bg-white rounded-sm px-1.5 py-0.5 text-[8px] leading-tight font-medium text-[#1a1a2e]">
               Section {sectionLabel}, Row {rowNumber}
             </div>
           </div>
@@ -58,31 +54,11 @@ export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#3
       )}
       {/* Pill body */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          background: bgColor,
-          color: '#fff',
-          fontSize: 12,
-          fontWeight: 600,
-          lineHeight: 1,
-          padding: '4px 5px',
-          borderRadius: 4,
-          whiteSpace: 'nowrap',
-          textAlign: 'center',
-        }}
+        className="flex items-center gap-1 text-xs font-semibold leading-none px-[5px] py-1 rounded whitespace-nowrap text-center text-white"
+        style={{ background: bgColor }}
       >
         {showDealScore && (
-          <span
-            style={{
-              background: '#4CAF50',
-              borderRadius: 2,
-              padding: '2px 4px',
-              fontSize: 10,
-              fontWeight: 700,
-            }}
-          >
+          <span className="rounded-sm px-1 py-0.5 text-[10px] font-bold bg-[#4CAF50]">
             {dealScore.toFixed(1)}
           </span>
         )}

@@ -1,4 +1,4 @@
-import type { Listing, EventInfo, LayoutMode } from '../seatMap/model/types';
+import type { Listing, EventInfo, LayoutMode } from '../../seatMap/model/types';
 import { TicketDetailHeader } from './TicketDetailHeader';
 import { TicketDetailInfo } from './TicketDetailInfo';
 import { TicketDetailCheckout } from './TicketDetailCheckout';
@@ -23,12 +23,11 @@ export function TicketDetail({ listing, eventInfo, layoutMode, onBack, className
         <TicketDetailHeader
           seatViewUrl={listing.seatViewUrl}
           sectionLabel={listing.sectionLabel}
-          layoutMode={layoutMode}
           onBack={onBack}
         />
         <TicketDetailInfo listing={listing} />
         {!isMobile && <TicketDetailCheckout quantityAvailable={listing.quantityAvailable} />}
-        <TicketDetailPerks perks={listing.perks} layoutMode={layoutMode} />
+        <TicketDetailPerks perks={listing.perks} />
         <TicketDetailDelivery delivery={listing.delivery} />
         <TicketDetailEventInfo eventInfo={eventInfo} />
       </div>

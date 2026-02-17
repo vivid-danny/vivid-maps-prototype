@@ -1,5 +1,5 @@
-import type { Listing } from '../seatMap/model/types';
-import { formatPrice } from '../seatMap/behavior/utils';
+import type { Listing } from '../../seatMap/model/types';
+import { formatPrice } from '../../seatMap/behavior/utils';
 
 interface TicketDetailInfoProps {
   listing: Listing;
