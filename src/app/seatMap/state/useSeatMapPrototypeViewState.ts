@@ -72,9 +72,11 @@ export function useSeatMapPrototypeViewState({
 
     if (nextSelection === EMPTY_SELECTION) {
       setSelection(EMPTY_SELECTION);
+      setViewMode('listings');
     } else {
       setSelection(nextSelection);
       navigateToSelection(nextSelection);
+      setViewMode(nextSelection.listingId ? 'detail' : 'listings');
     }
   };
 
@@ -99,6 +101,7 @@ export function useSeatMapPrototypeViewState({
 
   const handleBackToListings = () => {
     setViewMode('listings');
+    setSelection(EMPTY_SELECTION);
   };
 
   const handleHoverFromPanel = (listing: Listing | null) => {

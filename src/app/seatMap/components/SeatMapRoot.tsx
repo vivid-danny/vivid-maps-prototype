@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { RotateCcw } from 'lucide-react';
 import { Section } from '../../components/Section';
@@ -14,6 +14,13 @@ import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewSt
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
+import type { Listing } from '../model/types';
+
+const DETAIL_EASING_IN = 'cubic-bezier(0.215, 0.61, 0.355, 1)';
+const DETAIL_EASING_OUT = 'cubic-bezier(0.215, 0.61, 0.355, 1)';
+const DETAIL_DURATION = '300ms';
+
+type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
@@ -39,6 +46,49 @@ export function SeatMapRoot() {
 
   const isMobile = config.layoutMode === 'mobile';
 
+  // --- Detail panel slide transition ---
+  const isDetailOpen = viewState.viewMode === 'detail' && !!viewState.selectedListing;
+  const [detailPhase, setDetailPhase] = useState<DetailPhase>('closed');
+  const lastListingRef = useRef<Listing | null>(null);
+  const rafRef = useRef(0);
+
+  if (viewState.selectedListing) {
+    lastListingRef.current = viewState.selectedListing;
+  }
+
+  useEffect(() => {
+    if (isDetailOpen) {
+      cancelAnimationFrame(rafRef.current);
+      setDetailPhase('entering');
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = requestAnimationFrame(() => {
+          setDetailPhase('open');
+        });
+      });
+    } else {
+      cancelAnimationFrame(rafRef.current);
+      setDetailPhase((prev) => {
+        if (prev === 'open') return 'exiting';
+        // If still in 'entering' (hasn't transitioned yet), go straight to closed
+        if (prev === 'entering') return 'closed';
+        return prev;
+      });
+    }
+  }, [isDetailOpen]);
+
+  const handleDetailTransitionEnd = () => {
+    if (detailPhase === 'exiting') setDetailPhase('closed');
+  };
+
+  const showDetailOverlay = detailPhase !== 'closed';
+  const detailSlideIn = detailPhase === 'open';
+  const detailListing = viewState.selectedListing || lastListingRef.current;
+
+  const detailTransitionStyle = {
+    transform: detailSlideIn ? 'translateX(0)' : 'translateX(-100%)',
+    transition: `transform ${DETAIL_DURATION} ${detailSlideIn ? DETAIL_EASING_IN : DETAIL_EASING_OUT}`,
+  };
+
   return (
     <div className="size-full flex">
       <PrototypeControls
@@ -58,21 +108,14 @@ export function SeatMapRoot() {
       >
         <div
           className={`flex bg-white ${
-            config.layoutMode === 'desktop' ? 'flex-row w-full h-full overflow-hidden' : 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300'
+            config.layoutMode === 'desktop' ? 'flex-row w-full h-full overflow-hidden' : 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300 relative'
           }`}
         >
+          {/* Desktop: sidebar panel (listings + detail overlay) */}
           {config.layoutMode === 'desktop' && (
-            viewState.viewMode === 'detail' && viewState.selectedListing ? (
-              <TicketDetail
-                className="w-[450px] h-full shrink-0"
-                listing={viewState.selectedListing}
-                eventInfo={model.eventInfo}
-                layoutMode={config.layoutMode}
-                onBack={viewState.handleBackToListings}
-              />
-            ) : (
+            <div className="w-[450px] h-full shrink-0 relative overflow-hidden">
               <ListingsPanel
-                className="w-[450px] shrink-0"
+                className="w-full h-full"
                 listings={viewState.listings}
                 selection={viewState.selection}
                 hoverState={viewState.hoverState}
@@ -83,86 +126,93 @@ export function SeatMapRoot() {
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
               />
-            )
-          )}
-
-          {!(config.layoutMode === 'mobile' && viewState.viewMode === 'detail') && (
-            <div
-              className={`flex items-center justify-center ${
-                config.layoutMode === 'desktop' ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
-              }`}
-            >
-              <div className={`relative ${config.layoutMode === 'desktop' ? 'w-full h-full' : ''}`}>
-                <MapContainer
-                  ref={transformRef}
-                  model={model}
-                  controller={controller}
-                  config={config}
-                  onScaleChange={setCurrentScale}
-                  wheelStep={0.2}
+              {showDetailOverlay && detailListing && (
+                <div
+                  className="absolute inset-0"
+                  style={detailTransitionStyle}
+                  onTransitionEnd={handleDetailTransitionEnd}
                 >
-                  <Venue boundary={model.boundary}>
-                    <Stage
-                      x={STAGE_CONFIG.x}
-                      y={STAGE_CONFIG.y}
-                      width={STAGE_CONFIG.width}
-                      height={STAGE_CONFIG.height}
-                    />
-                    {controller.sections.map((sectionConfig) => {
-                      const sectionPins = viewState.pinsBySection.get(sectionConfig.sectionId) || [];
-                      return (
-                        <Section
-                          key={sectionConfig.sectionId}
-                          config={sectionConfig}
-                          sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
-                          seatColors={config.seatColors}
-                          displayMode={controller.displayMode}
-                          selection={viewState.selection}
-                          onSelect={viewState.handleSelect}
-                          hoverState={viewState.hoverState}
-                          onHover={viewState.handleHoverFromMap}
-                          connectorWidth={config.connectorWidth}
-                          pins={isMobile ? sectionPins.slice(0, Math.ceil(sectionPins.length / 2)) : sectionPins}
-                          currentScale={viewState.currentScale}
-                          selectedListing={viewState.selectedListing}
-                          sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
-                          disableHover={isMobile}
-                        />
-                      );
-                    })}
-                  </Venue>
-                </MapContainer>
-                <button
-                  onClick={() => {
-                    transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
-                    viewState.setSelection(EMPTY_SELECTION);
-                    setCurrentScale(controller.initialScale);
-                  }}
-                  className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
-                  style={{
-                    padding: '6px 8px',
-                    opacity: viewState.currentScale >= controller.zoomThreshold ? 1 : 0,
-                    pointerEvents: viewState.currentScale >= controller.zoomThreshold ? 'auto' : 'none',
-                  }}
-                >
-                  Reset Map <RotateCcw className="w-4 h-4" />
-                </button>
-              </div>
+                  <TicketDetail
+                    className="w-full h-full"
+                    listing={detailListing}
+                    eventInfo={model.eventInfo}
+                    layoutMode={config.layoutMode}
+                    onBack={viewState.handleBackToListings}
+                  />
+                </div>
+              )}
             </div>
           )}
 
+          {/* Map area */}
+          <div
+            className={`flex items-center justify-center ${
+              config.layoutMode === 'desktop' ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
+            }`}
+          >
+            <div className={`relative ${config.layoutMode === 'desktop' ? 'w-full h-full' : ''}`}>
+              <MapContainer
+                ref={transformRef}
+                model={model}
+                controller={controller}
+                config={config}
+                onScaleChange={setCurrentScale}
+                wheelStep={0.2}
+              >
+                <Venue boundary={model.boundary}>
+                  <Stage
+                    x={STAGE_CONFIG.x}
+                    y={STAGE_CONFIG.y}
+                    width={STAGE_CONFIG.width}
+                    height={STAGE_CONFIG.height}
+                  />
+                  {controller.sections.map((sectionConfig) => {
+                    const sectionPins = viewState.pinsBySection.get(sectionConfig.sectionId) || [];
+                    return (
+                      <Section
+                        key={sectionConfig.sectionId}
+                        config={sectionConfig}
+                        sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
+                        seatColors={config.seatColors}
+                        displayMode={controller.displayMode}
+                        selection={viewState.selection}
+                        onSelect={viewState.handleSelect}
+                        hoverState={viewState.hoverState}
+                        onHover={viewState.handleHoverFromMap}
+                        connectorWidth={config.connectorWidth}
+                        pins={isMobile ? sectionPins.slice(0, Math.ceil(sectionPins.length / 2)) : sectionPins}
+                        currentScale={viewState.currentScale}
+                        selectedListing={viewState.selectedListing}
+                        sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
+                        disableHover={isMobile}
+                      />
+                    );
+                  })}
+                </Venue>
+              </MapContainer>
+              <button
+                onClick={() => {
+                  transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
+                  viewState.setSelection(EMPTY_SELECTION);
+                  setCurrentScale(controller.initialScale);
+                }}
+                className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                style={{
+                  padding: '6px 8px',
+                  opacity: viewState.currentScale >= controller.zoomThreshold ? 1 : 0,
+                  pointerEvents: viewState.currentScale >= controller.zoomThreshold ? 'auto' : 'none',
+                }}
+              >
+                Reset Map <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile: listings panel + detail overlay */}
           {config.layoutMode === 'mobile' && (
-            viewState.viewMode === 'detail' && viewState.selectedListing ? (
-              <TicketDetail
-                className="flex-1"
-                listing={viewState.selectedListing}
-                eventInfo={model.eventInfo}
-                layoutMode={config.layoutMode}
-                onBack={viewState.handleBackToListings}
-              />
-            ) : (
+            <div className="flex-1 relative overflow-hidden">
               <ListingsPanel
-                className="flex-1"
+                className="w-full h-full"
                 listings={viewState.listings}
                 selection={viewState.selection}
                 hoverState={viewState.hoverState}
@@ -173,7 +223,22 @@ export function SeatMapRoot() {
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
               />
-            )
+              {showDetailOverlay && detailListing && (
+                <div
+                  className="absolute inset-0 z-10"
+                  style={detailTransitionStyle}
+                  onTransitionEnd={handleDetailTransitionEnd}
+                >
+                  <TicketDetail
+                    className="w-full h-full"
+                    listing={detailListing}
+                    eventInfo={model.eventInfo}
+                    layoutMode={config.layoutMode}
+                    onBack={viewState.handleBackToListings}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
