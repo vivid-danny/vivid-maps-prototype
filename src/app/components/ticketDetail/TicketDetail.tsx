@@ -18,7 +18,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, onBack, className
   const isMobile = layoutMode === 'mobile';
 
   return (
-    <div className={`flex flex-col min-h-0 ${!isMobile ? 'bg-white' : ''} ${className}`}>
+    <div className={`flex flex-col min-h-0 bg-white ${className}`}>
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <TicketDetailHeader
           seatViewUrl={listing.seatViewUrl}

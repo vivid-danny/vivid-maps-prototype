@@ -132,13 +132,19 @@ export function SeatMapRoot() {
                   style={detailTransitionStyle}
                   onTransitionEnd={handleDetailTransitionEnd}
                 >
-                  <TicketDetail
+                  <div
+                    key={detailListing.listingId}
+                    style={{ animation: 'detailContentIn 200ms ease-out' }}
                     className="w-full h-full"
-                    listing={detailListing}
-                    eventInfo={model.eventInfo}
-                    layoutMode={config.layoutMode}
-                    onBack={viewState.handleBackToListings}
-                  />
+                  >
+                    <TicketDetail
+                      className="w-full h-full"
+                      listing={detailListing}
+                      eventInfo={model.eventInfo}
+                      layoutMode={config.layoutMode}
+                      onBack={viewState.handleBackToListings}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -208,7 +214,7 @@ export function SeatMapRoot() {
             </div>
           </div>
 
-          {/* Mobile: listings panel + detail overlay */}
+          {/* Mobile: listings panel */}
           {config.layoutMode === 'mobile' && (
             <div className="flex-1 relative overflow-hidden">
               <ListingsPanel
@@ -223,21 +229,29 @@ export function SeatMapRoot() {
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
               />
-              {showDetailOverlay && detailListing && (
-                <div
-                  className="absolute inset-0 z-10"
-                  style={detailTransitionStyle}
-                  onTransitionEnd={handleDetailTransitionEnd}
-                >
-                  <TicketDetail
-                    className="w-full h-full"
-                    listing={detailListing}
-                    eventInfo={model.eventInfo}
-                    layoutMode={config.layoutMode}
-                    onBack={viewState.handleBackToListings}
-                  />
-                </div>
-              )}
+            </div>
+          )}
+
+          {/* Mobile: detail overlay — covers full viewport (map + listings) */}
+          {config.layoutMode === 'mobile' && showDetailOverlay && detailListing && (
+            <div
+              className="absolute inset-0 z-10"
+              style={detailTransitionStyle}
+              onTransitionEnd={handleDetailTransitionEnd}
+            >
+              <div
+                key={detailListing.listingId}
+                style={{ animation: 'detailContentIn 200ms ease-out' }}
+                className="w-full h-full"
+              >
+                <TicketDetail
+                  className="w-full h-full"
+                  listing={detailListing}
+                  eventInfo={model.eventInfo}
+                  layoutMode={config.layoutMode}
+                  onBack={viewState.handleBackToListings}
+                />
+              </div>
             </div>
           )}
         </div>

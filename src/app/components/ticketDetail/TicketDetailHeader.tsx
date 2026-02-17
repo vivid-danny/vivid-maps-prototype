@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface TicketDetailHeaderProps {
   seatViewUrl: string;
@@ -18,7 +18,7 @@ export function TicketDetailHeader({ seatViewUrl, sectionLabel, onBack }: Ticket
         onClick={onBack}
         className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white cursor-pointer transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
