@@ -85,8 +85,11 @@ export function SeatMapRoot() {
   const detailListing = viewState.selectedListing || lastListingRef.current;
 
   const detailTransitionStyle = {
-    transform: detailSlideIn ? 'translateX(0)' : 'translateX(-100%)',
-    transition: `transform ${DETAIL_DURATION} ${detailSlideIn ? DETAIL_EASING_IN : DETAIL_EASING_OUT}`,
+    opacity: detailSlideIn ? 1 : 0,
+    transform: detailSlideIn ? 'translateY(0%)' : 'translateY(100%)',
+    transition: detailSlideIn
+      ? `opacity 250ms ease-out, transform ${DETAIL_DURATION} ${DETAIL_EASING_IN} 50ms`
+      : `opacity 200ms ease-in 100ms, transform ${DETAIL_DURATION} ${DETAIL_EASING_OUT}`,
   };
 
   return (

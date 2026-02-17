@@ -96,7 +96,9 @@ export function useSeatMapPrototypeViewState({
 
     setSelection(newSelection);
     setViewMode('detail');
-    navigateToSelection(newSelection);
+    if (config.layoutMode !== 'mobile') {
+      navigateToSelection(newSelection);
+    }
   };
 
   const handleBackToListings = () => {

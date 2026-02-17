@@ -19,7 +19,7 @@
 @keyframes detailContentIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(100%);
   }
   to {
     opacity: 1;
