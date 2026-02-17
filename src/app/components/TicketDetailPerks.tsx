@@ -1,5 +1,5 @@
 import type { Perk, LayoutMode } from '../seatMap/model/types';
-import { PERK_LABELS } from '../seatMap/domain/utils';
+import { PERK_LABELS } from '../seatMap/behavior/utils';
 
 interface TicketDetailPerksProps {
   perks: Perk[];
