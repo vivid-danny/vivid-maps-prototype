@@ -16,15 +16,47 @@
   }
 }
 
+/* ─── Detail Panel Animation ─────────────────────────────────── */
+/* Edit these variables to tune timing and easing for all states  */
+:root {
+  --detail-slide-duration:   350ms;
+  --detail-slide-easing-in:  cubic-bezier(0.215, 0.61, 0.355, 1);
+  --detail-slide-easing-out: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --detail-content-duration: 350ms;
+  --detail-content-easing:   ease-out;
+}
+
+@keyframes detailSlideIn {
+  0% { opacity: 0; scale: 1.1; transform: translateY(100%); }
+  50% { opacity: 0; scale: 1.1; }
+  51% { opacity: 0.1; }
+  100%   { opacity: 1; scale: 1; transform: translateY(0); }
+}
+
+@keyframes detailSlideOut {
+  0% { opacity: 1; scale: 1; transform: translateY(0);    }
+  50% { opacity: 0; scale: 1.1; }
+  51% { opacity: 0; }
+  100%   { opacity: 0; scale: 1.1; transform: translateY(100%); }
+}
+
 @keyframes detailContentIn {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { filter: blur(20px); }
+  100% { filter: blur(0px); }
+}
+
+.detail-panel--entering {
+  animation: detailSlideIn var(--detail-slide-duration) var(--detail-slide-easing-in) forwards;
+}
+.detail-panel--open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.detail-panel--exiting {
+  animation: detailSlideOut var(--detail-slide-duration) var(--detail-slide-easing-out) forwards;
+}
+.detail-content {
+  animation: detailContentIn var(--detail-content-duration) var(--detail-content-easing);
 }
 
 html, body, #root {

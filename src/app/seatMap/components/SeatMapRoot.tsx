@@ -16,10 +16,6 @@ import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
 import type { Listing } from '../model/types';
 
-const DETAIL_EASING_IN = 'cubic-bezier(0.215, 0.61, 0.355, 1)';
-const DETAIL_EASING_OUT = 'cubic-bezier(0.215, 0.61, 0.355, 1)';
-const DETAIL_DURATION = '300ms';
-
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
@@ -50,7 +46,6 @@ export function SeatMapRoot() {
   const isDetailOpen = viewState.viewMode === 'detail' && !!viewState.selectedListing;
   const [detailPhase, setDetailPhase] = useState<DetailPhase>('closed');
   const lastListingRef = useRef<Listing | null>(null);
-  const rafRef = useRef(0);
 
   if (viewState.selectedListing) {
     lastListingRef.current = viewState.selectedListing;
@@ -58,39 +53,24 @@ export function SeatMapRoot() {
 
   useEffect(() => {
     if (isDetailOpen) {
-      cancelAnimationFrame(rafRef.current);
       setDetailPhase('entering');
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = requestAnimationFrame(() => {
-          setDetailPhase('open');
-        });
-      });
     } else {
-      cancelAnimationFrame(rafRef.current);
       setDetailPhase((prev) => {
         if (prev === 'open') return 'exiting';
-        // If still in 'entering' (hasn't transitioned yet), go straight to closed
-        if (prev === 'entering') return 'closed';
+        if (prev === 'entering') return 'closed'; // interrupted mid-enter: instant close
         return prev;
       });
     }
   }, [isDetailOpen]);
 
-  const handleDetailTransitionEnd = () => {
+  const handleDetailAnimationEnd = (e: React.AnimationEvent) => {
+    if (e.target !== e.currentTarget) return; // block bubbled events from inner content
+    if (detailPhase === 'entering') setDetailPhase('open');
     if (detailPhase === 'exiting') setDetailPhase('closed');
   };
 
   const showDetailOverlay = detailPhase !== 'closed';
-  const detailSlideIn = detailPhase === 'open';
   const detailListing = viewState.selectedListing || lastListingRef.current;
-
-  const detailTransitionStyle = {
-    opacity: detailSlideIn ? 1 : 0,
-    transform: detailSlideIn ? 'translateY(0%)' : 'translateY(100%)',
-    transition: detailSlideIn
-      ? `opacity 250ms ease-out, transform ${DETAIL_DURATION} ${DETAIL_EASING_IN} 50ms`
-      : `opacity 200ms ease-in 100ms, transform ${DETAIL_DURATION} ${DETAIL_EASING_OUT}`,
-  };
 
   return (
     <div className="size-full flex">
@@ -131,14 +111,12 @@ export function SeatMapRoot() {
               />
               {showDetailOverlay && detailListing && (
                 <div
-                  className="absolute inset-0"
-                  style={detailTransitionStyle}
-                  onTransitionEnd={handleDetailTransitionEnd}
+                  className={`absolute inset-0 detail-panel--${detailPhase}`}
+                  onAnimationEnd={handleDetailAnimationEnd}
                 >
                   <div
                     key={detailListing.listingId}
-                    style={{ animation: 'detailContentIn 200ms ease-out' }}
-                    className="w-full h-full"
+                    className="detail-content w-full h-full"
                   >
                     <TicketDetail
                       className="w-full h-full"
@@ -238,14 +216,12 @@ export function SeatMapRoot() {
           {/* Mobile: detail overlay — covers full viewport (map + listings) */}
           {config.layoutMode === 'mobile' && showDetailOverlay && detailListing && (
             <div
-              className="absolute inset-0 z-10"
-              style={detailTransitionStyle}
-              onTransitionEnd={handleDetailTransitionEnd}
+              className={`absolute inset-0 z-10 detail-panel--${detailPhase}`}
+              onAnimationEnd={handleDetailAnimationEnd}
             >
               <div
                 key={detailListing.listingId}
-                style={{ animation: 'detailContentIn 200ms ease-out' }}
-                className="w-full h-full"
+                className="detail-content w-full h-full"
               >
                 <TicketDetail
                   className="w-full h-full"
