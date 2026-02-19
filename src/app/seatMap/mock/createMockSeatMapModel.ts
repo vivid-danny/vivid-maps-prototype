@@ -1,7 +1,7 @@
 import { generateAllListings } from './generateListings';
 import { generateAllPins } from './generatePins';
 import { generateSectionData } from './generateSectionData';
-import type { MapConfig, SeatMapModel } from '../model/types';
+import type { MapConfig, SeatMapModel, EventInfo } from '../model/types';
 
 // Layout constants for centered positioning.
 // Section widths: narrow (6 seats) = 36px, wide (14 seats) = 84px.
@@ -121,6 +121,13 @@ const DEMO_MAP: MapConfig = {
   seed: 12345,
 };
 
+const DEMO_EVENT_INFO: EventInfo = {
+  eventName: 'Lionel Richie and Earth Wind and Fire',
+  eventDate: 'Tue, Jan 30, 2024 at 7:00pm',
+  venueName: 'Wrigley Field',
+  venueAddress: '1060 W Addison St, Chicago, IL 60613',
+};
+
 interface CreateMockSeatMapModelOptions {
   seed?: number;
 }
@@ -155,6 +162,7 @@ export function createMockSeatMapModel(options: CreateMockSeatMapModelOptions = 
     listings,
     listingsBySection,
     pinsBySection,
+    eventInfo: DEMO_EVENT_INFO,
   };
 }
 

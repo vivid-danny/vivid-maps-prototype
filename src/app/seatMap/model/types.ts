@@ -2,6 +2,23 @@ export type DisplayMode = 'seats' | 'rows' | 'sections';
 
 export type LayoutMode = 'desktop' | 'mobile';
 
+export type ViewMode = 'listings' | 'detail';
+
+export type DeliveryMethod = 'mobile_transfer' | 'instant_download';
+
+export interface DeliveryInfo {
+  method: DeliveryMethod;
+  label: string;
+  description: string;
+}
+
+export interface EventInfo {
+  eventName: string;
+  eventDate: string;
+  venueName: string;
+  venueAddress: string;
+}
+
 export interface SeatColors {
   available: string;
   unavailable: string;
@@ -72,6 +89,7 @@ export interface SeatMapModel extends MapConfig {
   listings: Listing[];
   listingsBySection: Map<string, Listing[]>;
   pinsBySection: Map<string, PinData[]>;
+  eventInfo: EventInfo;
 }
 
 // Unified selection state - only one thing can be selected at a time
@@ -124,4 +142,7 @@ export interface Listing {
   seatViewUrl: string;
   perks: Perk[];
   dealScore: number; // 0-10.0 scale
+  quantityAvailable: number;
+  feePerTicket: number; // in cents
+  delivery: DeliveryInfo;
 }

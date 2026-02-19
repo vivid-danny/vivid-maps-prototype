@@ -345,12 +345,13 @@ export function Section({
         left: `${config.x}px`,
         top: `${config.y}px`,
         overflow: 'visible',
+        zIndex: hoverPinTarget ? 50 : (selectedListing?.sectionId === config.sectionId ? 10 : undefined),
       }}
     >
       {renderContent()}
       {renderPins()}
-      {!disableHover && renderHoverPin()}
       {renderSelectedPin()}
+      {!disableHover && renderHoverPin()}
     </div>
   );
 }

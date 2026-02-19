@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { RotateCcw } from 'lucide-react';
 import { Section } from '../../components/Section';
 import { Venue } from '../../components/Venue';
 import { Stage } from '../../components/Stage';
 import { ListingsPanel } from '../../components/ListingsPanel';
+import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
@@ -13,6 +14,9 @@ import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewSt
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
+import type { Listing } from '../model/types';
+
+type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
@@ -38,6 +42,36 @@ export function SeatMapRoot() {
 
   const isMobile = config.layoutMode === 'mobile';
 
+  // --- Detail panel slide transition ---
+  const isDetailOpen = viewState.viewMode === 'detail' && !!viewState.selectedListing;
+  const [detailPhase, setDetailPhase] = useState<DetailPhase>('closed');
+  const lastListingRef = useRef<Listing | null>(null);
+
+  if (viewState.selectedListing) {
+    lastListingRef.current = viewState.selectedListing;
+  }
+
+  useEffect(() => {
+    if (isDetailOpen) {
+      setDetailPhase('entering');
+    } else {
+      setDetailPhase((prev) => {
+        if (prev === 'open') return 'exiting';
+        if (prev === 'entering') return 'closed'; // interrupted mid-enter: instant close
+        return prev;
+      });
+    }
+  }, [isDetailOpen]);
+
+  const handleDetailAnimationEnd = (e: React.AnimationEvent) => {
+    if (e.target !== e.currentTarget) return; // block bubbled events from inner content
+    if (detailPhase === 'entering') setDetailPhase('open');
+    if (detailPhase === 'exiting') setDetailPhase('closed');
+  };
+
+  const showDetailOverlay = detailPhase !== 'closed';
+  const detailListing = viewState.selectedListing || lastListingRef.current;
+
   return (
     <div className="size-full flex">
       <PrototypeControls
@@ -57,24 +91,47 @@ export function SeatMapRoot() {
       >
         <div
           className={`flex bg-white ${
-            config.layoutMode === 'desktop' ? 'flex-row w-full h-full overflow-hidden' : 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300'
+            config.layoutMode === 'desktop' ? 'flex-row w-full h-full overflow-hidden' : 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300 relative'
           }`}
         >
+          {/* Desktop: sidebar panel (listings + detail overlay) */}
           {config.layoutMode === 'desktop' && (
-            <ListingsPanel
-              className="w-[450px] shrink-0"
-              listings={viewState.listings}
-              selection={viewState.selection}
-              hoverState={viewState.hoverState}
-              onSelectListing={viewState.handleSelectFromPanel}
-              onHoverListing={viewState.handleHoverFromPanel}
-              selectedColor={config.seatColors.selected}
-              hoverColor={config.seatColors.hover}
-              pressedColor={config.seatColors.pressed}
-              disableHover={isMobile}
-            />
+            <div className="w-[450px] h-full shrink-0 relative overflow-hidden">
+              <ListingsPanel
+                className="w-full h-full"
+                listings={viewState.listings}
+                selection={viewState.selection.listingId ? EMPTY_SELECTION : viewState.selection}
+                hoverState={viewState.hoverState}
+                onSelectListing={viewState.handleSelectFromPanel}
+                onHoverListing={viewState.handleHoverFromPanel}
+                selectedColor={config.seatColors.selected}
+                hoverColor={config.seatColors.hover}
+                pressedColor={config.seatColors.pressed}
+                disableHover={isMobile}
+              />
+              {showDetailOverlay && detailListing && (
+                <div
+                  className={`absolute inset-0 detail-panel--${detailPhase}`}
+                  onAnimationEnd={handleDetailAnimationEnd}
+                >
+                  <div
+                    key={detailListing.listingId}
+                    className="detail-content w-full h-full"
+                  >
+                    <TicketDetail
+                      className="w-full h-full"
+                      listing={detailListing}
+                      eventInfo={model.eventInfo}
+                      layoutMode={config.layoutMode}
+                      onBack={viewState.handleBackToListings}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
+          {/* Map area */}
           <div
             className={`flex items-center justify-center ${
               config.layoutMode === 'desktop' ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
@@ -138,19 +195,43 @@ export function SeatMapRoot() {
             </div>
           </div>
 
+          {/* Mobile: listings panel */}
           {config.layoutMode === 'mobile' && (
-            <ListingsPanel
-              className="flex-1"
-              listings={viewState.listings}
-              selection={viewState.selection}
-              hoverState={viewState.hoverState}
-              onSelectListing={viewState.handleSelectFromPanel}
-              onHoverListing={viewState.handleHoverFromPanel}
-              selectedColor={config.seatColors.selected}
-              hoverColor={config.seatColors.hover}
-              pressedColor={config.seatColors.pressed}
-              disableHover={isMobile}
-            />
+            <div className="flex-1 relative overflow-hidden">
+              <ListingsPanel
+                className="w-full h-full"
+                listings={viewState.listings}
+                selection={viewState.selection.listingId ? EMPTY_SELECTION : viewState.selection}
+                hoverState={viewState.hoverState}
+                onSelectListing={viewState.handleSelectFromPanel}
+                onHoverListing={viewState.handleHoverFromPanel}
+                selectedColor={config.seatColors.selected}
+                hoverColor={config.seatColors.hover}
+                pressedColor={config.seatColors.pressed}
+                disableHover={isMobile}
+              />
+            </div>
+          )}
+
+          {/* Mobile: detail overlay — covers full viewport (map + listings) */}
+          {config.layoutMode === 'mobile' && showDetailOverlay && detailListing && (
+            <div
+              className={`absolute inset-0 z-10 detail-panel--${detailPhase}`}
+              onAnimationEnd={handleDetailAnimationEnd}
+            >
+              <div
+                key={detailListing.listingId}
+                className="detail-content w-full h-full"
+              >
+                <TicketDetail
+                  className="w-full h-full"
+                  listing={detailListing}
+                  eventInfo={model.eventInfo}
+                  layoutMode={config.layoutMode}
+                  onBack={viewState.handleBackToListings}
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>

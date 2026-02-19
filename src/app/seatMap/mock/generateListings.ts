@@ -1,8 +1,21 @@
-import type { SectionConfig, SectionData, Listing, Perk } from '../model/types';
+import type { SectionConfig, SectionData, Listing, Perk, DeliveryInfo } from '../model/types';
 import { createSeededRandom, SeededRandom } from './seededRandom';
 import { generateSectionData } from './generateSectionData';
 import { hashString, parseSeatId } from '../behavior/utils';
 import seatViewImg from '../../../assets/seatView.png';
+
+const DELIVERY_OPTIONS: DeliveryInfo[] = [
+  {
+    method: 'mobile_transfer',
+    label: 'Mobile Transfer',
+    description: 'When your tickets are ready, we\'ll send them to the email address on your account. You can then transfer them to your phone.',
+  },
+  {
+    method: 'instant_download',
+    label: 'Instant Download',
+    description: 'Your tickets will be available for immediate download after purchase. Print them or save to your phone.',
+  },
+];
 
 /**
  * Compute a deal score (0-10) based on price, seat position, and perks.
@@ -107,6 +120,8 @@ function extractListingsFromSection(
     const price = rng.randInt(priceRange[0], priceRange[1] + 1);
     const perks = assignPerks(group.seatIds, group.rowNumber, sectionConfig, rng);
     const dealScore = computeDealScore(price, group.rowNumber, sectionConfig.numRows, perks, priceRange, rng);
+    const feePerTicket = rng.randInt(800, 2500);
+    const delivery = DELIVERY_OPTIONS[rng.randInt(0, 2)];
     listings.push({
       listingId,
       sectionId: sectionConfig.sectionId,
@@ -118,6 +133,9 @@ function extractListingsFromSection(
       seatViewUrl: seatViewImg,
       perks,
       dealScore,
+      quantityAvailable: group.seatIds.length,
+      feePerTicket,
+      delivery,
     });
   });
 
@@ -127,6 +145,8 @@ function extractListingsFromSection(
     const price = rng.randInt(priceRange[0], priceRange[1] + 1);
     const perks = assignPerks([solo.seatId], solo.rowNumber, sectionConfig, rng);
     const dealScore = computeDealScore(price, solo.rowNumber, sectionConfig.numRows, perks, priceRange, rng);
+    const feePerTicket = rng.randInt(800, 2500);
+    const delivery = DELIVERY_OPTIONS[rng.randInt(0, 2)];
     listings.push({
       listingId: `solo-${sectionConfig.sectionId}-${solo.seatId}`,
       sectionId: sectionConfig.sectionId,
@@ -138,6 +158,9 @@ function extractListingsFromSection(
       seatViewUrl: seatViewImg,
       perks,
       dealScore,
+      quantityAvailable: 1,
+      feePerTicket,
+      delivery,
     });
   });
 

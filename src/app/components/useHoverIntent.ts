@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react';
 
-const HOVER_DELAY_MS = 100;
+const HOVER_DELAY_MS = 200;
 
 /**
  * Delays cross-component hover callbacks by HOVER_DELAY_MS while allowing

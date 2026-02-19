@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
-import type { Listing, Perk } from '../seatMap/model/types';
+import type { Listing } from '../seatMap/model/types';
 import { useHoverIntent } from './useHoverIntent';
+import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 
 interface ListingCardProps {
   listing: Listing;
@@ -13,22 +14,6 @@ interface ListingCardProps {
   pressedColor?: string;
   disableHover?: boolean;
 }
-
-// Format price from cents to dollars
-function formatPrice(cents: number): string {
-  return `$${(cents / 100).toFixed(0)}`;
-}
-
-const PERK_LABELS: Record<Perk, string> = {
-  aisle: 'Aisle',
-  front_of_section: 'Front Row',
-  ada_accessible: 'Accessible',
-  food_and_drink: 'Food & Drink',
-  super_seller: 'Super Seller',
-  vip: 'VIP',
-};
-
-import { lightenColor } from '../seatMap/behavior/utils';
 
 export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
