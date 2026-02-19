@@ -41,7 +41,7 @@
 }
 
 @keyframes detailContentIn {
-  0% { filter: blur(20px); }
+  0% { filter: blur(10px); }
   100% { filter: blur(0px); }
 }
 
