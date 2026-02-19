@@ -84,6 +84,7 @@ export function useSeatMapPrototypeViewState({
     // If already viewing this listing's detail, go back to listings
     if (viewMode === 'detail' && selection.listingId === listing.listingId) {
       setViewMode('listings');
+      setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
       return;
     }
 
@@ -103,7 +104,7 @@ export function useSeatMapPrototypeViewState({
 
   const handleBackToListings = () => {
     setViewMode('listings');
-    setSelection(EMPTY_SELECTION);
+    setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
   };
 
   const handleHoverFromPanel = (listing: Listing | null) => {
