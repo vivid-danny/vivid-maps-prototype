@@ -1,5 +1,7 @@
 import type { DisplayMode, LayoutMode, SeatColors } from '../model/types';
 
+export type PinDensityConfig = { sections: number; rows: number; seats: number };
+
 export interface SeatMapConfig {
   layoutMode: LayoutMode;
   initialDisplay: DisplayMode;
@@ -10,5 +12,6 @@ export interface SeatMapConfig {
   mobileZoomThreshold: number;
   connectorWidth: number;
   seatColors: SeatColors;
+  pinDensity: PinDensityConfig;
 }
 

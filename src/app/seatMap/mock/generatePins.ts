@@ -3,8 +3,11 @@ import { createSeededRandom } from './seededRandom';
 import { hashString, parseSeatId } from '../behavior/utils';
 
 /**
- * Select up to 3 pins for a section using greedy selection with Chebyshev distance >= 2.
- * Pins are placed at specific seat positions and carry listing price info.
+ * Select pins for a section using multi-pass greedy selection.
+ * Pass 1: Chebyshev distance >= 2 from all placed pins (well-spaced)
+ * Pass 2: Chebyshev distance >= 1 from all placed pins (adjacent OK)
+ * Pass 3: All remaining candidates (overlapping allowed at high density)
+ * Returns priority-ordered PinData[] with no hard cap.
  */
 function selectPinsForSection(
   listings: Listing[],
@@ -30,20 +33,37 @@ function selectPinsForSection(
   // Shuffle candidates deterministically
   rng.shuffle(candidates);
 
-  // Greedy selection with Chebyshev distance >= 2
+  const chebyshev = (a: PinData, b: PinData) =>
+    Math.max(Math.abs(a.rowIndex - b.rowIndex), Math.abs(a.seatIndex - b.seatIndex));
+
   const selected: PinData[] = [];
-  for (const candidate of candidates) {
-    if (selected.length >= 3) break;
+  const remaining: PinData[] = [...candidates];
 
-    const tooClose = selected.some(
-      (pin) =>
-        Math.abs(pin.rowIndex - candidate.rowIndex) <= 1 &&
-        Math.abs(pin.seatIndex - candidate.seatIndex) <= 1
-    );
-
+  // Pass 1: Chebyshev >= 2
+  const afterPass1: PinData[] = [];
+  for (const candidate of remaining) {
+    const tooClose = selected.some((pin) => chebyshev(pin, candidate) < 2);
     if (!tooClose) {
       selected.push(candidate);
+    } else {
+      afterPass1.push(candidate);
     }
+  }
+
+  // Pass 2: Chebyshev >= 1 from all placed
+  const afterPass2: PinData[] = [];
+  for (const candidate of afterPass1) {
+    const tooClose = selected.some((pin) => chebyshev(pin, candidate) < 1);
+    if (!tooClose) {
+      selected.push(candidate);
+    } else {
+      afterPass2.push(candidate);
+    }
+  }
+
+  // Pass 3: all remaining (overlapping allowed)
+  for (const candidate of afterPass2) {
+    selected.push(candidate);
   }
 
   return selected;

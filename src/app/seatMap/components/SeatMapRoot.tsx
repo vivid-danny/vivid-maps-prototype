@@ -172,6 +172,7 @@ export function SeatMapRoot() {
                         selectedListing={viewState.selectedListing}
                         sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
                         disableHover={isMobile}
+                        pinDensity={config.pinDensity}
                       />
                     );
                   })}

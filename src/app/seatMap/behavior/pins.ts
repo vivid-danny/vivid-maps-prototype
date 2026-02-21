@@ -1,4 +1,4 @@
-import { parseSeatId } from './utils';
+import { hashString, parseSeatId } from './utils';
 import type { DisplayMode, HoverState, Listing, PinData } from '../model/types';
 
 export type PinVisualState = 'default' | 'hover' | 'selected' | 'hidden';
@@ -131,4 +131,19 @@ export function getOverlayPinVisualState(params: { isSelected: boolean; isHovere
   if (params.isSelected) return 'selected';
   if (params.isHovered) return 'hover';
   return 'default';
+}
+
+// Deterministic per-id check for sections/rows mode density filtering.
+// Uses Fibonacci/Knuth multiplicative hashing to ensure good distribution even
+// for short sequential IDs (e.g. single-letter section IDs A-H whose raw hash
+// values all cluster in the 65-72 range, making a naive % 100 useless).
+export function isDensityEnabled(id: string, density: number): boolean {
+  const threshold = Math.round(density * 100);
+  const hash = (hashString(id) * 2654435761) >>> 0;
+  return hash % 100 < threshold;
+}
+
+// Slice for seats mode (by count ratio)
+export function getDensityPinSlice(pins: PinData[], density: number): PinData[] {
+  return pins.slice(0, Math.ceil(pins.length * density));
 }
