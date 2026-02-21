@@ -25,8 +25,6 @@ import {
   getDensityPinSlice,
 } from '../seatMap/behavior/pins';
 import type { SectionConfig, SectionData, SeatColors, DisplayMode, SelectionState, HoverState, PinData, Listing } from '../seatMap/model/types';
-import type { PinDensity } from '../seatMap/config/types';
-
 interface SectionProps {
   config: SectionConfig;
   sectionData: SectionData;
@@ -43,7 +41,7 @@ interface SectionProps {
   selectedListing?: Listing | null;
   sectionListings?: Listing[];
   disableHover?: boolean;
-  pinDensity?: PinDensity;
+  pinDensity?: number;
 }
 
 export function Section({
@@ -62,7 +60,7 @@ export function Section({
   selectedListing = null,
   sectionListings = [],
   disableHover = false,
-  pinDensity = 'high',
+  pinDensity = 0.80,
 }: SectionProps) {
   // Handle section selection (only sets sectionId)
   const handleSelectSection = (sectionId: string) => {

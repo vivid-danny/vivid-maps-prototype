@@ -1,6 +1,6 @@
 import type { DisplayMode, LayoutMode, SeatColors } from '../model/types';
 
-export type PinDensity = 'low' | 'medium' | 'high';
+export type PinDensity = number;
 
 export interface SeatMapConfig {
   layoutMode: LayoutMode;

@@ -22,6 +22,11 @@ export function useSeatMapConfig(initialConfig: SeatMapConfig) {
     const stored = readStoredConfig();
     if (!stored) return initialConfig;
 
+    // Migration: discard pinDensity if it's a legacy string value
+    if (stored.pinDensity !== undefined && typeof stored.pinDensity !== 'number') {
+      delete stored.pinDensity;
+    }
+
     return {
       ...initialConfig,
       ...stored,

@@ -106,7 +106,7 @@ function ColorControl({
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const LAYOUT_MODES = ['desktop', 'mobile'] as const;
-const PIN_DENSITIES = ['low', 'medium', 'high'] as const;
+const PIN_DENSITY_STOPS = [0.10, 0.28, 0.45, 0.63, 0.80] as const;
 
 export function PrototypeControls({
   showControls,
@@ -226,14 +226,16 @@ export function PrototypeControls({
             onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
             min={0.5} max={4} step={0.5}
           />
-          <div>
-            <label className="text-xs text-gray-600 block mb-2">Pin Density</label>
-            <ToggleGroup
-              options={PIN_DENSITIES}
-              value={config.pinDensity}
-              onChange={(pinDensity) => onConfigChange({ pinDensity })}
-            />
-          </div>
+          <SliderControl
+            label={`Pin Density: ${Math.round(config.pinDensity * 100)}%`}
+            value={PIN_DENSITY_STOPS.indexOf(config.pinDensity) !== -1
+              ? PIN_DENSITY_STOPS.indexOf(config.pinDensity)
+              : PIN_DENSITY_STOPS.length - 1}
+            onChange={(i) => onConfigChange({ pinDensity: PIN_DENSITY_STOPS[Math.round(i)] })}
+            min={0}
+            max={4}
+            step={1}
+          />
         </div>
 
         {/* Section Fill Colors */}
