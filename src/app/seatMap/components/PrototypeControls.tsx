@@ -226,16 +226,35 @@ export function PrototypeControls({
             onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
             min={0.5} max={4} step={0.5}
           />
-          <SliderControl
-            label={`Pin Density: ${Math.round(config.pinDensity * 100)}%`}
-            value={PIN_DENSITY_STOPS.indexOf(config.pinDensity) !== -1
-              ? PIN_DENSITY_STOPS.indexOf(config.pinDensity)
-              : PIN_DENSITY_STOPS.length - 1}
-            onChange={(i) => onConfigChange({ pinDensity: PIN_DENSITY_STOPS[Math.round(i)] })}
-            min={0}
-            max={4}
-            step={1}
-          />
+          <div>
+            <label className="text-xs text-gray-600 block mb-2">Pin Density</label>
+            <div className="space-y-3">
+              <SliderControl
+                label={`Sections: ${Math.round(config.pinDensity.sections * 100)}%`}
+                value={PIN_DENSITY_STOPS.includes(config.pinDensity.sections as never)
+                  ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.sections as never)
+                  : PIN_DENSITY_STOPS.length - 1}
+                onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, sections: PIN_DENSITY_STOPS[Math.round(i)] } })}
+                min={0} max={4} step={1}
+              />
+              <SliderControl
+                label={`Rows: ${Math.round(config.pinDensity.rows * 100)}%`}
+                value={PIN_DENSITY_STOPS.includes(config.pinDensity.rows as never)
+                  ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.rows as never)
+                  : PIN_DENSITY_STOPS.length - 1}
+                onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, rows: PIN_DENSITY_STOPS[Math.round(i)] } })}
+                min={0} max={4} step={1}
+              />
+              <SliderControl
+                label={`Seats: ${Math.round(config.pinDensity.seats * 100)}%`}
+                value={PIN_DENSITY_STOPS.includes(config.pinDensity.seats as never)
+                  ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.seats as never)
+                  : PIN_DENSITY_STOPS.length - 1}
+                onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, seats: PIN_DENSITY_STOPS[Math.round(i)] } })}
+                min={0} max={4} step={1}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Section Fill Colors */}
