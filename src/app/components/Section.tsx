@@ -21,8 +21,11 @@ import {
   getOverlayPinVisualState,
   getPinVisualState,
   isPinVisible,
+  isDensityEnabled,
+  getDensityPinSlice,
 } from '../seatMap/behavior/pins';
 import type { SectionConfig, SectionData, SeatColors, DisplayMode, SelectionState, HoverState, PinData, Listing } from '../seatMap/model/types';
+import type { PinDensity } from '../seatMap/config/types';
 
 interface SectionProps {
   config: SectionConfig;
@@ -40,6 +43,7 @@ interface SectionProps {
   selectedListing?: Listing | null;
   sectionListings?: Listing[];
   disableHover?: boolean;
+  pinDensity?: PinDensity;
 }
 
 export function Section({
@@ -58,6 +62,7 @@ export function Section({
   selectedListing = null,
   sectionListings = [],
   disableHover = false,
+  pinDensity = 'high',
 }: SectionProps) {
   // Handle section selection (only sets sectionId)
   const handleSelectSection = (sectionId: string) => {
@@ -175,6 +180,8 @@ export function Section({
     } as const;
 
     if (displayMode === 'sections') {
+      if (!isDensityEnabled(config.sectionId, pinDensity)) return null;
+
       const lowestPriceListing = getLowestPricePin(pins);
       if (!lowestPriceListing) return null;
       if (!isPinVisible(lowestPriceListing, pinVisibilityContext)) return null;
@@ -194,6 +201,7 @@ export function Section({
       const byRow = getLowestPricePinsByRow(pins);
 
       return byRow.map(([rowIndex, pin]) => {
+        if (!isDensityEnabled(pin.listing.rowId, pinDensity)) return null;
         if (getPinVisualState(pin, pinVisibilityContext) === 'hidden') return null;
 
         const { cy } = getSeatCenter(rowIndex, 0);
@@ -210,7 +218,7 @@ export function Section({
       });
     }
 
-    return pins.map((pin) => {
+    return getDensityPinSlice(pins, pinDensity).map((pin) => {
       if (getPinVisualState(pin, pinVisibilityContext) === 'hidden') return null;
 
       const { cx: x, cy: y } = getSeatCenter(pin.rowIndex, pin.seatIndex);
