@@ -21,6 +21,8 @@ type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
 
   const model = useMemo(() => createMockSeatMapModel(), []);
   const { config, updateConfig, resetConfig } = useSeatMapConfig(DEFAULT_SEAT_MAP_CONFIG);
@@ -45,6 +47,37 @@ export function SeatMapRoot() {
     setCurrentScale,
     transformRef,
   });
+
+  useEffect(() => {
+    if (isMobile) return;
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+
+      const prev = prevSizeRef.current;
+      if (prev) {
+        const dx = (rect.width - prev.width) / 2;
+        const dy = (rect.height - prev.height) / 2;
+        const state = transformRef.current?.instance?.transformState;
+        if (state) {
+          transformRef.current?.setTransform(
+            state.positionX + dx,
+            state.positionY + dy,
+            state.scale,
+            0, // instant
+          );
+        }
+      }
+
+      prevSizeRef.current = { width: rect.width, height: rect.height };
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, transformRef]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -154,7 +187,7 @@ export function SeatMapRoot() {
               !isMobile ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
             }`}
           >
-            <div className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
+            <div ref={mapContainerRef} className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
               <MapContainer
                 ref={transformRef}
                 controller={controller}
