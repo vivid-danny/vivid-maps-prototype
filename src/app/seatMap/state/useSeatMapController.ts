@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import type { MapConfig, DisplayMode } from '../model/types';
+import type { MapConfig, DisplayMode, LayoutMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 
 interface UseSeatMapControllerParams {
   model: MapConfig;
   config: SeatMapConfig;
+  layoutMode: LayoutMode;
   currentScale: number;
 }
 
@@ -17,14 +18,14 @@ export interface SeatMapController {
   displayMode: DisplayMode;
 }
 
-export function useSeatMapController({ model, config, currentScale }: UseSeatMapControllerParams): SeatMapController {
+export function useSeatMapController({ model, config, layoutMode, currentScale }: UseSeatMapControllerParams): SeatMapController {
   const zoomThreshold =
-    config.layoutMode === 'mobile' ? config.mobileZoomThreshold : config.desktopZoomThreshold;
+    layoutMode === 'mobile' ? config.mobileZoomThreshold : config.desktopZoomThreshold;
 
   const initialScale =
-    config.layoutMode === 'mobile' ? config.mobileInitialScale : config.desktopInitialScale;
+    layoutMode === 'mobile' ? config.mobileInitialScale : config.desktopInitialScale;
 
-  const minScale = config.layoutMode === 'mobile' ? config.mobileInitialScale : 1;
+  const minScale = layoutMode === 'mobile' ? config.mobileInitialScale : 1;
 
   const displayMode: DisplayMode =
     currentScale >= zoomThreshold ? config.zoomedDisplay : config.initialDisplay;

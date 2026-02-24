@@ -120,7 +120,7 @@ function Accordion({ label, children }: { label: string; children: React.ReactNo
 }
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const LAYOUT_MODES = ['desktop', 'mobile'] as const;
+const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
@@ -170,9 +170,9 @@ export function PrototypeControls({
         <div className="mb-6">
           <label className="text-xs text-black font-bold block mb-2">Device</label>
           <ToggleGroup
-            options={LAYOUT_MODES}
-            value={config.layoutMode}
-            onChange={(layoutMode) => onConfigChange({ layoutMode })}
+            options={LAYOUT_MODE_OVERRIDES}
+            value={config.layoutModeOverride}
+            onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
           />
         </div>
 
