@@ -1,9 +1,10 @@
 import type { DisplayMode, SeatColors } from '../model/types';
 
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
+export type LayoutModeOverride = 'auto' | 'desktop' | 'mobile';
 
 export interface SeatMapConfig {
-  layoutModeOverride: 'auto' | 'desktop' | 'mobile';
+  layoutModeOverride: LayoutModeOverride;
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
   desktopInitialScale: number;

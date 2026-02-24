@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { LayoutMode } from '../model/types';
+import type { LayoutModeOverride } from '../config/types';
 
-export function useLayoutMode(override: 'auto' | 'desktop' | 'mobile'): LayoutMode {
+export function useLayoutMode(override: LayoutModeOverride): LayoutMode {
   const getViewportMode = (): LayoutMode =>
     window.matchMedia('(max-width: 800px)').matches ? 'mobile' : 'desktop';
 

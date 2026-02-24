@@ -3,13 +3,11 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
-import type { SeatMapConfig } from '../config/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
-  config: SeatMapConfig;
   layoutMode: LayoutMode;
   controller: SeatMapController;
   currentScale: number;
@@ -19,7 +17,6 @@ interface UseSeatMapPrototypeViewStateParams {
 
 export function useSeatMapPrototypeViewState({
   model,
-  config,
   layoutMode,
   controller,
   currentScale,

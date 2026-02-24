@@ -39,7 +39,6 @@ export function SeatMapRoot() {
 
   const viewState = useSeatMapPrototypeViewState({
     model,
-    config,
     layoutMode,
     controller,
     currentScale,
@@ -158,7 +157,6 @@ export function SeatMapRoot() {
             <div className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
               <MapContainer
                 ref={transformRef}
-                model={model}
                 controller={controller}
                 isSimulatedMobile={isSimulatedMobile}
                 onScaleChange={setCurrentScale}
