@@ -38,7 +38,7 @@ The map renders different levels of detail depending on zoom level:
 
 **Zoom-based switching:**
 - Below threshold → renders `config.initialDisplay` (default: `sections`)
-- At or above threshold → renders `config.zoomedDisplay` (default: `rows`)
+- At or above threshold → renders `config.zoomedDisplay` (default: `seats`)
 
 **Thresholds:**
 | Layout | Zoom Threshold | Initial Scale |
@@ -145,6 +145,12 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 
 **Back preserves section context:** if you browsed into section B and selected a listing, Back returns you to the section-B-filtered panel, not the full list. This is the key design decision.
 
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| Shift+H | Toggle prototype controls panel |
+
 ### Reset Map Button
 
 Visible only when `currentScale >= zoomThreshold`. On click:
@@ -189,13 +195,18 @@ open   ──[isDetailOpen → false]─▶ exiting  ──[350ms]──▶ clos
 
 ### Placement
 
-Up to 3 pins per section, placed using **Chebyshev distance** (not Euclidean):
+Pins are generated using a **three-pass greedy algorithm** with no hard cap — each listing
+produces one candidate pin (positioned at its middle seat), candidates are shuffled
+deterministically, then selected across three passes:
 
-```
-distance = max(|Δrow|, |Δseat|) >= 2  →  3×3 exclusion zone per pin
-```
+| Pass | Chebyshev Distance | Effect |
+|------|--------------------|--------|
+| 1 | ≥ 2 | Well-spaced pins (3×3 exclusion zone) |
+| 2 | ≥ 1 | Adjacent pins allowed |
+| 3 | Any (accept all) | Overlapping allowed at high density |
 
-Greedy selection: place cheapest available listing first, exclude its zone, repeat.
+The result is a **priority-ordered** `PinData[]` per section — Pass 1 winners first.
+Density filtering (below) then controls how many are actually rendered per mode.
 
 ### Visibility Rules
 
@@ -206,6 +217,67 @@ Pins are suppressed to avoid visual overlap with selection/hover overlays:
 | `sections` | Any selection or hover in the section |
 | `rows` | The selected/hovered listing's row matches the pin's row |
 | `seats` | The selected/hovered listing matches the pin's listing |
+
+**Hover pin target suppression:** `getHoverPinTarget` returns `null` (no hover pin) when
+the hovered listing already matches the currently selected listing — prevents duplicate
+pins stacking at the same position.
+
+### Rendering Count Per Mode
+
+Even when pins are "visible," only a subset renders per display mode:
+
+| Mode | Pins Rendered (per section) |
+|------|-----------------------------|
+| `sections` | **1** — lowest-price pin only (via `getLowestPricePin`) |
+| `rows` | **1 per row** — lowest-price per row (via `getLowestPricePinsByRow`) |
+| `seats` | All surviving density-filtered pins |
+
+### Pin Density
+
+`pinDensity: { sections: number; rows: number; seats: number }` controls what fraction of
+pins render per display mode. Defaults: `{ sections: 0.80, rows: 0.50, seats: 0.30 }`.
+
+Each mode uses a different filtering strategy:
+
+| Mode | Strategy | Mechanism |
+|------|----------|-----------|
+| `sections` | Per-section hash gate | `isDensityEnabled(sectionId, density)` |
+| `rows` | Per-row hash gate | `isDensityEnabled(rowId, density)` |
+| `seats` | Array slice (count ratio) | `getDensityPinSlice(pins, density)` |
+
+**Hash gate (`isDensityEnabled`):** Uses Knuth multiplicative hashing
+(`hashString(id) * 2654435761 >>> 0 % 100 < threshold`) to ensure good distribution even
+for single-character section IDs (A–H), whose raw ASCII values cluster in 65–72 and would
+produce near-identical results with a naive modulo.
+
+**Array slice (`getDensityPinSlice`):** In seats mode, takes the first
+`ceil(pins.length * density)` pins — biased toward Pass 1 winners (most spread-out, often
+the cheapest).
+
+### Pin Rendering
+
+**Counter-zoom:** Pins scale inversely with the map zoom level so they stay legible at
+all scales:
+```
+inverseScale = (1 / currentScale) × sizeMultiplier
+```
+Size multipliers: selected = 1.875×, hovered = 1.5×, default = 1.25×. Transform origin
+is at the pin tip (bottom-center).
+
+**Visual states:**
+
+| State | Background | Z-index |
+|-------|-----------|---------|
+| Default | `#1a1a2e` | 10 |
+| Hovered | `hoverColor` darkened 60% | 30 |
+| Selected | `selectedColor` darkened 60% | 20 |
+
+**Deal score badge:** A green `#4CAF50` badge appears on the pin when `dealScore > 7`.
+
+**Seat view card:** A 160×100px image preview appears **on hover only** (not on selected
+state). Shows the seat view image with a `Section {label}, Row {num}` overlay badge.
+
+**Price display:** Prices are stored in cents; rendered as `$${Math.round(price / 100)}`.
 
 ### Overlay Pins
 
@@ -252,6 +324,19 @@ On mobile, only `ceil(pins.length / 2)` regular pins are shown per section to re
 | Hover | Enabled, 200ms delay | Disabled |
 | Min scale | 1.0 | 0.5 |
 | Detail panel | Slides over sidebar only | Full-screen overlay |
+
+**Auto-detection breakpoint:** `max-width: 800px` — detected via `matchMedia` and updated
+on viewport change. Can be overridden via the prototype controls (auto / desktop / mobile).
+
+### Map Resize Re-centering (Desktop Only)
+
+On desktop, a `ResizeObserver` watches the map container. On each resize:
+- Position adjusts by `Δwidth / 2` and `Δheight / 2` to keep the map centered
+- Scale is unchanged
+- Adjustment is instant (no animation)
+- The first callback (fired immediately on `observe()`) records the baseline size
+  without adjusting — prevents a spurious shift on mount
+- Not active on mobile (fixed-size container, no resize needed)
 
 ---
 
@@ -318,7 +403,7 @@ All data is **deterministic via Mulberry32 PRNG**. Each section creates its own 
 SeatMapConfig
   └─ generateSectionData()  →  SectionData (seats, availability)
   └─ generateListings()     →  Listing[] (grouped seats with prices)
-  └─ generatePins()         →  PinData[] (up to 3 per section, Chebyshev-spaced)
+  └─ generatePins()         →  PinData[] (three-pass Chebyshev-spaced, priority-ordered)
   └─ createMockSeatMapModel() →  SeatMapModel (assembled model)
 ```
 
@@ -379,4 +464,4 @@ Restructured codebase from a flat organization to a domain-driven feature folder
 
 ---
 
-*Last updated: Feb 19, 2026*
+*Last updated: Feb 24, 2026*

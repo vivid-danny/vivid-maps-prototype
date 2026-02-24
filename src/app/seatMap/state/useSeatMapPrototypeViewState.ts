@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
-import type { HoverState, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
+import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
-import type { SeatMapConfig } from '../config/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
-  config: SeatMapConfig;
+  layoutMode: LayoutMode;
   controller: SeatMapController;
   currentScale: number;
   setCurrentScale: Dispatch<SetStateAction<number>>;
@@ -18,7 +17,7 @@ interface UseSeatMapPrototypeViewStateParams {
 
 export function useSeatMapPrototypeViewState({
   model,
-  config,
+  layoutMode,
   controller,
   currentScale,
   setCurrentScale,
@@ -26,7 +25,7 @@ export function useSeatMapPrototypeViewState({
 }: UseSeatMapPrototypeViewStateParams) {
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('listings');
 
   const listings = model.listings;
@@ -47,7 +46,7 @@ export function useSeatMapPrototypeViewState({
     }, 50);
 
     return () => clearTimeout(timeout);
-  }, [controller.initialScale, config.layoutMode, setCurrentScale, transformRef]);
+  }, [controller.initialScale, layoutMode, setCurrentScale, transformRef]);
 
   const navigateToSelection = (sel: SelectionState) => {
     if (!sel.sectionId) return;
@@ -97,7 +96,7 @@ export function useSeatMapPrototypeViewState({
 
     setSelection(newSelection);
     setViewMode('detail');
-    if (config.layoutMode !== 'mobile') {
+    if (layoutMode !== 'mobile') {
       navigateToSelection(newSelection);
     }
   };
@@ -108,7 +107,7 @@ export function useSeatMapPrototypeViewState({
   };
 
   const handleHoverFromPanel = (listing: Listing | null) => {
-    if (config.layoutMode === 'mobile') return;
+    if (layoutMode === 'mobile') return;
     if (listing) {
       setHoverState({
         listingId: listing.listingId,
@@ -121,7 +120,7 @@ export function useSeatMapPrototypeViewState({
   };
 
   const handleHoverFromMap = (hover: HoverState) => {
-    if (config.layoutMode === 'mobile') return;
+    if (layoutMode === 'mobile') return;
     setHoverState(hover);
   };
 

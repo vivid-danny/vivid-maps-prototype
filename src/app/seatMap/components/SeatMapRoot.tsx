@@ -11,6 +11,7 @@ import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
+import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
@@ -20,27 +21,73 @@ type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
 
   const model = useMemo(() => createMockSeatMapModel(), []);
   const { config, updateConfig, resetConfig } = useSeatMapConfig(DEFAULT_SEAT_MAP_CONFIG);
   const [currentScale, setCurrentScale] = useState(DEFAULT_SEAT_MAP_CONFIG.desktopInitialScale);
 
+  const layoutMode = useLayoutMode(config.layoutModeOverride);
+  const isSimulatedMobile = config.layoutModeOverride === 'mobile';
+  const isMobile = layoutMode === 'mobile';
+
   const controller = useSeatMapController({
     model,
     config,
+    layoutMode,
     currentScale,
   });
 
   const viewState = useSeatMapPrototypeViewState({
     model,
-    config,
+    layoutMode,
     controller,
     currentScale,
     setCurrentScale,
     transformRef,
   });
 
-  const isMobile = config.layoutMode === 'mobile';
+  useEffect(() => {
+    if (isMobile) return;
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+
+      const prev = prevSizeRef.current;
+      if (prev) {
+        const dx = (rect.width - prev.width) / 2;
+        const dy = (rect.height - prev.height) / 2;
+        const state = transformRef.current?.instance?.transformState;
+        if (state) {
+          transformRef.current?.setTransform(
+            state.positionX + dx,
+            state.positionY + dy,
+            state.scale,
+            0, // instant
+          );
+        }
+      }
+
+      prevSizeRef.current = { width: rect.width, height: rect.height };
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, transformRef]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'H') {
+        viewState.setShowControls((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewState.setShowControls]);
 
   // --- Detail panel slide transition ---
   const isDetailOpen = viewState.viewMode === 'detail' && !!viewState.selectedListing;
@@ -76,7 +123,6 @@ export function SeatMapRoot() {
     <div className="size-full flex">
       <PrototypeControls
         showControls={viewState.showControls}
-        onToggleControls={() => viewState.setShowControls(!viewState.showControls)}
         currentScale={viewState.currentScale}
         displayMode={controller.displayMode}
         config={config}
@@ -86,16 +132,20 @@ export function SeatMapRoot() {
 
       <div
         className={`flex-1 min-w-0 flex bg-gray-100 ${
-          config.layoutMode === 'desktop' ? '' : 'items-center justify-center p-5'
+          isSimulatedMobile ? 'items-center justify-center p-5' : ''
         }`}
       >
         <div
           className={`flex bg-white ${
-            config.layoutMode === 'desktop' ? 'flex-row w-full h-full overflow-hidden' : 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300 relative'
+            isSimulatedMobile
+              ? 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300 relative'
+              : isMobile
+              ? 'flex-col w-full h-full overflow-hidden relative'
+              : 'flex-row w-full h-full overflow-hidden'
           }`}
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
-          {config.layoutMode === 'desktop' && (
+          {!isMobile && (
             <div className="w-[450px] h-full shrink-0 relative overflow-hidden">
               <ListingsPanel
                 className="w-full h-full"
@@ -122,7 +172,7 @@ export function SeatMapRoot() {
                       className="w-full h-full"
                       listing={detailListing}
                       eventInfo={model.eventInfo}
-                      layoutMode={config.layoutMode}
+                      layoutMode={layoutMode}
                       onBack={viewState.handleBackToListings}
                     />
                   </div>
@@ -134,15 +184,14 @@ export function SeatMapRoot() {
           {/* Map area */}
           <div
             className={`flex items-center justify-center ${
-              config.layoutMode === 'desktop' ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
+              !isMobile ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
             }`}
           >
-            <div className={`relative ${config.layoutMode === 'desktop' ? 'w-full h-full' : ''}`}>
+            <div ref={mapContainerRef} className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
               <MapContainer
                 ref={transformRef}
-                model={model}
                 controller={controller}
-                config={config}
+                isSimulatedMobile={isSimulatedMobile}
                 onScaleChange={setCurrentScale}
                 wheelStep={0.2}
               >
@@ -197,7 +246,7 @@ export function SeatMapRoot() {
           </div>
 
           {/* Mobile: listings panel */}
-          {config.layoutMode === 'mobile' && (
+          {isMobile && (
             <div className="flex-1 relative overflow-hidden">
               <ListingsPanel
                 className="w-full h-full"
@@ -215,7 +264,7 @@ export function SeatMapRoot() {
           )}
 
           {/* Mobile: detail overlay — covers full viewport (map + listings) */}
-          {config.layoutMode === 'mobile' && showDetailOverlay && detailListing && (
+          {isMobile && showDetailOverlay && detailListing && (
             <div
               className={`absolute inset-0 z-10 detail-panel--${detailPhase}`}
               onAnimationEnd={handleDetailAnimationEnd}
@@ -228,7 +277,7 @@ export function SeatMapRoot() {
                   className="w-full h-full"
                   listing={detailListing}
                   eventInfo={model.eventInfo}
-                  layoutMode={config.layoutMode}
+                  layoutMode={layoutMode}
                   onBack={viewState.handleBackToListings}
                 />
               </div>

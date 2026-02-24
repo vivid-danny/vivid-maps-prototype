@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
-import { PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface PrototypeControlsProps {
   showControls: boolean;
-  onToggleControls: () => void;
   currentScale: number;
   displayMode: DisplayMode;
   config: SeatMapConfig;
@@ -121,12 +120,11 @@ function Accordion({ label, children }: { label: string; children: React.ReactNo
 }
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const LAYOUT_MODES = ['desktop', 'mobile'] as const;
+const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
   showControls,
-  onToggleControls,
   currentScale,
   displayMode,
   config,
@@ -145,24 +143,11 @@ export function PrototypeControls({
   return (
     <div
       className={`shrink-0 h-full border-r border-gray-200 transition-all duration-300 ${
-        showControls ? 'w-80' : 'w-12'
+        showControls ? 'w-80' : 'w-0 overflow-hidden border-r-0'
       }`}
     >
-      <div className={`flex items-center justify-between h-12 border-b border-gray-200
-        ${ showControls ? 'px-6' : 'px-3'}`}>
-        <h2
-          className={`text-sm font-semibold text-gray-700 transition-opacity 
-            ${ showControls ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}
-        >
-          Prototype Controls
-        </h2>
-        <button
-          onClick={onToggleControls}
-          className="hover:bg-gray-100 rounded text-gray-500 cursor-pointer"
-          title={showControls ? 'Hide controls' : 'Show controls'}
-        >
-          {showControls ? <PanelLeftClose /> : <PanelLeftOpen />}
-        </button>
+      <div className="flex items-center h-12 border-b border-gray-200 px-6">
+        <h2 className="text-sm font-semibold text-gray-700">Prototype Controls</h2>
       </div>
       <div
         className={`p-6 overflow-y-auto h-[calc(100%-41px)] transition-opacity no-scrollbar ${
@@ -185,9 +170,9 @@ export function PrototypeControls({
         <div className="mb-6">
           <label className="text-xs text-black font-bold block mb-2">Device</label>
           <ToggleGroup
-            options={LAYOUT_MODES}
-            value={config.layoutMode}
-            onChange={(layoutMode) => onConfigChange({ layoutMode })}
+            options={LAYOUT_MODE_OVERRIDES}
+            value={config.layoutModeOverride}
+            onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
           />
         </div>
 

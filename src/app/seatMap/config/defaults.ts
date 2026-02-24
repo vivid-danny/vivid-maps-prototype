@@ -2,7 +2,7 @@ import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig } from './types';
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
-  layoutMode: 'desktop',
+  layoutModeOverride: 'auto',
   initialDisplay: 'sections',
   zoomedDisplay: 'seats',
   desktopInitialScale: 1.5,

@@ -1,26 +1,22 @@
 import { forwardRef, type ReactNode } from 'react';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
-import type { MapConfig } from '../model/types';
-import type { SeatMapConfig } from '../config/types';
 import type { SeatMapController } from '../state/useSeatMapController';
 
 const MAX_SCALE = 25;
 const DEFAULT_WHEEL_STEP = 0.2;
 
 interface MapContainerProps {
-  model: MapConfig;
   controller: SeatMapController;
-  config: SeatMapConfig;
+  isSimulatedMobile: boolean;
   children: ReactNode;
   onScaleChange?: (scale: number) => void;
   wheelStep?: number;
 }
 
 export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
-  function MapContainer({ model, controller, config, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP }, ref) {
-    void model;
-    const width = config.layoutMode === 'mobile' ? 390 : '100%';
-    const height = config.layoutMode === 'mobile' ? 200 : '100%';
+  function MapContainer({ controller, isSimulatedMobile, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP }, ref) {
+    const width = isSimulatedMobile ? 390 : '100%';
+    const height = isSimulatedMobile ? 200 : '100%';
     const initialScale = controller.initialScale;
     const minScale = controller.minScale;
 
