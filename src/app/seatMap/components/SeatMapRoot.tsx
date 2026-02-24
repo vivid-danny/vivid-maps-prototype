@@ -40,6 +40,16 @@ export function SeatMapRoot() {
     transformRef,
   });
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'H') {
+        viewState.setShowControls((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewState.setShowControls]);
+
   const isMobile = config.layoutMode === 'mobile';
 
   // --- Detail panel slide transition ---
@@ -76,7 +86,6 @@ export function SeatMapRoot() {
     <div className="size-full flex">
       <PrototypeControls
         showControls={viewState.showControls}
-        onToggleControls={() => viewState.setShowControls(!viewState.showControls)}
         currentScale={viewState.currentScale}
         displayMode={controller.displayMode}
         config={config}

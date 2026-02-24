@@ -26,7 +26,7 @@ export function useSeatMapPrototypeViewState({
 }: UseSeatMapPrototypeViewStateParams) {
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('listings');
 
   const listings = model.listings;
