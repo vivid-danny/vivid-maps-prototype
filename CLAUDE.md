@@ -105,7 +105,7 @@ IDs are hierarchical strings built by concatenation — no delimiters between se
 - sectionId: `"B"` (single uppercase letter in current demo)
 - rowId: `"B3"` (sectionId + 1-based row number)
 - seatId: `"B3-5"` (rowId + `-` + 1-based seat number)
-- listingId: `"listing-B-1"` (grouped), `"listing-B-saver-3"` (seat saver row), or `"solo-B-B3-5"` (solo seat)
+- listingId: `"listing-B-1"` (grouped), `"listing-B-zone-3-1"` (zone row), or `"solo-B-B3-5"` (solo seat)
 
 This format assumes single-character section IDs. Numeric IDs (e.g., "101") would need a delimiter.
 
@@ -122,4 +122,4 @@ Uses **Chebyshev distance** (not Euclidean): `max(|Δrow|, |Δseat|) >= 2`. This
 - Layout: map on top (390×200px), listings panel below
 
 ### Demo Map
-8 sections in 2 rows around a stage. Sections 101 and 104 are sold out (`unavailableRatio: 1.0`) — use them to test unavailable state handling. Sections 102 (B) and 1B (E) have `seatSaverRows` configured — rows that are single full-row listings spanning all seats. All other sections use `unavailableRatio: 0.5` with greedy seat grouping (target: ~50% unavailable, ~45% grouped, ~5% solo).
+8 sections in 2 rows around a stage. Sections 101 and 104 are sold out (`unavailableRatio: 1.0`) — use them to test unavailable state handling. Sections 102 (B) and 1B (E) have `seatZoneRows` configured — rows with 2 listings per zone row (mapped + unmapped), rendered as row-level blocks in seats mode. All other sections use `unavailableRatio: 0.5` with greedy seat grouping (target: ~50% unavailable, ~45% grouped, ~5% solo).

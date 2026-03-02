@@ -50,7 +50,10 @@ const DEMO_MAP: MapConfig = {
       unavailableRatio: 0.5,
       listingCount: 20,
       seatsPerListing: [2, 8],
-      seatSaverRows: [3, 7],
+      seatZoneRows: [
+        { row: 3, mappedRatio: 0.6 },
+        { row: 7, mappedRatio: 0.0 },
+      ],
     },
     {
       sectionId: 'C',
@@ -83,7 +86,10 @@ const DEMO_MAP: MapConfig = {
       unavailableRatio: 0.5,
       listingCount: 12,
       seatsPerListing: [2, 6],
-      seatSaverRows: [2, 6],
+      seatZoneRows: [
+        { row: 2, mappedRatio: 0.5 },
+        { row: 6, mappedRatio: 0.0 },
+      ],
     },
     {
       sectionId: 'F',

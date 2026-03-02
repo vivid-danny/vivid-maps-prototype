@@ -55,7 +55,8 @@ export function useSeatMapPrototypeViewState({
     if (controller.displayMode === 'seats' && sel.seatIds.length > 0) {
       const midIndex = Math.floor(sel.seatIds.length / 2);
       elementId = sel.seatIds[midIndex];
-    } else if (controller.displayMode === 'rows' && sel.rowId) {
+    } else if (sel.rowId) {
+      // Works for rows mode AND zone row selection in seats mode
       elementId = sel.rowId;
     }
 
@@ -83,7 +84,14 @@ export function useSeatMapPrototypeViewState({
     // If already viewing this listing's detail, go back to listings
     if (viewMode === 'detail' && selection.listingId === listing.listingId) {
       setViewMode('listings');
-      setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
+      // Check if this listing is in a zone row — return to zone row selection
+      const sectionData = model.sectionDataById.get(listing.sectionId);
+      const row = sectionData?.rows.find(r => r.rowId === listing.rowId);
+      if (row?.isZoneRow) {
+        setSelection({ sectionId: listing.sectionId, rowId: listing.rowId, listingId: null, seatIds: [] });
+      } else {
+        setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
+      }
       return;
     }
 
@@ -103,6 +111,15 @@ export function useSeatMapPrototypeViewState({
 
   const handleBackToListings = () => {
     setViewMode('listings');
+    // If current selection is in a zone row, return to row-level selection
+    if (selection.rowId && selection.sectionId) {
+      const sectionData = model.sectionDataById.get(selection.sectionId);
+      const row = sectionData?.rows.find(r => r.rowId === selection.rowId);
+      if (row?.isZoneRow) {
+        setSelection({ sectionId: selection.sectionId, rowId: selection.rowId, listingId: null, seatIds: [] });
+        return;
+      }
+    }
     setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
   };
 

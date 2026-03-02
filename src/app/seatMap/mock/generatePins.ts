@@ -22,6 +22,14 @@ function selectPinsForSection(
   const candidates: PinData[] = [];
   for (const listing of listings) {
     const rowIndex = listing.rowNumber - 1;
+
+    // Unmapped listings (zone rows): use row center as pin position
+    if (listing.isUnmapped) {
+      const seatIndex = Math.floor(sectionConfig.seatsPerRow / 2);
+      candidates.push({ listing, rowIndex, seatIndex });
+      continue;
+    }
+
     const middleSeatId = listing.seatIds[Math.floor(listing.seatIds.length / 2)];
     const parsed = parseSeatId(middleSeatId);
     if (!parsed) continue;
@@ -30,14 +38,35 @@ function selectPinsForSection(
     candidates.push({ listing, rowIndex, seatIndex });
   }
 
+  // Identify zone row indices: any row that has an isUnmapped candidate
+  const zoneRowIndices = new Set<number>();
+  for (const c of candidates) {
+    if (c.listing.isUnmapped) zoneRowIndices.add(c.rowIndex);
+  }
+
+  // Collapse zone row candidates to one per row (keep cheapest)
+  const zoneRowBest = new Map<number, PinData>();
+  const nonZone: PinData[] = [];
+  for (const c of candidates) {
+    if (zoneRowIndices.has(c.rowIndex)) {
+      const existing = zoneRowBest.get(c.rowIndex);
+      if (!existing || c.listing.price < existing.listing.price) {
+        zoneRowBest.set(c.rowIndex, c);
+      }
+    } else {
+      nonZone.push(c);
+    }
+  }
+  const deduped = [...nonZone, ...zoneRowBest.values()];
+
   // Shuffle candidates deterministically
-  rng.shuffle(candidates);
+  rng.shuffle(deduped);
 
   const chebyshev = (a: PinData, b: PinData) =>
     Math.max(Math.abs(a.rowIndex - b.rowIndex), Math.abs(a.seatIndex - b.seatIndex));
 
   const selected: PinData[] = [];
-  const remaining: PinData[] = [...candidates];
+  const remaining: PinData[] = [...deduped];
 
   // Pass 1: Chebyshev >= 2
   const afterPass1: PinData[] = [];

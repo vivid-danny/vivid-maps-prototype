@@ -1,4 +1,4 @@
-import type { SectionConfig, SectionData, SeatData } from '../model/types';
+import type { SectionConfig, SectionData, SeatData, SeatZoneRowConfig } from '../model/types';
 import { createSeededRandom, SeededRandom } from './seededRandom';
 import { hashString, parseSeatIdNums } from '../behavior/utils';
 
@@ -16,9 +16,12 @@ export function generateSectionData(
   const listingCount = config.listingCount ?? 5;
   const seatsPerListing = config.seatsPerListing ?? [2, 4];
 
-  // Convert soldOutRows and seatSaverRows to Sets for quick lookup (1-indexed)
+  // Convert soldOutRows to Set and build zone row map for quick lookup (1-indexed)
   const soldOutRowSet = new Set(soldOutRows ?? []);
-  const seatSaverRowSet = new Set(config.seatSaverRows ?? []);
+  const zoneRowMap = new Map<number, SeatZoneRowConfig>();
+  for (const zr of config.seatZoneRows ?? []) {
+    zoneRowMap.set(zr.row, zr);
+  }
 
   // Generate all seat IDs
   const allSeatIds: string[] = [];
@@ -41,11 +44,11 @@ export function generateSectionData(
     return { sectionId, rows };
   }
 
-  // Determine unavailable seats (excluding sold out rows and saver rows which are handled separately)
+  // Determine unavailable seats (excluding sold out rows and zone rows which are handled separately)
   const seatsNotInSpecialRows = allSeatIds.filter((id) => {
     const parsed = parseSeatIdNums(id);
     if (!parsed) return true;
-    return !soldOutRowSet.has(parsed.rowNum) && !seatSaverRowSet.has(parsed.rowNum);
+    return !soldOutRowSet.has(parsed.rowNum) && !zoneRowMap.has(parsed.rowNum);
   });
 
   const unavailableCount = Math.floor(seatsNotInSpecialRows.length * unavailableRatio);
@@ -59,11 +62,11 @@ export function generateSectionData(
     }
   });
 
-  // Generate listings for available seats, excluding saver rows (pre-assigned below)
+  // Generate listings for available seats, excluding zone rows (pre-assigned below)
   const availableSeatIds = allSeatIds.filter((id) => !unavailableSeats.has(id));
   const availableSeatIdsForListings = availableSeatIds.filter((id) => {
     const parsed = parseSeatIdNums(id);
-    return !parsed || !seatSaverRowSet.has(parsed.rowNum);
+    return !parsed || !zoneRowMap.has(parsed.rowNum);
   });
   const seatListings = generateListings(
     availableSeatIdsForListings,
@@ -76,33 +79,59 @@ export function generateSectionData(
   );
 
   // Build section data
-  const rows = Array.from({ length: numRows }, (_, rowIndex) => ({
-    rowId: `${sectionId}${rowIndex + 1}`,
-    seats: Array.from({ length: seatsPerRow }, (_, seatIndex) => {
-      const seatId = `${sectionId}${rowIndex + 1}-${seatIndex + 1}`;
-      const isUnavailable = unavailableSeats.has(seatId);
+  const rows = Array.from({ length: numRows }, (_, rowIndex) => {
+    const rowNum = rowIndex + 1;
+    const isZoneRow = zoneRowMap.has(rowNum);
+    const zoneConfig = zoneRowMap.get(rowNum);
 
-      // All available seats get a listingId
-      // - Saver row seats: pre-assigned full-row listing id
-      // - Grouped seats: use listingId from seatListings
-      // - Solo seats: assign solo-{sectionId}-{seatId}
+    const seats = Array.from({ length: seatsPerRow }, (_, seatIndex) => {
+      const canonicalSeatId = `${sectionId}${rowNum}-${seatIndex + 1}`;
+      const isUnavailable = unavailableSeats.has(canonicalSeatId);
+
+      if (isZoneRow && zoneConfig) {
+        // Zone row: all seats are available with zone listing assignments
+        const seatNum = seatIndex + 1;
+        const rowId = `${sectionId}${rowNum}`;
+        const listingId1 = `listing-${sectionId}-zone-${rowNum}-1`;
+        const listingId2 = `listing-${sectionId}-zone-${rowNum}-2`;
+
+        const mappedCount = zoneConfig.mappedRatio > 0
+          ? Math.floor(seatsPerRow * zoneConfig.mappedRatio)
+          : Math.ceil(seatsPerRow / 2);
+
+        const isMapped = seatNum <= mappedCount && zoneConfig.mappedRatio > 0;
+        const seatId = isMapped ? canonicalSeatId : `${rowId}-zone-${seatNum}`;
+        const listingId = seatNum <= mappedCount ? listingId1 : listingId2;
+
+        return {
+          seatId,
+          status: 'available' as const,
+          listingId,
+        };
+      }
+
+      // Normal seat
       let listingId: string | undefined;
       if (!isUnavailable) {
-        const parsed = parseSeatIdNums(seatId);
-        if (parsed && seatSaverRowSet.has(parsed.rowNum)) {
-          listingId = `listing-${sectionId}-saver-${parsed.rowNum}`;
-        } else {
-          listingId = seatListings.get(seatId) || `solo-${sectionId}-${seatId}`;
-        }
+        listingId = seatListings.get(canonicalSeatId) || `solo-${sectionId}-${canonicalSeatId}`;
       }
 
       return {
-        seatId,
+        seatId: canonicalSeatId,
         status: isUnavailable ? ('unavailable' as const) : ('available' as const),
         listingId,
       };
-    }),
-  }));
+    });
+
+    const rowData: { rowId: string; seats: SeatData[]; isZoneRow?: boolean } = {
+      rowId: `${sectionId}${rowNum}`,
+      seats,
+    };
+    if (isZoneRow) {
+      rowData.isZoneRow = true;
+    }
+    return rowData;
+  });
 
   return { sectionId, rows };
 }

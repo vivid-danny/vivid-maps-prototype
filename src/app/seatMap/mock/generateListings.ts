@@ -122,7 +122,9 @@ function extractListingsFromSection(
     const dealScore = computeDealScore(price, group.rowNumber, sectionConfig.numRows, perks, priceRange, rng);
     const feePerTicket = rng.randInt(800, 2500);
     const delivery = DELIVERY_OPTIONS[rng.randInt(0, 2)];
-    listings.push({
+    // Detect unmapped listings: all seatIds contain the "-zone-" synthetic pattern
+    const isUnmapped = group.seatIds.every((id) => id.includes('-zone-'));
+    const listing: Listing = {
       listingId,
       sectionId: sectionConfig.sectionId,
       sectionLabel: sectionConfig.label,
@@ -136,7 +138,11 @@ function extractListingsFromSection(
       quantityAvailable: group.seatIds.length,
       feePerTicket,
       delivery,
-    });
+    };
+    if (isUnmapped) {
+      listing.isUnmapped = true;
+    }
+    listings.push(listing);
   });
 
   // Convert solo seats to individual Listing objects

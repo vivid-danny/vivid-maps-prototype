@@ -10,6 +10,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   mobileInitialScale: 0.5,
   mobileZoomThreshold: 3,
   connectorWidth: 1,
+  zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.80, rows: 0.50, seats: 0.30 },
   seatColors: {
     available: '#CE3197',

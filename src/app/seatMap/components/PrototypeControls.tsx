@@ -121,6 +121,7 @@ function Accordion({ label, children }: { label: string; children: React.ReactNo
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
+const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
@@ -191,6 +192,14 @@ export function PrototypeControls({
               options={DISPLAY_MODES}
               value={config.zoomedDisplay}
               onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 block mb-2">Mixed Inventory Display</label>
+            <ToggleGroup
+              options={ZONE_ROW_DISPLAYS}
+              value={config.zoneRowDisplay}
+              onChange={(zoneRowDisplay) => onConfigChange({ zoneRowDisplay })}
             />
           </div>
           <SliderControl

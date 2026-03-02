@@ -42,6 +42,7 @@ export interface SeatData {
 export interface RowData {
   rowId: string;
   seats: SeatData[];
+  isZoneRow?: boolean;
 }
 
 export interface SectionData {
@@ -50,6 +51,11 @@ export interface SectionData {
 }
 
 // Configuration types for generating sections and maps
+
+export interface SeatZoneRowConfig {
+  row: number;          // 1-indexed row number
+  mappedRatio: number;  // 0.0–0.9: fraction of seats with known seat assignments
+}
 
 export interface SectionConfig {
   sectionId: string;
@@ -66,8 +72,8 @@ export interface SectionConfig {
   seatsPerListing?: [number, number];
   // Optional: array of 1-indexed row numbers that are fully sold out
   soldOutRows?: number[];
-  // Optional: 1-indexed row numbers that are full-row exclusive listings (Seat Savers)
-  seatSaverRows?: number[];
+  // Optional: row numbers that are seat zones (unmapped/partially-mapped listings)
+  seatZoneRows?: SeatZoneRowConfig[];
 }
 
 export interface BoundaryConfig {
@@ -149,4 +155,5 @@ export interface Listing {
   quantityAvailable: number;
   feePerTicket: number; // in cents
   delivery: DeliveryInfo;
+  isUnmapped?: boolean;
 }

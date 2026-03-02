@@ -43,6 +43,7 @@ interface SectionProps {
   sectionListings?: Listing[];
   disableHover?: boolean;
   pinDensity?: PinDensityConfig;
+  zoneRowDisplay?: 'rows' | 'seats';
 }
 
 export function Section({
@@ -62,6 +63,7 @@ export function Section({
   sectionListings = [],
   disableHover = false,
   pinDensity = { sections: 0.80, rows: 0.45, seats: 0.28 },
+  zoneRowDisplay = 'rows',
 }: SectionProps) {
   // Handle section selection (only sets sectionId)
   const handleSelectSection = (sectionId: string) => {
@@ -76,6 +78,20 @@ export function Section({
   // Handle seat/listing selection (sets all levels)
   const handleSelectListing = (listingId: string, seatIds: string[]) => {
     onSelect(buildListingSelection(config.sectionId, listingId, seatIds));
+  };
+
+  // Handle zone row selection (row-level, like RowsView)
+  const handleSelectZoneRow = (rowId: string) => {
+    onSelect(buildRowSelection(config.sectionId, rowId));
+  };
+
+  // Handle zone row hover from map
+  const handleZoneRowHover = (rowId: string | null) => {
+    if (rowId) {
+      onHover(buildRowHover(config.sectionId, rowId));
+    } else {
+      onHover(clearHover());
+    }
   };
 
   // Check if this section is selected (at any level)
@@ -108,6 +124,16 @@ export function Section({
 
   // Check external hover state for this section
   const isExternalSectionHover = hoverState.sectionId === config.sectionId;
+
+  // When a listing is hovered from the panel and it belongs to a zone row,
+  // derive externalHoveredRowId so zone row block highlights on the map
+  const externalHoveredZoneRowId = useMemo(() => {
+    if (!isExternalSectionHover || !hoverState.listingId) return null;
+    const listing = sectionListings?.find(l => l.listingId === hoverState.listingId);
+    if (!listing) return null;
+    const row = sectionData.rows.find(r => r.rowId === listing.rowId);
+    return row?.isZoneRow ? row.rowId : null;
+  }, [isExternalSectionHover, hoverState.listingId, sectionListings, sectionData.rows]);
 
   const hoverPinTarget = useMemo(() => getHoverPinTarget({
     displayMode,
@@ -160,6 +186,11 @@ export function Section({
             externalHoveredListingId={disableHover ? null : (isExternalSectionHover ? hoverState.listingId : null)}
             onListingHover={disableHover ? undefined : handleListingHover}
             hoverTransitionMs={hoverTransitionMs}
+            selectedRowId={isSectionSelected ? selection.rowId : null}
+            onSelectZoneRow={handleSelectZoneRow}
+            onZoneRowHover={disableHover ? undefined : handleZoneRowHover}
+            externalHoveredRowId={disableHover ? null : externalHoveredZoneRowId}
+            zoneRowDisplay={zoneRowDisplay}
           />
         );
     }
@@ -319,6 +350,27 @@ export function Section({
     }
 
     // Seats mode: derive position from listing data
+    // For zone row listings, position at row center (synthetic seatIds can't be parsed)
+    const row = sectionData.rows.find(r => r.rowId === selectedListing.rowId);
+    if (row?.isZoneRow) {
+      const { cy } = getSeatCenter(rowIndex, 0);
+      const selectedVisualState = getOverlayPinVisualState({ isSelected: true, isHovered: true });
+      return (
+        <Pin
+          isSelected={selectedVisualState === 'selected'}
+          selectedColor={seatColors.selected}
+          price={selectedListing.price}
+          dealScore={selectedListing.dealScore}
+          x={sectionWidth / 2}
+          y={cy}
+          currentScale={currentScale}
+          seatViewUrl={selectedListing.seatViewUrl}
+          sectionLabel={selectedListing.sectionLabel}
+          rowNumber={selectedListing.rowNumber}
+        />
+      );
+    }
+
     const middleSeatId = selectedListing.seatIds[Math.floor(selectedListing.seatIds.length / 2)];
     const seatIndex = middleSeatId
       ? (parseSeatId(middleSeatId)?.seatNumber ?? 1) - 1
