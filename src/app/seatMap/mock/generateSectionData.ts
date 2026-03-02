@@ -22,6 +22,7 @@ export function generateSectionData(
   for (const zr of config.seatZoneRows ?? []) {
     zoneRowMap.set(zr.row, zr);
   }
+  const singleListingRowSet = new Set(config.singleListingRows ?? []);
 
   // Generate all seat IDs
   const allSeatIds: string[] = [];
@@ -48,7 +49,7 @@ export function generateSectionData(
   const seatsNotInSpecialRows = allSeatIds.filter((id) => {
     const parsed = parseSeatIdNums(id);
     if (!parsed) return true;
-    return !soldOutRowSet.has(parsed.rowNum) && !zoneRowMap.has(parsed.rowNum);
+    return !soldOutRowSet.has(parsed.rowNum) && !zoneRowMap.has(parsed.rowNum) && !singleListingRowSet.has(parsed.rowNum);
   });
 
   const unavailableCount = Math.floor(seatsNotInSpecialRows.length * unavailableRatio);
@@ -66,7 +67,7 @@ export function generateSectionData(
   const availableSeatIds = allSeatIds.filter((id) => !unavailableSeats.has(id));
   const availableSeatIdsForListings = availableSeatIds.filter((id) => {
     const parsed = parseSeatIdNums(id);
-    return !parsed || !zoneRowMap.has(parsed.rowNum);
+    return !parsed || (!zoneRowMap.has(parsed.rowNum) && !singleListingRowSet.has(parsed.rowNum));
   });
   const seatListings = generateListings(
     availableSeatIdsForListings,
@@ -107,6 +108,14 @@ export function generateSectionData(
           seatId,
           status: 'available' as const,
           listingId,
+        };
+      }
+
+      if (singleListingRowSet.has(rowNum)) {
+        return {
+          seatId: canonicalSeatId,
+          status: 'available' as const,
+          listingId: `listing-${sectionId}-row-${rowNum}`,
         };
       }
 

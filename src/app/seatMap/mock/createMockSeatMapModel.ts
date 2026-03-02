@@ -113,6 +113,7 @@ const DEMO_MAP: MapConfig = {
       unavailableRatio: 0.5,
       listingCount: 20,
       seatsPerListing: [2, 8],
+      singleListingRows: [9],
     },
     {
       sectionId: 'A',
@@ -124,6 +125,7 @@ const DEMO_MAP: MapConfig = {
       unavailableRatio: 0.5,
       listingCount: 12,
       seatsPerListing: [2, 6],
+      singleListingRows: [10],
     },
   ],
   seed: 12345,
