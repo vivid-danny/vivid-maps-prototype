@@ -74,6 +74,8 @@ export interface SectionConfig {
   soldOutRows?: number[];
   // Optional: row numbers that are seat zones (unmapped/partially-mapped listings)
   seatZoneRows?: SeatZoneRowConfig[];
+  // Optional: row numbers (1-indexed) where all seats are grouped into one listing
+  singleListingRows?: number[];
 }
 
 export interface BoundaryConfig {
