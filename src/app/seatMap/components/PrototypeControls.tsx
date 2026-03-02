@@ -121,6 +121,7 @@ function Accordion({ label, children }: { label: string; children: React.ReactNo
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
+const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
@@ -193,6 +194,14 @@ export function PrototypeControls({
               onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
             />
           </div>
+          <div>
+            <label className="text-xs text-gray-600 block mb-2">Mixed Inventory Display</label>
+            <ToggleGroup
+              options={ZONE_ROW_DISPLAYS}
+              value={config.zoneRowDisplay}
+              onChange={(zoneRowDisplay) => onConfigChange({ zoneRowDisplay })}
+            />
+          </div>
           <SliderControl
             label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
             value={config.desktopInitialScale}
@@ -248,16 +257,15 @@ export function PrototypeControls({
           </div>
         </Accordion>
 
-        <Accordion label="Style">
-          <SliderControl
-            label={`Connector Width: ${config.connectorWidth}px`}
-            value={config.connectorWidth}
-            onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-            min={0.5} max={4} step={0.5}
-          />
+        <Accordion label="Connector">
           <div className="space-y-3">
-            <label className="text-xs text-black font-bold block mb-2">Section Fill Colors</label>
-            {(['available', 'unavailable', 'selected', 'hover', 'pressed', 'connector'] as const).map((colorKey) => (
+            <SliderControl
+              label={`Connector Width: ${config.connectorWidth}px`}
+              value={config.connectorWidth}
+              onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
+              min={0.5} max={4} step={0.5}
+            />
+            {(['connector', 'connectorHover', 'connectorPressed'] as const).map((colorKey) => (
               <ColorControl
                 key={colorKey}
                 label={colorKey}
@@ -266,7 +274,18 @@ export function PrototypeControls({
               />
             ))}
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 mt-9">
+            <label className="text-xs text-black font-bold block mb-2">Section Fill Colors</label>
+            {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const).map((colorKey) => (
+              <ColorControl
+                key={colorKey}
+                label={colorKey}
+                value={config.seatColors[colorKey]}
+                onChange={(value) => handleColorChange(colorKey, value)}
+              />
+            ))}
+          </div>
+          <div className="space-y-3 mt-9">
             <label className="text-xs text-black font-bold block mb-2">Section Label Colors</label>
             {([
               { key: 'labelDefault' as const, label: 'Available' },

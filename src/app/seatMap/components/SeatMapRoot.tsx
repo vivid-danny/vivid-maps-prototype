@@ -150,7 +150,9 @@ export function SeatMapRoot() {
               <ListingsPanel
                 className="w-full h-full"
                 listings={viewState.listings}
-                selection={viewState.selection.listingId ? EMPTY_SELECTION : viewState.selection}
+                selection={viewState.selection.listingId
+                  ? { ...viewState.selection, listingId: null, seatIds: [] }
+                  : viewState.selection}
                 hoverState={viewState.hoverState}
                 onSelectListing={viewState.handleSelectFromPanel}
                 onHoverListing={viewState.handleHoverFromPanel}
@@ -222,6 +224,7 @@ export function SeatMapRoot() {
                         sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
                         disableHover={isMobile}
                         pinDensity={config.pinDensity}
+                        zoneRowDisplay={config.zoneRowDisplay}
                       />
                     );
                   })}
@@ -251,7 +254,9 @@ export function SeatMapRoot() {
               <ListingsPanel
                 className="w-full h-full"
                 listings={viewState.listings}
-                selection={viewState.selection.listingId ? EMPTY_SELECTION : viewState.selection}
+                selection={viewState.selection.listingId
+                  ? { ...viewState.selection, listingId: null, seatIds: [] }
+                  : viewState.selection}
                 hoverState={viewState.hoverState}
                 onSelectListing={viewState.handleSelectFromPanel}
                 onHoverListing={viewState.handleHoverFromPanel}

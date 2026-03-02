@@ -71,6 +71,12 @@ export function getHoverPinTarget({
     if (!listing) return null;
 
     const rowIndex = listing.rowNumber - 1;
+
+    // Unmapped listings (zone rows): position at row center
+    if (listing.isUnmapped) {
+      return { kind: 'row', listing, rowIndex };
+    }
+
     const middleSeatId = listing.seatIds[Math.floor(listing.seatIds.length / 2)];
     const seatIndex = middleSeatId ? (parseSeatId(middleSeatId)?.seatNumber ?? 1) - 1 : 0;
 

@@ -14,5 +14,6 @@ export interface SeatMapConfig {
   connectorWidth: number;
   seatColors: SeatColors;
   pinDensity: PinDensityConfig;
+  zoneRowDisplay: 'rows' | 'seats';
 }
 

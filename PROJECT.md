@@ -34,7 +34,7 @@ The map renders different levels of detail depending on zoom level:
 |------|--------|-----------------|
 | `sections` | Filled rounded rectangle with label | Section |
 | `rows` | Horizontal bars per row | Row |
-| `seats` | Individual 4×4px seat rects with listing connectors | Listing (grouped seats) |
+| `seats` | Individual 4×4px seat circles; connector rects link adjacent seats in the same listing (both are interactive) | Listing (grouped seats) |
 
 **Zoom-based switching:**
 - Below threshold → renders `config.initialDisplay` (default: `sections`)
@@ -125,7 +125,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 |--------|---------|--------|
 | Click section | `handleSelect(buildSectionSelection(sectionId))` | Selects section; map zooms to it; panel filters to section |
 | Click row | `handleSelect(buildRowSelection(sectionId, rowId))` | Selects row; panel filters to row |
-| Click listing/seat | `handleSelect(buildListingSelection(...))` | Selects listing; view switches to `detail` |
+| Click listing/seat/connector | `handleSelect(buildListingSelection(...))` | Selects listing; view switches to `detail` |
 | Click selected item again | `getToggledSelection()` → `EMPTY_SELECTION` | Full deselect; panel returns to all listings |
 | Hover section/row/seat | `handleHoverFromMap(hover)` | Hover pin appears on map; listing card highlights in panel |
 
@@ -407,7 +407,11 @@ SeatMapConfig
   └─ createMockSeatMapModel() →  SeatMapModel (assembled model)
 ```
 
-**Demo map:** 8 sections around a stage. Sections `101` and `104` have `unavailableRatio: 1.0` (fully sold out) — useful for testing unavailable states.
+**Seat zone rows (`seatZoneRows`):** a `SectionConfig` option that marks specific rows as seat zones — rows with unmapped or partially-mapped listings. Each zone row produces 2 listings: one with mapped seats (real seatIds) and one with unmapped seats (synthetic `{rowId}-zone-{n}` seatIds). Zone rows are excluded from both the random unavailability pool and the regular grouping pass. In seats display mode, zone rows render as row-level pill blocks (like RowsView bars) instead of individual seats, and clicking them filters the panel to show the zone row's listings.
+
+**Grouping algorithm:** `generateListings` uses a greedy consecutive-run approach — seats are bucketed by row, consecutive available seats are found, and each run is greedily filled with groups of random size `[min, max]`. Only isolated seats (run length < min) fall through as solo listings. This maximises grouped coverage regardless of unavailability ratio.
+
+**Demo map:** 8 sections around a stage. Sections `101` and `104` have `unavailableRatio: 1.0` (fully sold out). Sections `102` (B) and `1B` (E) have `seatZoneRows` configured — B: rows 3 (60% mapped) & 7 (0% mapped); E: rows 2 (50% mapped) & 6 (0% mapped). All non-sold-out sections use `unavailableRatio: 0.5` targeting ~50% unavailable, ~45% grouped, ~5% solo.
 
 ---
 
@@ -421,6 +425,7 @@ IDs are hierarchical strings built by concatenation:
 | Row | `{sectionId}{rowNum}` | `"B3"` |
 | Seat | `{rowId}-{seatNum}` | `"B3-5"` |
 | Listing (grouped) | `"listing-{sectionId}-{n}"` | `"listing-B-1"` |
+| Listing (zone row) | `"listing-{sectionId}-zone-{rowNum}-{1\|2}"` | `"listing-B-zone-3-1"` |
 | Listing (solo) | `"solo-{sectionId}-{rowId}-{seatNum}"` | `"solo-B-B3-5"` |
 
 *Note: this format assumes single-character section IDs. Numeric IDs (e.g., "101") would need a delimiter.*
@@ -464,4 +469,23 @@ Restructured codebase from a flat organization to a domain-driven feature folder
 
 ---
 
-*Last updated: Feb 24, 2026*
+### March 2, 2026 — Seat Zone Rows + Inventory Distribution
+
+**Changes:**
+- Added `seatZoneRows?: SeatZoneRowConfig[]` to `SectionConfig` — marks rows as seat zones with configurable mapped/unmapped ratio
+- Zone rows produce 2 listings each: one with mapped seats (real seatIds) and one with unmapped seats (synthetic `{rowId}-zone-{n}` seatIds). Unmapped listings have `isUnmapped: true`.
+- In seats display mode, zone rows render as row-level pill blocks (like RowsView bars) instead of individual seats. Clicking a zone row filters the panel to show 2 listings for that row.
+- Replaced random-start grouping algorithm with greedy consecutive-run grouping: scan each row's available seats, find consecutive runs, fill greedily with groups of `[min, max]` size. Isolated seats (run length < min) remain solo. Eliminates the wasted-iteration problem of the old approach.
+- Rebalanced all non-sold-out sections to `unavailableRatio: 0.5`, higher `listingCount`, and `seatsPerListing: [2, 8]` — targeting ~50% unavailable, ~45% grouped, ~5% solo
+- Pin dedup fix: zone rows (2 listings each — mapped + unmapped) now collapse to a single pin per row. The algorithm infers zone rows by scanning candidates for any `isUnmapped` listing, then collapses ALL candidates on that `rowIndex` to the cheapest. Default `zoneRowDisplay` changed from `'rows'` to `'seats'`.
+
+---
+
+### March 2, 2026 — Selectable Connectors + Connector Color Controls
+
+**Changes:**
+- Connector elements replaced from `<line>` to `<rect>` (same `connectorWidth` height, centered at seat `cy`). Connectors now carry the same click/hover/press event handlers as seat circles — clicking a connector selects the full listing, hovering highlights it across the map and listings panel.
+- Added `connectorHover` and `connectorPressed` to `SeatColors` interface and defaults (`#7A1D59` and `#312784`). Connectors use these for hover/pressed feedback instead of the seat circle colors.
+- Prototype controls: connector width slider and three connector color pickers (`connector`, `connectorHover`, `connectorPressed`) moved into their own **Connector** accordion section.
+
+*Last updated: Mar 2, 2026*

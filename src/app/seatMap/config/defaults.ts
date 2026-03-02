@@ -10,6 +10,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   mobileInitialScale: 0.5,
   mobileZoomThreshold: 3,
   connectorWidth: 1,
+  zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.80, rows: 0.50, seats: 0.30 },
   seatColors: {
     available: '#CE3197',
@@ -18,6 +19,8 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     pressed: '#3E0649',
     selected: '#312784',
     connector: '#CE3197',
+    connectorHover: '#7A1D59',
+    connectorPressed: '#312784',
     labelDefault: '#5D1A1A',
     labelSelected: '#FFFFFF',
     labelUnavailable: '#B0B0B0',

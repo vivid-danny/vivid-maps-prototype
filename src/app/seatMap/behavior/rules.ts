@@ -117,12 +117,12 @@ export function buildRowSelection(sectionId: string, rowId: string): SelectionSt
   };
 }
 
-export function buildListingSelection(sectionId: string, listingId: string, seatIds: string[]): SelectionState {
-  const rowId = seatIds.length > 0 ? (parseSeatId(seatIds[0])?.rowId ?? null) : null;
+export function buildListingSelection(sectionId: string, listingId: string, seatIds: string[], rowId?: string): SelectionState {
+  const derivedRowId = rowId ?? (seatIds.length > 0 ? (parseSeatId(seatIds[0])?.rowId ?? null) : null);
 
   return {
     sectionId,
-    rowId,
+    rowId: derivedRowId,
     listingId,
     seatIds,
   };
