@@ -49,6 +49,22 @@ export function SeatsView({
     });
   });
 
+  const getConnectorColor = (seat: SeatData): string => {
+    const state = getSeatVisualState({
+      seat,
+      selectedListingId,
+      pressedListingId,
+      localHoveredListingId,
+      externalHoveredListingId,
+    });
+    switch (state) {
+      case 'selected': return seatColors.selected;
+      case 'pressed':  return seatColors.connectorPressed;
+      case 'hover':    return seatColors.connectorHover;
+      default:         return seatColors.connector;
+    }
+  };
+
   const getSeatColor = (seat: SeatData): string => {
     const state = getSeatVisualState({
       seat,
@@ -130,17 +146,22 @@ export function SeatsView({
           if (!hasConnector(rowIndex, seatIndex)) return null;
 
           const { cx, cy } = getSeatCenter(rowIndex, seatIndex);
-          const nextCx = cx + SEAT_SIZE + SEAT_GAP;
 
           return (
-            <line
+            <rect
               key={`connector-${seat.seatId}`}
-              x1={cx}
-              y1={cy}
-              x2={nextCx}
-              y2={cy}
-              stroke={seatColors.connector}
-              strokeWidth={connectorWidth}
+              x={cx}
+              y={cy - connectorWidth / 2}
+              width={SEAT_SIZE + SEAT_GAP}
+              height={connectorWidth}
+              fill={getConnectorColor(seat)}
+              style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
+              className="cursor-pointer"
+              onClick={() => handleClick(seat)}
+              onMouseEnter={handleMouseEnter ? () => handleMouseEnter(seat) : undefined}
+              onMouseLeave={handleMouseLeave}
+              onMouseDown={() => handleMouseDown(seat)}
+              onMouseUp={handleMouseUp}
             />
           );
         })

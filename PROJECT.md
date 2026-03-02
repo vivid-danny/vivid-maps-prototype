@@ -34,7 +34,7 @@ The map renders different levels of detail depending on zoom level:
 |------|--------|-----------------|
 | `sections` | Filled rounded rectangle with label | Section |
 | `rows` | Horizontal bars per row | Row |
-| `seats` | Individual 4×4px seat rects with listing connectors | Listing (grouped seats) |
+| `seats` | Individual 4×4px seat circles; connector rects link adjacent seats in the same listing (both are interactive) | Listing (grouped seats) |
 
 **Zoom-based switching:**
 - Below threshold → renders `config.initialDisplay` (default: `sections`)
@@ -125,7 +125,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 |--------|---------|--------|
 | Click section | `handleSelect(buildSectionSelection(sectionId))` | Selects section; map zooms to it; panel filters to section |
 | Click row | `handleSelect(buildRowSelection(sectionId, rowId))` | Selects row; panel filters to row |
-| Click listing/seat | `handleSelect(buildListingSelection(...))` | Selects listing; view switches to `detail` |
+| Click listing/seat/connector | `handleSelect(buildListingSelection(...))` | Selects listing; view switches to `detail` |
 | Click selected item again | `getToggledSelection()` → `EMPTY_SELECTION` | Full deselect; panel returns to all listings |
 | Hover section/row/seat | `handleHoverFromMap(hover)` | Hover pin appears on map; listing card highlights in panel |
 
@@ -476,5 +476,14 @@ Restructured codebase from a flat organization to a domain-driven feature folder
 - Seat saver rows produce a single `listing-{sectionId}-saver-{rowNum}` listingId shared across all seats in the row; they render as a connected group spanning the full row width
 - Replaced random-start grouping algorithm with greedy consecutive-run grouping: scan each row's available seats, find consecutive runs, fill greedily with groups of `[min, max]` size. Isolated seats (run length < min) remain solo. Eliminates the wasted-iteration problem of the old approach.
 - Rebalanced all non-sold-out sections to `unavailableRatio: 0.5`, higher `listingCount`, and `seatsPerListing: [2, 8]` — targeting ~50% unavailable, ~45% grouped, ~5% solo
+
+---
+
+### March 2, 2026 — Selectable Connectors + Connector Color Controls
+
+**Changes:**
+- Connector elements replaced from `<line>` to `<rect>` (same `connectorWidth` height, centered at seat `cy`). Connectors now carry the same click/hover/press event handlers as seat circles — clicking a connector selects the full listing, hovering highlights it across the map and listings panel.
+- Added `connectorHover` and `connectorPressed` to `SeatColors` interface and defaults (`#7A1D59` and `#312784`). Connectors use these for hover/pressed feedback instead of the seat circle colors.
+- Prototype controls: connector width slider and three connector color pickers (`connector`, `connectorHover`, `connectorPressed`) moved into their own **Connector** accordion section.
 
 *Last updated: Mar 2, 2026*

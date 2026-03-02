@@ -248,16 +248,15 @@ export function PrototypeControls({
           </div>
         </Accordion>
 
-        <Accordion label="Style">
-          <SliderControl
-            label={`Connector Width: ${config.connectorWidth}px`}
-            value={config.connectorWidth}
-            onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-            min={0.5} max={4} step={0.5}
-          />
+        <Accordion label="Connector">
           <div className="space-y-3">
-            <label className="text-xs text-black font-bold block mb-2">Section Fill Colors</label>
-            {(['available', 'unavailable', 'selected', 'hover', 'pressed', 'connector'] as const).map((colorKey) => (
+            <SliderControl
+              label={`Connector Width: ${config.connectorWidth}px`}
+              value={config.connectorWidth}
+              onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
+              min={0.5} max={4} step={0.5}
+            />
+            {(['connector', 'connectorHover', 'connectorPressed'] as const).map((colorKey) => (
               <ColorControl
                 key={colorKey}
                 label={colorKey}
@@ -266,7 +265,18 @@ export function PrototypeControls({
               />
             ))}
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 mt-9">
+            <label className="text-xs text-black font-bold block mb-2">Section Fill Colors</label>
+            {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const).map((colorKey) => (
+              <ColorControl
+                key={colorKey}
+                label={colorKey}
+                value={config.seatColors[colorKey]}
+                onChange={(value) => handleColorChange(colorKey, value)}
+              />
+            ))}
+          </div>
+          <div className="space-y-3 mt-9">
             <label className="text-xs text-black font-bold block mb-2">Section Label Colors</label>
             {([
               { key: 'labelDefault' as const, label: 'Available' },
