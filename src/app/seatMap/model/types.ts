@@ -64,6 +64,8 @@ export interface SectionConfig {
   seatsPerListing?: [number, number];
   // Optional: array of 1-indexed row numbers that are fully sold out
   soldOutRows?: number[];
+  // Optional: 1-indexed row numbers that are full-row exclusive listings (Seat Savers)
+  seatSaverRows?: number[];
 }
 
 export interface BoundaryConfig {
