@@ -72,4 +72,4 @@ export const THEME_LABELS: Record<ThemeId, string> = {
   zone: 'Zone',
 };
 
-export const THEME_IDS = ['branded', 'neutral', 'zone'] as const;
+export const THEME_IDS = ['branded', 'neutral'] as const;
