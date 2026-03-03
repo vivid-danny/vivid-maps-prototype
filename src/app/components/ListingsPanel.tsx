@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
+import type { ListingCardSize } from '../seatMap/config/types';
 import { ListingCard } from './ListingCard';
 
 interface ListingsPanelProps {
@@ -13,9 +14,10 @@ interface ListingsPanelProps {
   hoverColor?: string;
   pressedColor?: string;
   disableHover?: boolean;
+  listingCardSize?: ListingCardSize;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize }: ListingsPanelProps) {
   // Filter listings based on selection
   const filteredListings = useMemo(() => {
     if (!selection.sectionId) {
@@ -67,6 +69,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
               hoverColor={hoverColor}
               pressedColor={pressedColor}
               disableHover={disableHover}
+              size={listingCardSize}
             />
           ))
         )}

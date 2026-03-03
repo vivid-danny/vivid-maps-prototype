@@ -8,6 +8,7 @@ const DEFAULT_WHEEL_STEP = 0.2;
 interface MapContainerProps {
   controller: SeatMapController;
   isSimulatedMobile: boolean;
+  mobileMapHeight: number;
   children: ReactNode;
   onScaleChange?: (scale: number) => void;
   wheelStep?: number;
@@ -15,9 +16,9 @@ interface MapContainerProps {
 }
 
 export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
-  function MapContainer({ controller, isSimulatedMobile, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
+  function MapContainer({ controller, isSimulatedMobile, mobileMapHeight, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
     const width = isSimulatedMobile ? 390 : '100%';
-    const height = isSimulatedMobile ? 200 : '100%';
+    const height = isSimulatedMobile ? mobileMapHeight : '100%';
     const initialScale = controller.initialScale;
     const minScale = controller.minScale;
 
