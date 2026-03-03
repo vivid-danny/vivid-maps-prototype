@@ -306,45 +306,28 @@ export function PrototypeControls({
               />
             </div>
 
-            {/* Venue */}
-            <div className="mb-6">
-              <label className="text-xs text-black font-bold block mb-3">Venue</label>
-              <ColorControl
-                label="Fill"
-                value={config.seatColors.venueFill}
-                onChange={(value) => handleColorChange('venueFill', value)}
-              />
-              <ColorControl
-                label="Stroke"
-                value={config.seatColors.venueStroke}
-                onChange={(value) => handleColorChange('venueStroke', value)}
-              />
-              <ColorControl
-                label="Map Background"
-                value={config.seatColors.mapBackground}
-                onChange={(value) => handleColorChange('mapBackground', value)}
-              />
-            </div>
-
-            <Accordion label="Connector">
+            <Accordion label="Venue">
               <div className="space-y-3">
-                <SliderControl
-                  label={`Connector Width: ${config.connectorWidth}px`}
-                  value={config.connectorWidth}
-                  onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-                  min={0.5} max={4} step={0.5}
+                <ColorControl
+                  label="Fill"
+                  value={config.seatColors.venueFill}
+                  onChange={(value) => handleColorChange('venueFill', value)}
                 />
-                {(['connector', 'connectorHover', 'connectorPressed'] as const).map((colorKey) => (
-                  <ColorControl
-                    key={colorKey}
-                    label={colorKey}
-                    value={config.seatColors[colorKey]}
-                    onChange={(value) => handleColorChange(colorKey, value)}
-                  />
-                ))}
+                <ColorControl
+                  label="Stroke"
+                  value={config.seatColors.venueStroke}
+                  onChange={(value) => handleColorChange('venueStroke', value)}
+                />
+                <ColorControl
+                  label="Map Background"
+                  value={config.seatColors.mapBackground}
+                  onChange={(value) => handleColorChange('mapBackground', value)}
+                />
               </div>
-              <div className="space-y-3 mt-9">
-                <label className="text-xs text-black font-bold block mb-2">Section Fill Colors</label>
+            </Accordion>
+
+            <Accordion label="Inventory">
+              <div className="space-y-3">
                 {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const).map((colorKey) => (
                   <ColorControl
                     key={colorKey}
@@ -354,8 +337,51 @@ export function PrototypeControls({
                   />
                 ))}
               </div>
-              <div className="space-y-3 mt-9">
-                <label className="text-xs text-black font-bold block mb-2">Section Label Colors</label>
+            </Accordion>
+
+            <Accordion label="Connector">
+              <div className="space-y-3">
+                <SliderControl
+                  label={`Connector Width: ${config.connectorWidth}px`}
+                  value={config.connectorWidth}
+                  onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
+                  min={0.5} max={4} step={0.5}
+                />
+                {([
+                  { key: 'connector' as const, label: 'Default' },
+                  { key: 'connectorHover' as const, label: 'Hover' },
+                  { key: 'connectorPressed' as const, label: 'Pressed' },
+                ]).map(({ key, label }) => (
+                  <ColorControl
+                    key={key}
+                    label={label}
+                    value={config.seatColors[key]}
+                    onChange={(value) => handleColorChange(key, value)}
+                  />
+                ))}
+              </div>
+            </Accordion>
+
+            <Accordion label="Pins">
+              <div className="space-y-3">
+                {([
+                  { key: 'pinDefault' as const, label: 'Default' },
+                  { key: 'pinHovered' as const, label: 'Hovered' },
+                  { key: 'pinPressed' as const, label: 'Pressed' },
+                  { key: 'pinSelected' as const, label: 'Selected' },
+                ]).map(({ key, label }) => (
+                  <ColorControl
+                    key={key}
+                    label={label}
+                    value={config.seatColors[key]}
+                    onChange={(value) => handleColorChange(key, value)}
+                  />
+                ))}
+              </div>
+            </Accordion>
+
+            <Accordion label="Section Labels">
+              <div className="space-y-3">
                 {([
                   { key: 'labelDefault' as const, label: 'Available' },
                   { key: 'labelUnavailable' as const, label: 'Unavailable' },

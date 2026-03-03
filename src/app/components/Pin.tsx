@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { darkenHex } from '../seatMap/behavior/utils';
 
 interface PinProps {
   price: number; // in cents
@@ -10,16 +9,19 @@ interface PinProps {
   selectedColor?: string;
   isHovered?: boolean;
   hoverColor?: string;
+  isPressed?: boolean;
+  pressedColor?: string;
+  defaultColor?: string;
   dealScore?: number;
   seatViewUrl?: string;
   sectionLabel?: string;
   rowNumber?: number;
 }
 
-export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#312784', isHovered, hoverColor = '#7A1D59', dealScore, seatViewUrl, sectionLabel, rowNumber }: PinProps) {
+export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber }: PinProps) {
   const displayPrice = `$${Math.round(price / 100)}`;
   const inverseScale = (1 / currentScale) * (isSelected ? 1.875 : isHovered ? 1.5 : 1.25);
-  const bgColor = isSelected ? darkenHex(selectedColor, 0.6) : isHovered ? darkenHex(hoverColor, 0.6) : '#1a1a2e';
+  const bgColor = isSelected ? selectedColor : isPressed ? pressedColor : isHovered ? hoverColor : defaultColor;
   const zIndex = isHovered ? 30 : isSelected ? 20 : 10;
   const showDealScore = dealScore !== undefined && dealScore > 7;
   const showSeatView = isHovered && !isSelected && seatViewUrl;

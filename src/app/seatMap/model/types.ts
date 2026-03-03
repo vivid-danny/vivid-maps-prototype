@@ -31,6 +31,10 @@ export interface SeatColors {
   labelDefault: string;
   labelSelected: string;
   labelUnavailable: string;
+  pinDefault: string;
+  pinHovered: string;
+  pinPressed: string;
+  pinSelected: string;
   venueFill: string;
   venueStroke: string;
   mapBackground: string;
