@@ -31,6 +31,9 @@ export interface SeatColors {
   labelDefault: string;
   labelSelected: string;
   labelUnavailable: string;
+  venueFill: string;
+  venueStroke: string;
+  mapBackground: string;
 }
 
 export interface SeatData {

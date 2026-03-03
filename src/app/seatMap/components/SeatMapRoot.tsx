@@ -131,9 +131,10 @@ export function SeatMapRoot() {
       />
 
       <div
-        className={`flex-1 min-w-0 flex bg-gray-100 ${
+        className={`flex-1 min-w-0 flex ${
           isSimulatedMobile ? 'items-center justify-center p-5' : ''
         }`}
+        style={{ backgroundColor: '#f3f4f6' }}
       >
         <div
           className={`flex bg-white ${
@@ -196,8 +197,9 @@ export function SeatMapRoot() {
                 isSimulatedMobile={isSimulatedMobile}
                 onScaleChange={setCurrentScale}
                 wheelStep={0.2}
+                background={config.seatColors.mapBackground}
               >
-                <Venue boundary={model.boundary}>
+                <Venue boundary={model.boundary ? { ...model.boundary, fill: config.seatColors.venueFill, stroke: config.seatColors.venueStroke } : undefined}>
                   <Stage
                     x={STAGE_CONFIG.x}
                     y={STAGE_CONFIG.y}

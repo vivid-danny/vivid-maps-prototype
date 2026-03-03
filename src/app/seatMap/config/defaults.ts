@@ -26,6 +26,9 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     labelDefault: '#5D1A1A',
     labelSelected: '#FFFFFF',
     labelUnavailable: '#B0B0B0',
+    venueFill: '#FFFFFF',
+    venueStroke: '#A0A2B3',
+    mapBackground: '#EFEFF6',
   },
 };
 

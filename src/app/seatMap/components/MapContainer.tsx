@@ -11,10 +11,11 @@ interface MapContainerProps {
   children: ReactNode;
   onScaleChange?: (scale: number) => void;
   wheelStep?: number;
+  background?: string;
 }
 
 export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
-  function MapContainer({ controller, isSimulatedMobile, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP }, ref) {
+  function MapContainer({ controller, isSimulatedMobile, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
     const width = isSimulatedMobile ? 390 : '100%';
     const height = isSimulatedMobile ? 200 : '100%';
     const initialScale = controller.initialScale;
@@ -22,10 +23,11 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
 
     return (
       <div
-        className="border-1 border-gray-200 bg-[#EFEFF6]"
+        className="border-1 border-gray-200"
         style={{
           width: typeof width === 'number' ? `${width}px` : width,
           height: typeof height === 'number' ? `${height}px` : height,
+          backgroundColor: background ?? '#EFEFF6',
         }}
       >
         <TransformWrapper
