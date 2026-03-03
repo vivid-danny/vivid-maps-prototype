@@ -12,6 +12,8 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   connectorWidth: 1,
   zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.80, rows: 0.50, seats: 0.30 },
+  theme: 'branded',
+  themeOverrides: {},
   seatColors: {
     available: '#CE3197',
     unavailable: '#FAEAF5',
@@ -24,6 +26,13 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     labelDefault: '#5D1A1A',
     labelSelected: '#FFFFFF',
     labelUnavailable: '#B0B0B0',
+    pinDefault: '#1a1a2e',
+    pinHovered: '#310C24',
+    pinPressed: '#141035',
+    pinSelected: '#141035',
+    venueFill: '#FFFFFF',
+    venueStroke: '#A0A2B3',
+    mapBackground: '#EFEFF6',
   },
 };
 

@@ -223,6 +223,10 @@ export function Section({
           x={sectionWidth / 2}
           y={getSectionHeight(config.numRows) * 0.3}
           currentScale={currentScale}
+          defaultColor={seatColors.pinDefault}
+          hoverColor={seatColors.pinHovered}
+          pressedColor={seatColors.pinPressed}
+          selectedColor={seatColors.pinSelected}
         />
       );
     }
@@ -243,6 +247,10 @@ export function Section({
             x={sectionWidth / 2}
             y={cy}
             currentScale={currentScale}
+            defaultColor={seatColors.pinDefault}
+            hoverColor={seatColors.pinHovered}
+            pressedColor={seatColors.pinPressed}
+            selectedColor={seatColors.pinSelected}
           />
         );
       });
@@ -260,6 +268,10 @@ export function Section({
           x={x}
           y={y}
           currentScale={currentScale}
+          defaultColor={seatColors.pinDefault}
+          hoverColor={seatColors.pinHovered}
+          pressedColor={seatColors.pinPressed}
+          selectedColor={seatColors.pinSelected}
         />
       );
     });
@@ -289,12 +301,15 @@ export function Section({
     return (
       <Pin
         isHovered={hoverVisualState === 'hover'}
-        hoverColor={seatColors.hover}
         price={hoverPinTarget.listing.price}
         dealScore={hoverPinTarget.listing.dealScore}
         x={x}
         y={y}
         currentScale={currentScale}
+        defaultColor={seatColors.pinDefault}
+        hoverColor={seatColors.pinHovered}
+        pressedColor={seatColors.pinPressed}
+        selectedColor={seatColors.pinSelected}
         seatViewUrl={hoverPinTarget.listing.seatViewUrl}
         sectionLabel={hoverPinTarget.listing.sectionLabel}
         rowNumber={hoverPinTarget.listing.rowNumber}
@@ -314,12 +329,15 @@ export function Section({
       return (
         <Pin
           isSelected={selectedVisualState === 'selected'}
-          selectedColor={seatColors.selected}
           price={selectedListing.price}
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={getSectionHeight(config.numRows) * 0.3}
           currentScale={currentScale}
+          defaultColor={seatColors.pinDefault}
+          hoverColor={seatColors.pinHovered}
+          pressedColor={seatColors.pinPressed}
+          selectedColor={seatColors.pinSelected}
           seatViewUrl={selectedListing.seatViewUrl}
           sectionLabel={selectedListing.sectionLabel}
           rowNumber={selectedListing.rowNumber}
@@ -336,12 +354,15 @@ export function Section({
       return (
         <Pin
           isSelected={selectedVisualState === 'selected'}
-          selectedColor={seatColors.selected}
           price={selectedListing.price}
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={cy}
           currentScale={currentScale}
+          defaultColor={seatColors.pinDefault}
+          hoverColor={seatColors.pinHovered}
+          pressedColor={seatColors.pinPressed}
+          selectedColor={seatColors.pinSelected}
           seatViewUrl={selectedListing.seatViewUrl}
           sectionLabel={selectedListing.sectionLabel}
           rowNumber={selectedListing.rowNumber}
@@ -358,12 +379,15 @@ export function Section({
       return (
         <Pin
           isSelected={selectedVisualState === 'selected'}
-          selectedColor={seatColors.selected}
           price={selectedListing.price}
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={cy}
           currentScale={currentScale}
+          defaultColor={seatColors.pinDefault}
+          hoverColor={seatColors.pinHovered}
+          pressedColor={seatColors.pinPressed}
+          selectedColor={seatColors.pinSelected}
           seatViewUrl={selectedListing.seatViewUrl}
           sectionLabel={selectedListing.sectionLabel}
           rowNumber={selectedListing.rowNumber}
@@ -383,12 +407,15 @@ export function Section({
     return (
       <Pin
         isSelected={selectedVisualState === 'selected'}
-        selectedColor={seatColors.selected}
         price={selectedListing.price}
         dealScore={selectedListing.dealScore}
         x={x}
         y={y}
         currentScale={currentScale}
+        defaultColor={seatColors.pinDefault}
+        hoverColor={seatColors.pinHovered}
+        pressedColor={seatColors.pinPressed}
+        selectedColor={seatColors.pinSelected}
         seatViewUrl={selectedListing.seatViewUrl}
         sectionLabel={selectedListing.sectionLabel}
         rowNumber={selectedListing.rowNumber}

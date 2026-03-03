@@ -15,7 +15,7 @@ import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
-import type { Listing } from '../model/types';
+import type { Listing, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
@@ -119,6 +119,15 @@ export function SeatMapRoot() {
   const showDetailOverlay = detailPhase !== 'closed';
   const detailListing = viewState.selectedListing || lastListingRef.current;
 
+  // Freeze panel selection during detail entry to prevent flash
+  const panelSelectionRef = useRef<SelectionState>(viewState.selection);
+  if (!isDetailOpen) {
+    panelSelectionRef.current = viewState.selection;
+  }
+  const panelSelection = isDetailOpen
+    ? panelSelectionRef.current
+    : viewState.selection;
+
   return (
     <div className="size-full flex">
       <PrototypeControls
@@ -131,9 +140,10 @@ export function SeatMapRoot() {
       />
 
       <div
-        className={`flex-1 min-w-0 flex bg-gray-100 ${
+        className={`flex-1 min-w-0 flex ${
           isSimulatedMobile ? 'items-center justify-center p-5' : ''
         }`}
+        style={{ backgroundColor: '#f3f4f6' }}
       >
         <div
           className={`flex bg-white ${
@@ -150,9 +160,7 @@ export function SeatMapRoot() {
               <ListingsPanel
                 className="w-full h-full"
                 listings={viewState.listings}
-                selection={viewState.selection.listingId
-                  ? { ...viewState.selection, listingId: null, seatIds: [] }
-                  : viewState.selection}
+                selection={panelSelection}
                 hoverState={viewState.hoverState}
                 onSelectListing={viewState.handleSelectFromPanel}
                 onHoverListing={viewState.handleHoverFromPanel}
@@ -196,8 +204,9 @@ export function SeatMapRoot() {
                 isSimulatedMobile={isSimulatedMobile}
                 onScaleChange={setCurrentScale}
                 wheelStep={0.2}
+                background={config.seatColors.mapBackground}
               >
-                <Venue boundary={model.boundary}>
+                <Venue boundary={model.boundary ? { ...model.boundary, fill: config.seatColors.venueFill, stroke: config.seatColors.venueStroke } : undefined}>
                   <Stage
                     x={STAGE_CONFIG.x}
                     y={STAGE_CONFIG.y}
@@ -254,9 +263,7 @@ export function SeatMapRoot() {
               <ListingsPanel
                 className="w-full h-full"
                 listings={viewState.listings}
-                selection={viewState.selection.listingId
-                  ? { ...viewState.selection, listingId: null, seatIds: [] }
-                  : viewState.selection}
+                selection={panelSelection}
                 hoverState={viewState.hoverState}
                 onSelectListing={viewState.handleSelectFromPanel}
                 onHoverListing={viewState.handleHoverFromPanel}
