@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
+import { THEME_IDS, THEME_LABELS } from '../config/themes';
+import type { ThemeId } from '../config/themes';
 import { ChevronDown } from 'lucide-react';
 
 interface PrototypeControlsProps {
@@ -16,10 +18,12 @@ function ToggleGroup<T extends string>({
   options,
   value,
   onChange,
+  getLabel,
 }: {
   options: readonly T[];
   value: T;
   onChange: (v: T) => void;
+  getLabel?: (v: T) => string;
 }) {
   return (
     <div className="flex border border-gray-300 rounded overflow-hidden">
@@ -33,7 +37,7 @@ function ToggleGroup<T extends string>({
               : 'bg-white text-gray-600 hover:bg-gray-50'
           }`}
         >
-          {option}
+          {getLabel ? getLabel(option) : option}
         </button>
       ))}
     </div>
@@ -174,6 +178,17 @@ export function PrototypeControls({
             options={LAYOUT_MODE_OVERRIDES}
             value={config.layoutModeOverride}
             onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
+          />
+        </div>
+
+        {/* Theme */}
+        <div className="mb-6">
+          <label className="text-xs text-black font-bold block mb-2">Theme</label>
+          <ToggleGroup
+            options={THEME_IDS}
+            value={config.theme}
+            onChange={(theme: ThemeId) => onConfigChange({ theme })}
+            getLabel={(t) => THEME_LABELS[t]}
           />
         </div>
 

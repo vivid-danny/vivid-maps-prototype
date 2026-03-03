@@ -1,4 +1,5 @@
 import type { DisplayMode, SeatColors } from '../model/types';
+import type { ThemeId } from './themes';
 
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
 export type LayoutModeOverride = 'auto' | 'desktop' | 'mobile';
@@ -15,5 +16,7 @@ export interface SeatMapConfig {
   seatColors: SeatColors;
   pinDensity: PinDensityConfig;
   zoneRowDisplay: 'rows' | 'seats';
+  theme: ThemeId;
+  themeOverrides: Partial<Record<ThemeId, SeatColors>>;
 }
 

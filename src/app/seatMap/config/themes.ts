@@ -1,0 +1,54 @@
+import type { SeatColors } from '../model/types';
+
+export type ThemeId = 'branded' | 'neutral' | 'zone';
+
+export const THEMES: Record<ThemeId, SeatColors> = {
+  branded: {
+    available: '#CE3197',
+    unavailable: '#FAEAF5',
+    hover: '#7A1D59',
+    pressed: '#3E0649',
+    selected: '#312784',
+    connector: '#CE3197',
+    connectorHover: '#7A1D59',
+    connectorPressed: '#312784',
+    labelDefault: '#5D1A1A',
+    labelSelected: '#FFFFFF',
+    labelUnavailable: '#B0B0B0',
+  },
+  neutral: {
+    available: '#322d34',
+    unavailable: '#e4e1e5',
+    hover: '#837788',
+    pressed: '#7d3664',
+    selected: '#CE3197',
+    connector: '#83758a',
+    connectorHover: '#9c92a0',
+    connectorPressed: '#a14581',
+    labelDefault: '#ffffff',
+    labelSelected: '#FFFFFF',
+    labelUnavailable: '#B0B0B0',
+  },
+  zone: {
+    // Placeholder — reuses branded until follow-up session
+    available: '#CE3197',
+    unavailable: '#FAEAF5',
+    hover: '#7A1D59',
+    pressed: '#3E0649',
+    selected: '#312784',
+    connector: '#CE3197',
+    connectorHover: '#7A1D59',
+    connectorPressed: '#312784',
+    labelDefault: '#5D1A1A',
+    labelSelected: '#FFFFFF',
+    labelUnavailable: '#B0B0B0',
+  },
+};
+
+export const THEME_LABELS: Record<ThemeId, string> = {
+  branded: 'Branded',
+  neutral: 'Neutral',
+  zone: 'Zone',
+};
+
+export const THEME_IDS = ['branded', 'neutral', 'zone'] as const;
