@@ -7,6 +7,7 @@ import { Stage } from '../../components/Stage';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
+import { getZoneColor } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
 import { useSeatMapController } from '../state/useSeatMapController';
@@ -15,7 +16,7 @@ import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
-import type { Listing, SelectionState } from '../model/types';
+import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
@@ -47,6 +48,23 @@ export function SeatMapRoot() {
     setCurrentScale,
     transformRef,
   });
+
+  // For zone theme: build per-section SeatColors with zone-specific available/connector
+  const seatColorsBySection = useMemo(() => {
+    if (config.theme !== 'zone') return null;
+    const map = new Map<string, SeatColors>();
+    for (const section of model.sections) {
+      if (section.zone) {
+        const zoneColor = getZoneColor(section.zone);
+        map.set(section.sectionId, {
+          ...config.seatColors,
+          available: zoneColor,
+          connector: zoneColor,
+        });
+      }
+    }
+    return map;
+  }, [config.theme, config.seatColors, model.sections]);
 
   useEffect(() => {
     if (isMobile) return;
@@ -221,7 +239,7 @@ export function SeatMapRoot() {
                         key={sectionConfig.sectionId}
                         config={sectionConfig}
                         sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
-                        seatColors={config.seatColors}
+                        seatColors={seatColorsBySection?.get(sectionConfig.sectionId) ?? config.seatColors}
                         displayMode={controller.displayMode}
                         selection={viewState.selection}
                         onSelect={viewState.handleSelect}

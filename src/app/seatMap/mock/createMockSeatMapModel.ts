@@ -39,6 +39,7 @@ const DEMO_MAP: MapConfig = {
       y: 140,
       unavailableRatio: 1.0,
       listingCount: 0,
+      zone: 'lower-edge',
     },
     {
       sectionId: 'B',
@@ -54,6 +55,7 @@ const DEMO_MAP: MapConfig = {
         { row: 3, mappedRatio: 0.6 },
         { row: 7, mappedRatio: 0.0 },
       ],
+      zone: 'lower',
     },
     {
       sectionId: 'C',
@@ -65,6 +67,7 @@ const DEMO_MAP: MapConfig = {
       unavailableRatio: 0.5,
       listingCount: 20,
       seatsPerListing: [2, 8],
+      zone: 'lower',
     },
     {
       sectionId: 'D',
@@ -75,6 +78,7 @@ const DEMO_MAP: MapConfig = {
       y: 140,
       unavailableRatio: 1.0,
       listingCount: 0,
+      zone: 'lower-edge',
     },
     {
       sectionId: 'E',
@@ -90,6 +94,7 @@ const DEMO_MAP: MapConfig = {
         { row: 2, mappedRatio: 0.5 },
         { row: 6, mappedRatio: 0.0 },
       ],
+      zone: 'upper-edge',
     },
     {
       sectionId: 'F',
@@ -102,6 +107,7 @@ const DEMO_MAP: MapConfig = {
       listingCount: 18,
       seatsPerListing: [2, 8],
       soldOutRows: [3, 4, 5],
+      zone: 'upper',
     },
     {
       sectionId: 'G',
@@ -114,6 +120,7 @@ const DEMO_MAP: MapConfig = {
       listingCount: 20,
       seatsPerListing: [2, 8],
       singleListingRows: [9],
+      zone: 'upper',
     },
     {
       sectionId: 'A',
@@ -126,6 +133,7 @@ const DEMO_MAP: MapConfig = {
       listingCount: 12,
       seatsPerListing: [2, 6],
       singleListingRows: [10],
+      zone: 'upper-edge',
     },
   ],
   seed: 12345,
