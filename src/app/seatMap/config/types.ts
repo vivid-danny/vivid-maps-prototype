@@ -3,6 +3,7 @@ import type { ThemeId } from './themes';
 
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
 export type LayoutModeOverride = 'auto' | 'desktop' | 'mobile';
+export type ListingCardSize = 'dense' | 'standard' | 'spacious';
 
 export interface SeatMapConfig {
   layoutModeOverride: LayoutModeOverride;
@@ -18,5 +19,7 @@ export interface SeatMapConfig {
   zoneRowDisplay: 'rows' | 'seats';
   theme: ThemeId;
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
+  listingCardSize: ListingCardSize;
+  mobileMapHeight: number;
 }
 

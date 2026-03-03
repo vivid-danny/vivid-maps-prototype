@@ -168,6 +168,7 @@ export function SeatMapRoot() {
                 hoverColor={config.seatColors.hover}
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
+                listingCardSize={config.listingCardSize}
               />
               {showDetailOverlay && detailListing && (
                 <div
@@ -193,15 +194,15 @@ export function SeatMapRoot() {
 
           {/* Map area */}
           <div
-            className={`flex items-center justify-center ${
-              !isMobile ? 'flex-1 min-w-0 h-full' : 'h-[200px] shrink-0'
-            }`}
+            className={`flex items-center justify-center ${!isMobile ? 'flex-1 min-w-0 h-full' : 'shrink-0'}`}
+            style={isMobile ? { height: config.mobileMapHeight } : undefined}
           >
             <div ref={mapContainerRef} className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
               <MapContainer
                 ref={transformRef}
                 controller={controller}
                 isSimulatedMobile={isSimulatedMobile}
+                mobileMapHeight={config.mobileMapHeight}
                 onScaleChange={setCurrentScale}
                 wheelStep={0.2}
                 background={config.seatColors.mapBackground}
@@ -271,6 +272,7 @@ export function SeatMapRoot() {
                 hoverColor={config.seatColors.hover}
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
+                listingCardSize={config.listingCardSize}
               />
             </div>
           )}

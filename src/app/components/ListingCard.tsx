@@ -1,7 +1,14 @@
 import { useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
+import type { ListingCardSize } from '../seatMap/config/types';
 import { useHoverIntent } from './useHoverIntent';
 import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
+
+const LISTING_CARD_PADDING: Record<ListingCardSize, { top: number; right: number; bottom: number; left: number }> = {
+  dense:    { top: 4,  right: 12, bottom: 4,  left: 4  },
+  standard: { top: 12, right: 20, bottom: 12, left: 12 },
+  spacious: { top: 24, right: 32, bottom: 24, left: 24 },
+};
 
 interface ListingCardProps {
   listing: Listing;
@@ -13,9 +20,10 @@ interface ListingCardProps {
   hoverColor?: string;
   pressedColor?: string;
   disableHover?: boolean;
+  size?: ListingCardSize;
 }
 
-export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
+export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false, size = 'standard' }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
@@ -34,18 +42,20 @@ export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, 
   };
 
   // Determine style based on state priority: selected > pressed > hover > default
-  const cardBase = 'flex items-center justify-between rounded pl-3 pr-5 py-3 border cursor-pointer transition-colors ';
+  const cardBase = 'flex items-center justify-between rounded border cursor-pointer transition-colors ';
   let cardClass = cardBase;
-  let cardStyle: CSSProperties | undefined;
+  const pad = LISTING_CARD_PADDING[size];
+  const paddingStyle = { paddingTop: pad.top, paddingRight: pad.right, paddingBottom: pad.bottom, paddingLeft: pad.left };
+  let cardStyle: CSSProperties;
 
   if (isSelected) {
-    cardStyle = { backgroundColor: lightenColor(selectedColor, 80), borderColor: selectedColor };
+    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(selectedColor, 80), borderColor: selectedColor };
   } else if (!disableHover && localPressed) {
-    cardStyle = { backgroundColor: lightenColor(pressedColor, 80), borderColor: pressedColor };
+    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(pressedColor, 80), borderColor: pressedColor };
   } else if (!disableHover && (isHovered || localHover)) {
-    cardStyle = { backgroundColor: lightenColor(hoverColor, 80), borderColor: hoverColor };
+    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(hoverColor, 80), borderColor: hoverColor };
   } else {
-    cardStyle = { backgroundColor: '#fff', borderColor: '#e5e7eb' };
+    cardStyle = { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
   }
 
   return (

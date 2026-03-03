@@ -3,7 +3,6 @@ import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
-import { ChevronDown } from 'lucide-react';
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -107,25 +106,11 @@ function ColorControl({
   );
 }
 
-function Accordion({ label, children }: { label: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="mb-8">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-between w-full text-xs font-bold text-black mb-2 cursor-pointer"
-      >
-        {label}
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? '' : '-rotate-180'}`} />
-      </button>
-      {open && <div className="space-y-4">{children}</div>}
-    </div>
-  );
-}
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
 const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
+const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
@@ -162,7 +147,12 @@ export function PrototypeControls({
           Reset
         </button>
       </div>
-      <div className="flex border-b border-gray-200">
+      <div
+        className={`px-6 py-6 overflow-y-auto h-[calc(100%-77px)] transition-opacity no-scrollbar ${
+          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+      <div className="flex border-b border-gray-200 mb-8">
         {([
           { id: 'controls', label: 'Interaction' },
           { id: 'styles', label: 'Styles' },
@@ -180,37 +170,47 @@ export function PrototypeControls({
           </button>
         ))}
       </div>
-      <div
-        className={`p-6 overflow-y-auto h-[calc(100%-77px)] transition-opacity no-scrollbar ${
-          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {activeTab === 'controls' && (
-          <>
-            {/* Zoom Status */}
-            <div className="mb-6 p-3 bg-gray-50 rounded text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Zoom:</span>
-                <span className="font-mono">{currentScale.toFixed(2)}x</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Mode:</span>
-                <span className="font-medium">{displayMode}</span>
-              </div>
-            </div>
 
-            {/* Layout Mode Toggle */}
-            <div className="mb-6">
-              <label className="text-xs text-black font-bold block mb-2">Device</label>
-              <ToggleGroup
-                options={LAYOUT_MODE_OVERRIDES}
-                value={config.layoutModeOverride}
-                onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
-              />
+      {activeTab === 'controls' && (
+        <>
+          {/* Zoom Status */}
+          <div className="mb-6 p-3 bg-gray-50 rounded text-xs space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Zoom:</span>
+              <span className="font-mono">{currentScale.toFixed(2)}x</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Mode:</span>
+              <span className="font-medium">{displayMode}</span>
+            </div>
+          </div>
 
-            <Accordion label="Zoom">
-              <div>
+          {/* Layout Mode Toggle */}
+          <div className="mb-6">
+            <label className="text-xs text-black font-bold block mb-2">Device</label>
+            <ToggleGroup
+              options={LAYOUT_MODE_OVERRIDES}
+              value={config.layoutModeOverride}
+              onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
+            />
+          </div>
+
+          {/* Listing Card Size Toggle */}
+          <div className="mb-6">
+            <label className="text-xs text-black font-bold block mb-2">Listing Card</label>
+            <ToggleGroup
+              options={LISTING_CARD_SIZES}
+              value={config.listingCardSize}
+              onChange={(listingCardSize) => onConfigChange({ listingCardSize })}
+            />
+          </div>
+
+          <div className="mb-6">
+            <div className="text-xs font-bold text-black mb-2">Zoom</div>
+
+            <div className="space-y-3">
+              {/* Initial Display */}
+              <div className="mb-4">
                 <label className="text-xs text-gray-600 block mb-2">Initial Display</label>
                 <ToggleGroup
                   options={DISPLAY_MODES}
@@ -218,7 +218,9 @@ export function PrototypeControls({
                   onChange={(initialDisplay) => onConfigChange({ initialDisplay })}
                 />
               </div>
-              <div>
+
+              {/* Zoomed-In Display */}
+              <div className="mb-4">
                 <label className="text-xs text-gray-600 block mb-2">Zoomed-In Display</label>
                 <ToggleGroup
                   options={DISPLAY_MODES}
@@ -226,7 +228,9 @@ export function PrototypeControls({
                   onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
                 />
               </div>
-              <div>
+
+              {/* Mixed Inventory Display */}
+              <div className="mb-4">
                 <label className="text-xs text-gray-600 block mb-2">Mixed Inventory Display</label>
                 <ToggleGroup
                   options={ZONE_ROW_DISPLAYS}
@@ -234,171 +238,191 @@ export function PrototypeControls({
                   onChange={(zoneRowDisplay) => onConfigChange({ zoneRowDisplay })}
                 />
               </div>
-              <div className='mt-9'>
-                <SliderControl
-                  label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
-                  value={config.desktopInitialScale}
-                  onChange={(desktopInitialScale) => onConfigChange({ desktopInitialScale })}
-                  min={0.5} max={3} step={0.1}
-                />
-                <SliderControl
-                  label={`Desktop Zoom Threshold: ${config.desktopZoomThreshold}x`}
-                  value={config.desktopZoomThreshold}
-                  onChange={(desktopZoomThreshold) => onConfigChange({ desktopZoomThreshold })}
-                  min={2} max={15} step={0.5}
-                />
-                <SliderControl
-                  label={`Mobile Initial Scale: ${config.mobileInitialScale}`}
-                  value={config.mobileInitialScale}
-                  onChange={(mobileInitialScale) => onConfigChange({ mobileInitialScale })}
-                  min={0.2} max={1.5} step={0.1}
-                />
-                <SliderControl
-                  label={`Mobile Zoom Threshold: ${config.mobileZoomThreshold}x`}
-                  value={config.mobileZoomThreshold}
-                  onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
-                  min={1} max={10} step={0.5}
-                />
-              </div>
-            </Accordion>
+            </div>
+          </div>
 
-            <Accordion label="Pin">
-              <div className="space-y-3">
-                <SliderControl
-                  label={`Sections: ${Math.round(config.pinDensity.sections * 100)}%`}
-                  value={PIN_DENSITY_STOPS.includes(config.pinDensity.sections as never)
-                    ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.sections as never)
-                    : PIN_DENSITY_STOPS.length - 1}
-                  onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, sections: PIN_DENSITY_STOPS[Math.round(i)] } })}
-                  min={0} max={9} step={1}
-                />
-                <SliderControl
-                  label={`Rows: ${Math.round(config.pinDensity.rows * 100)}%`}
-                  value={PIN_DENSITY_STOPS.includes(config.pinDensity.rows as never)
-                    ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.rows as never)
-                    : PIN_DENSITY_STOPS.length - 1}
-                  onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, rows: PIN_DENSITY_STOPS[Math.round(i)] } })}
-                  min={0} max={9} step={1}
-                />
-                <SliderControl
-                  label={`Seats: ${Math.round(config.pinDensity.seats * 100)}%`}
-                  value={PIN_DENSITY_STOPS.includes(config.pinDensity.seats as never)
-                    ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.seats as never)
-                    : PIN_DENSITY_STOPS.length - 1}
-                  onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, seats: PIN_DENSITY_STOPS[Math.round(i)] } })}
-                  min={0} max={9} step={1}
-                />
-              </div>
-            </Accordion>
-          </>
-        )}
+          {/* Initial Scales */}
+          <div className="mb-6">
+            <div className="text-xs font-bold text-black mb-2">Initial Scales</div>
 
-        {activeTab === 'styles' && (
-          <>
-            {/* Theme */}
-            <div className="mb-6">
-              <label className="text-xs text-black font-bold block mb-2">Theme</label>
-              <ToggleGroup
-                options={THEME_IDS}
-                value={config.theme}
-                onChange={(theme: ThemeId) => onConfigChange({ theme })}
-                getLabel={(t) => THEME_LABELS[t]}
+            <div className="space-y-3">
+              <SliderControl
+                label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
+                value={config.desktopInitialScale}
+                onChange={(desktopInitialScale) => onConfigChange({ desktopInitialScale })}
+                min={0.5} max={3} step={0.1}
+              />
+              <SliderControl
+                label={`Desktop Zoom Threshold: ${config.desktopZoomThreshold}x`}
+                value={config.desktopZoomThreshold}
+                onChange={(desktopZoomThreshold) => onConfigChange({ desktopZoomThreshold })}
+                min={2} max={15} step={0.5}
+              />
+              <SliderControl
+                label={`Mobile Initial Scale: ${config.mobileInitialScale}`}
+                value={config.mobileInitialScale}
+                onChange={(mobileInitialScale) => onConfigChange({ mobileInitialScale })}
+                min={0.2} max={1.5} step={0.1}
+              />
+              <SliderControl
+                label={`Mobile Zoom Threshold: ${config.mobileZoomThreshold}x`}
+                value={config.mobileZoomThreshold}
+                onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
+                min={1} max={10} step={0.5}
+              />
+              <SliderControl
+                label={`Mobile Map Height: ${config.mobileMapHeight}px`}
+                value={config.mobileMapHeight}
+                onChange={(mobileMapHeight) => onConfigChange({ mobileMapHeight })}
+                min={200} max={560} step={10}
+              />
+              </div>
+          </div>
+
+          {/* Pin Density */}
+          <div className="mb-6">
+            <div className="text-xs font-bold text-black mb-2">Pin</div>
+            <div className="space-y-3">
+            <SliderControl
+              label={`Sections: ${Math.round(config.pinDensity.sections * 100)}%`}
+              value={PIN_DENSITY_STOPS.includes(config.pinDensity.sections as never)
+                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.sections as never)
+                : PIN_DENSITY_STOPS.length - 1}
+              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, sections: PIN_DENSITY_STOPS[Math.round(i)] } })}
+              min={0} max={9} step={1}
+            />
+            <SliderControl
+              label={`Rows: ${Math.round(config.pinDensity.rows * 100)}%`}
+              value={PIN_DENSITY_STOPS.includes(config.pinDensity.rows as never)
+                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.rows as never)
+                : PIN_DENSITY_STOPS.length - 1}
+              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, rows: PIN_DENSITY_STOPS[Math.round(i)] } })}
+              min={0} max={9} step={1}
+            />
+            <SliderControl
+              label={`Seats: ${Math.round(config.pinDensity.seats * 100)}%`}
+              value={PIN_DENSITY_STOPS.includes(config.pinDensity.seats as never)
+                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.seats as never)
+                : PIN_DENSITY_STOPS.length - 1}
+              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, seats: PIN_DENSITY_STOPS[Math.round(i)] } })}
+              min={0} max={9} step={1}
+            />
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'styles' && (
+        <>
+          {/* Theme */}
+          <div className="mb-6">
+            <label className="text-xs text-black font-bold block mb-2">Theme</label>
+            <ToggleGroup
+              options={THEME_IDS}
+              value={config.theme}
+              onChange={(theme: ThemeId) => onConfigChange({ theme })}
+              getLabel={(t) => THEME_LABELS[t]}
+            />
+          </div>
+
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Venue</div>
+            <div className="space-y-3">
+              <ColorControl
+                label="Fill"
+                value={config.seatColors.venueFill}
+                onChange={(value) => handleColorChange('venueFill', value)}
+              />
+              <ColorControl
+                label="Stroke"
+                value={config.seatColors.venueStroke}
+                onChange={(value) => handleColorChange('venueStroke', value)}
+              />
+              <ColorControl
+                label="Map Background"
+                value={config.seatColors.mapBackground}
+                onChange={(value) => handleColorChange('mapBackground', value)}
               />
             </div>
+          </div>
 
-            <Accordion label="Venue">
-              <div className="space-y-3">
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Inventory</div>
+            <div className="space-y-3">
+              {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const).map((colorKey) => (
                 <ColorControl
-                  label="Fill"
-                  value={config.seatColors.venueFill}
-                  onChange={(value) => handleColorChange('venueFill', value)}
+                  key={colorKey}
+                  label={colorKey}
+                  value={config.seatColors[colorKey]}
+                  onChange={(value) => handleColorChange(colorKey, value)}
                 />
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Connector</div>
+            <div className="space-y-3">
+              <SliderControl
+                label={`Connector Width: ${config.connectorWidth}px`}
+                value={config.connectorWidth}
+                onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
+                min={0} max={4} step={0.5}
+              />
+              {([
+                { key: 'connector' as const, label: 'Default' },
+                { key: 'connectorHover' as const, label: 'Hover' },
+                { key: 'connectorPressed' as const, label: 'Pressed' },
+              ]).map(({ key, label }) => (
                 <ColorControl
-                  label="Stroke"
-                  value={config.seatColors.venueStroke}
-                  onChange={(value) => handleColorChange('venueStroke', value)}
+                  key={key}
+                  label={label}
+                  value={config.seatColors[key]}
+                  onChange={(value) => handleColorChange(key, value)}
                 />
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Pins</div>
+            <div className="space-y-3">
+              {([
+                { key: 'pinDefault' as const, label: 'Default' },
+                { key: 'pinHovered' as const, label: 'Hovered' },
+                { key: 'pinPressed' as const, label: 'Pressed' },
+                { key: 'pinSelected' as const, label: 'Selected' },
+              ]).map(({ key, label }) => (
                 <ColorControl
-                  label="Map Background"
-                  value={config.seatColors.mapBackground}
-                  onChange={(value) => handleColorChange('mapBackground', value)}
+                  key={key}
+                  label={label}
+                  value={config.seatColors[key]}
+                  onChange={(value) => handleColorChange(key, value)}
                 />
-              </div>
-            </Accordion>
+              ))}
+            </div>
+          </div>
 
-            <Accordion label="Inventory">
-              <div className="space-y-3">
-                {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const).map((colorKey) => (
-                  <ColorControl
-                    key={colorKey}
-                    label={colorKey}
-                    value={config.seatColors[colorKey]}
-                    onChange={(value) => handleColorChange(colorKey, value)}
-                  />
-                ))}
-              </div>
-            </Accordion>
-
-            <Accordion label="Connector">
-              <div className="space-y-3">
-                <SliderControl
-                  label={`Connector Width: ${config.connectorWidth}px`}
-                  value={config.connectorWidth}
-                  onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-                  min={0.5} max={4} step={0.5}
+          <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Section Labels</div>
+            <div className="space-y-3">
+              {([
+                { key: 'labelDefault' as const, label: 'Available' },
+                { key: 'labelUnavailable' as const, label: 'Unavailable' },
+                { key: 'labelSelected' as const, label: 'Selected' },
+              ]).map(({ key, label }) => (
+                <ColorControl
+                  key={key}
+                  label={label}
+                  value={config.seatColors[key]}
+                  onChange={(value) => handleColorChange(key, value)}
                 />
-                {([
-                  { key: 'connector' as const, label: 'Default' },
-                  { key: 'connectorHover' as const, label: 'Hover' },
-                  { key: 'connectorPressed' as const, label: 'Pressed' },
-                ]).map(({ key, label }) => (
-                  <ColorControl
-                    key={key}
-                    label={label}
-                    value={config.seatColors[key]}
-                    onChange={(value) => handleColorChange(key, value)}
-                  />
-                ))}
-              </div>
-            </Accordion>
-
-            <Accordion label="Pins">
-              <div className="space-y-3">
-                {([
-                  { key: 'pinDefault' as const, label: 'Default' },
-                  { key: 'pinHovered' as const, label: 'Hovered' },
-                  { key: 'pinPressed' as const, label: 'Pressed' },
-                  { key: 'pinSelected' as const, label: 'Selected' },
-                ]).map(({ key, label }) => (
-                  <ColorControl
-                    key={key}
-                    label={label}
-                    value={config.seatColors[key]}
-                    onChange={(value) => handleColorChange(key, value)}
-                  />
-                ))}
-              </div>
-            </Accordion>
-
-            <Accordion label="Section Labels">
-              <div className="space-y-3">
-                {([
-                  { key: 'labelDefault' as const, label: 'Available' },
-                  { key: 'labelUnavailable' as const, label: 'Unavailable' },
-                  { key: 'labelSelected' as const, label: 'Selected' },
-                ]).map(({ key, label }) => (
-                  <ColorControl
-                    key={key}
-                    label={label}
-                    value={config.seatColors[key]}
-                    onChange={(value) => handleColorChange(key, value)}
-                  />
-                ))}
-              </div>
-            </Accordion>
-          </>
-        )}
-      </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
+  </div>
   );
 }
