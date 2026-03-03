@@ -217,7 +217,7 @@ export function SeatsView({
       {section.rows.map((row, rowIndex) => {
         if (row.isZoneRow) return null;
         return row.seats.slice(0, seatsPerRow).map((seat, seatIndex) => {
-          if (!hasConnector(rowIndex, seatIndex)) return null;
+          if (connectorWidth === 0 || !hasConnector(rowIndex, seatIndex)) return null;
 
           const { cx, cy } = getSeatCenter(rowIndex, seatIndex);
 
@@ -299,7 +299,7 @@ export function SeatsView({
               {...zoneRowHandlers}
             >
               {/* Connectors between adjacent seats */}
-              {Array.from({ length: seatsPerRow - 1 }, (_, seatIndex) => {
+              {connectorWidth > 0 && Array.from({ length: seatsPerRow - 1 }, (_, seatIndex) => {
                 const { cx } = getSeatCenter(rowIndex, seatIndex);
                 const { cy } = getSeatCenter(rowIndex, seatIndex);
                 return (
