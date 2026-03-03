@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
@@ -29,6 +29,7 @@ export function useSeatMapPrototypeViewState({
   const [viewMode, setViewMode] = useState<ViewMode>('listings');
 
   const listings = model.listings;
+  const pendingZoomRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedListing = useMemo(() => {
     if (!selection.listingId) return null;
@@ -38,7 +39,20 @@ export function useSeatMapPrototypeViewState({
   const listingsBySection = model.listingsBySection;
   const pinsBySection = model.pinsBySection;
 
+  // Cleanup pending zoom on unmount
   useEffect(() => {
+    return () => {
+      if (pendingZoomRef.current) clearTimeout(pendingZoomRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Cancel any pending step-2 zoom when layout resets
+    if (pendingZoomRef.current) {
+      clearTimeout(pendingZoomRef.current);
+      pendingZoomRef.current = null;
+    }
+
     const timeout = setTimeout(() => {
       transformRef.current?.centerView(controller.initialScale, 0);
       setSelection(EMPTY_SELECTION);
@@ -51,20 +65,47 @@ export function useSeatMapPrototypeViewState({
   const navigateToSelection = (sel: SelectionState) => {
     if (!sel.sectionId) return;
 
-    let elementId = `section-${sel.sectionId}`;
-    if (controller.displayMode === 'seats' && sel.seatIds.length > 0) {
+    // Cancel any in-flight step-2 zoom
+    if (pendingZoomRef.current) {
+      clearTimeout(pendingZoomRef.current);
+      pendingZoomRef.current = null;
+    }
+
+    // Determine the fine-grained target element (row or seat)
+    let fineElementId: string | null = null;
+    if (sel.seatIds.length > 0) {
       const midIndex = Math.floor(sel.seatIds.length / 2);
-      elementId = sel.seatIds[midIndex];
+      fineElementId = sel.seatIds[midIndex];
     } else if (sel.rowId) {
-      // Works for rows mode AND zone row selection in seats mode
-      elementId = sel.rowId;
+      fineElementId = sel.rowId;
     }
 
     const targetScale = currentScale >= controller.zoomThreshold
       ? currentScale
       : controller.zoomThreshold + 0.5;
 
-    transformRef.current?.zoomToElement(elementId, targetScale, 300, 'easeOut');
+    const alreadyZoomedIn = currentScale >= controller.zoomThreshold;
+
+    if (alreadyZoomedIn) {
+      // Already zoomed in — row/seat elements are in the DOM, single-step zoom
+      const elementId = fineElementId ?? `section-${sel.sectionId}`;
+      transformRef.current?.zoomToElement(elementId, targetScale, 300, 'easeOut');
+    } else {
+      // Zoomed out — row/seat elements not in DOM yet.
+      // Step 1: zoom to the section (always in DOM) to trigger display mode change
+      transformRef.current?.zoomToElement(`section-${sel.sectionId}`, targetScale, 300, 'easeOut');
+
+      // Step 2: after animation + re-render, refine to row/seat
+      if (fineElementId) {
+        const targetElementId = fineElementId;
+        pendingZoomRef.current = setTimeout(() => {
+          pendingZoomRef.current = null;
+          if (document.getElementById(targetElementId)) {
+            transformRef.current?.zoomToElement(targetElementId, targetScale, 200, 'easeOut');
+          }
+        }, 400);
+      }
+    }
   };
 
   const handleSelect = (newSelection: SelectionState) => {
