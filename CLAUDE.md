@@ -43,12 +43,19 @@ src/
     │   ├── ListingCard.tsx               # Individual listing card
     │   ├── Pin.tsx                       # Price pin overlay
     │   ├── useHoverIntent.ts             # Hover delay hook (100ms)
-    │   ├── types.ts                      # All TypeScript interfaces
     │   ├── constants.ts                  # Dimensions, thresholds, helpers
-    │   └── utils.ts                      # hashString, parseSeatId
+    │   └── ticketDetail/                 # Ticket detail overlay components
+    │       ├── TicketDetail.tsx
+    │       ├── TicketDetailHeader.tsx
+    │       ├── TicketDetailCheckout.tsx
+    │       ├── TicketDetailDelivery.tsx
+    │       ├── TicketDetailEventInfo.tsx
+    │       ├── TicketDetailInfo.tsx
+    │       └── TicketDetailPerks.tsx
     └── seatMap/                          # Seat map feature
         ├── config/
         │   ├── types.ts                  # SeatMapConfig interface
+        │   ├── themes.ts                 # Color themes, ThemeId, DEAL_SCORE_COLORS, getDealColor
         │   └── defaults.ts               # DEFAULT_SEAT_MAP_CONFIG
         ├── model/
         │   └── types.ts                  # Core domain types (SeatMapModel, etc.)
@@ -64,6 +71,7 @@ src/
         │   └── createMockSeatMapModel.ts # Orchestrates generation
         ├── state/
         │   ├── useSeatMapConfig.ts       # Config state management
+        │   ├── useLayoutMode.ts          # Viewport layout mode detection (mobile vs desktop)
         │   ├── useSeatMapController.ts   # Derived values (displayMode, etc.)
         │   └── useSeatMapPrototypeViewState.ts  # Selection, hover, navigation
         └── components/
@@ -88,7 +96,7 @@ src/
 - **Constants:** `UPPER_SNAKE_CASE` for module-level constants (`SEAT_SIZE`, `ZOOM_THRESHOLD`)
 
 ### State Management
-- useState/useMemo/useCallback in App.tsx — no Context, Redux, or Zustand
+- useState/useMemo/useCallback in feature hooks — no Context, Redux, or Zustand
 - Props drilling to child components
 - `useMemo` for expensive computations (data generation, grouping, filtering)
 - Custom `useHoverIntent` hook for delayed hover callbacks

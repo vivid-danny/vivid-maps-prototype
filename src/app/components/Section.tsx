@@ -44,6 +44,7 @@ interface SectionProps {
   disableHover?: boolean;
   pinDensity?: PinDensityConfig;
   zoneRowDisplay?: 'rows' | 'seats';
+  dealColorOverrides?: Map<string, string> | null;
 }
 
 export function Section({
@@ -64,6 +65,7 @@ export function Section({
   disableHover = false,
   pinDensity = { sections: 0.80, rows: 0.45, seats: 0.28 },
   zoneRowDisplay = 'rows',
+  dealColorOverrides = null,
 }: SectionProps) {
   // Handle section selection (only sets sectionId)
   const handleSelectSection = (sectionId: string) => {
@@ -143,6 +145,25 @@ export function Section({
     selectedListing,
   }), [hoverState, displayMode, config.sectionId, sectionListings, selectedListing]);
 
+  // For deal theme rows mode: compute per-row color from cheapest listing in that row
+  const rowColorOverrides = useMemo(() => {
+    if (!dealColorOverrides || displayMode !== 'rows') return null;
+    const cheapestByRow = new Map<string, { price: number; listingId: string }>();
+    for (const listing of sectionListings) {
+      if (!listing.rowId) continue;
+      const existing = cheapestByRow.get(listing.rowId);
+      if (!existing || listing.price < existing.price) {
+        cheapestByRow.set(listing.rowId, { price: listing.price, listingId: listing.listingId });
+      }
+    }
+    const result = new Map<string, string>();
+    for (const [rowId, { listingId }] of cheapestByRow) {
+      const color = dealColorOverrides.get(listingId);
+      if (color) result.set(rowId, color);
+    }
+    return result;
+  }, [dealColorOverrides, displayMode, sectionListings]);
+
   // All modes render a single SVG with identical dimensions
   const renderContent = () => {
     switch (displayMode) {
@@ -171,6 +192,7 @@ export function Section({
             externalHoveredRowId={disableHover ? null : (isExternalSectionHover ? hoverState.rowId : null)}
             onRowHover={disableHover ? undefined : handleRowHover}
             hoverTransitionMs={hoverTransitionMs}
+            rowColorOverrides={rowColorOverrides}
           />
         );
       case 'seats':
@@ -191,6 +213,7 @@ export function Section({
             onZoneRowHover={disableHover ? undefined : handleZoneRowHover}
             externalHoveredRowId={disableHover ? null : externalHoveredZoneRowId}
             zoneRowDisplay={zoneRowDisplay}
+            listingColorOverrides={dealColorOverrides}
           />
         );
     }

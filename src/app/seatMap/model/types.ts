@@ -28,6 +28,7 @@ export interface SeatColors {
   connector: string;
   connectorHover: string;
   connectorPressed: string;
+  connectorSelected: string;
   labelDefault: string;
   labelSelected: string;
   labelUnavailable: string;
@@ -83,6 +84,8 @@ export interface SectionConfig {
   seatZoneRows?: SeatZoneRowConfig[];
   // Optional: row numbers (1-indexed) where all seats are grouped into one listing
   singleListingRows?: number[];
+  // Optional: zone group name for zone-based color theming
+  zone?: string;
 }
 
 export interface BoundaryConfig {

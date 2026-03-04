@@ -7,6 +7,7 @@ import { Stage } from '../../components/Stage';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
+import { getDealColor, getZoneColor } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
 import { useSeatMapController } from '../state/useSeatMapController';
@@ -15,7 +16,7 @@ import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
-import type { Listing, SelectionState } from '../model/types';
+import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
@@ -47,6 +48,44 @@ export function SeatMapRoot() {
     setCurrentScale,
     transformRef,
   });
+
+  // For zone/deal themes: build per-section SeatColors with overridden available/connector
+  const seatColorsBySection = useMemo(() => {
+    if (config.theme !== 'zone' && config.theme !== 'deal') return null;
+    const map = new Map<string, SeatColors>();
+    for (const section of model.sections) {
+      if (config.theme === 'zone' && section.zone) {
+        const zoneColor = getZoneColor(section.zone);
+        map.set(section.sectionId, {
+          ...config.seatColors,
+          available: zoneColor,
+          connector: zoneColor,
+        });
+      } else if (config.theme === 'deal') {
+        const sectionListings = model.listingsBySection.get(section.sectionId);
+        if (sectionListings && sectionListings.length > 0) {
+          const cheapest = sectionListings.reduce((a, b) => a.price <= b.price ? a : b);
+          const dealColor = getDealColor(cheapest.dealScore);
+          map.set(section.sectionId, {
+            ...config.seatColors,
+            available: dealColor,
+            connector: dealColor,
+          });
+        }
+      }
+    }
+    return map;
+  }, [config.theme, config.seatColors, model.sections, model.listingsBySection]);
+
+  // For deal theme: build per-listing color overrides (listingId → deal color)
+  const dealColorOverrides = useMemo(() => {
+    if (config.theme !== 'deal') return null;
+    const map = new Map<string, string>();
+    for (const listing of model.listings) {
+      map.set(listing.listingId, getDealColor(listing.dealScore));
+    }
+    return map;
+  }, [config.theme, model.listings]);
 
   useEffect(() => {
     if (isMobile) return;
@@ -221,7 +260,7 @@ export function SeatMapRoot() {
                         key={sectionConfig.sectionId}
                         config={sectionConfig}
                         sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
-                        seatColors={config.seatColors}
+                        seatColors={seatColorsBySection?.get(sectionConfig.sectionId) ?? config.seatColors}
                         displayMode={controller.displayMode}
                         selection={viewState.selection}
                         onSelect={viewState.handleSelect}
@@ -235,6 +274,7 @@ export function SeatMapRoot() {
                         disableHover={isMobile}
                         pinDensity={config.pinDensity}
                         zoneRowDisplay={config.zoneRowDisplay}
+                        dealColorOverrides={dealColorOverrides}
                       />
                     );
                   })}

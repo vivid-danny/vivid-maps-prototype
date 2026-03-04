@@ -189,6 +189,22 @@ open   ──[isDetailOpen → false]─▶ exiting  ──[350ms]──▶ clos
 **Exit animation (`detailSlideOut`, 350ms, `cubic-bezier(0.55, 0.085, 0.68, 0.53)`):**
 - Reverse: slides down and out
 
+### Ticket Detail Content
+
+The overlay is composed of six stacked sections (all scroll together):
+
+| Section | Contents |
+|---------|----------|
+| **Header** | Seat view image (200px); X/back button top-left |
+| **Info** | Section label, row number, ticket count, price per ticket ("ea. · Fees Incl."); deal score badge (if `dealScore > 7`) |
+| **Checkout** | Quantity dropdown (1 → `quantityAvailable`) + Checkout button |
+| **Perks** | List of seat benefit labels + descriptions (e.g., "Aisle", "Front Row", "VIP") |
+| **Delivery** | Delivery method label + description (e.g., "Mobile Transfer") |
+| **Event Info** | Event name/date (Calendar icon) + venue name/address (Map Pin icon) |
+
+**Mobile layout difference:** Checkout is removed from the scroll area and pinned as a fixed
+footer with a top border — keeps the CTA always visible regardless of scroll position.
+
 ---
 
 ## Pin System
@@ -273,6 +289,7 @@ is at the pin tip (bottom-center).
 | Selected | `selectedColor` darkened 60% | 20 |
 
 **Deal score badge:** A green `#4CAF50` badge appears on the pin when `dealScore > 7`.
+See [Deal Score](#deal-score) for the full tier system.
 
 **Seat view card:** A 160×100px image preview appears **on hover only** (not on selected
 state). Shows the seat view image with a `Section {label}, Row {num}` overlay badge.
@@ -295,6 +312,67 @@ When a listing is selected or hovered, a dedicated overlay pin renders at higher
 ### Mobile Pin Count
 
 On mobile, only `ceil(pins.length / 2)` regular pins are shown per section to reduce clutter.
+
+---
+
+## Deal Score
+
+Each `Listing` has a `dealScore: number` field (0–10 scale). It drives color tiers and badge
+display across three surfaces:
+
+### Color Tiers
+
+| Range | Color | Hex |
+|-------|-------|-----|
+| ≤ 5.0 | Red | `#D94F4F` |
+| ≤ 6.0 | Orange | `#E0873E` |
+| ≤ 7.0 | Yellow | `#D4A843` |
+| > 7.0 | Green | `#4CAD68` |
+
+(`getDealColor(dealScore)` in `seatMap/config/themes.ts`)
+
+### Badge Surfaces
+
+| Surface | Shown When | Content |
+|---------|-----------|---------|
+| Price pin | `dealScore > 7` | Green `#4CAF50` box with score number |
+| Listing card | `dealScore > 7` | Green pill with score number |
+| Ticket detail (Info section) | `dealScore > 7` | Green badge with score + label ("Good" / "Great" / "Excellent") |
+
+---
+
+## Color Themes
+
+`ThemeId = 'branded' | 'neutral' | 'zone' | 'deal'`
+
+Themes control the `SeatColors` object applied to all seat/connector/pin rendering. Selectable
+at runtime via prototype controls.
+
+| Theme | Seat Color Strategy |
+|-------|---------------------|
+| `branded` | Vivid pink (`#CE3197`) — opinionated brand color |
+| `neutral` | Muted gray (`#5B6166`) — low visual noise |
+| `zone` | Per-section color based on zone group name |
+| `deal` | Per-listing color based on `dealScore` (uses Deal Score tiers above) |
+
+### Zone Theme
+
+Zone group names map to preset colors:
+
+| Zone Name | Color |
+|-----------|-------|
+| `lower` | `#D95BA0` |
+| `lower-edge` | `#EB78A4` |
+| `upper` | `#5690D6` |
+| `upper-edge` | `#55ADD4` |
+
+Unknown zone names fall back to a deterministic 5-color palette via `hashString(zoneName)`.
+
+### Deal Theme
+
+In sections/rows display modes, each section renders at the color of its cheapest listing's
+deal score tier. In seats mode, each listing's seats render at that listing's individual deal
+score color — creating a heat map across the section.
 
 ---
 
@@ -488,4 +566,21 @@ Restructured codebase from a flat organization to a domain-driven feature folder
 - Added `connectorHover` and `connectorPressed` to `SeatColors` interface and defaults (`#7A1D59` and `#312784`). Connectors use these for hover/pressed feedback instead of the seat circle colors.
 - Prototype controls: connector width slider and three connector color pickers (`connector`, `connectorHover`, `connectorPressed`) moved into their own **Connector** accordion section.
 
-*Last updated: Mar 2, 2026*
+---
+
+### March 4, 2026 — Color Themes + Zone Colors + Deal Score
+
+**Changes:**
+- Added `ThemeId` (`branded` | `neutral` | `zone` | `deal`) to `SeatMapConfig`. Theme controls
+  seat/connector/pin colors globally via the `THEMES` record in `seatMap/config/themes.ts`.
+- **Zone theme:** Per-section seat color derived from the section's `zoneName`. Preset palette
+  maps `lower`, `lower-edge`, `upper`, `upper-edge` to specific colors; unknown zone names use
+  a hash-based fallback palette.
+- **Deal theme:** Seat color overridden per-listing (seats mode) or per-section (sections/rows
+  modes) using the deal score color tiers from `getDealColor()`.
+- Added `dealScore: number` (0–10 scale) field to `Listing`. Drives the 4-tier color system
+  (`getDealColor`) and badge display across pins, listing cards, and ticket detail.
+- Added `TicketDetail` overlay with six content sections (Header, Info, Checkout, Perks,
+  Delivery, EventInfo). Desktop: Checkout inline. Mobile: Checkout pinned as fixed footer.
+
+*Last updated: Mar 4, 2026*

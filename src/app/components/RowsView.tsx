@@ -13,6 +13,7 @@ interface RowsViewProps {
   externalHoveredRowId?: string | null;
   onRowHover?: (rowId: string | null) => void;
   hoverTransitionMs?: number;
+  rowColorOverrides?: Map<string, string> | null;
 }
 
 export function RowsView({
@@ -24,6 +25,7 @@ export function RowsView({
   externalHoveredRowId = null,
   onRowHover,
   hoverTransitionMs = 150,
+  rowColorOverrides = null,
 }: RowsViewProps) {
   const [localHoveredRowId, setLocalHoveredRowId] = useState<string | null>(null);
   const [pressedRowId, setPressedRowId] = useState<string | null>(null);
@@ -56,7 +58,7 @@ export function RowsView({
         return seatColors.hover;
       case 'available':
       default:
-        return seatColors.available;
+        return rowColorOverrides?.get(rowId) ?? seatColors.available;
     }
   };
 
