@@ -1,7 +1,22 @@
 import type { SeatColors } from '../model/types';
 import { hashString } from '../behavior/utils';
 
-export type ThemeId = 'branded' | 'neutral' | 'zone';
+export type ThemeId = 'branded' | 'neutral' | 'zone' | 'deal';
+
+// Deal score color tiers
+export const DEAL_SCORE_COLORS = {
+  red: '#D94F4F',
+  orange: '#E0873E',
+  yellow: '#D4A843',
+  green: '#4CAD68',
+} as const;
+
+export function getDealColor(dealScore: number): string {
+  if (dealScore <= 5.0) return DEAL_SCORE_COLORS.red;
+  if (dealScore <= 6.0) return DEAL_SCORE_COLORS.orange;
+  if (dealScore <= 7.0) return DEAL_SCORE_COLORS.yellow;
+  return DEAL_SCORE_COLORS.green;
+}
 
 // Zone palette: maps zone group names → hex colors
 export const ZONE_PALETTE: Record<string, string> = {
@@ -19,6 +34,29 @@ export function getZoneColor(zoneName: string): string {
   const index = Math.abs(hashString(zoneName)) % FALLBACK_HUES.length;
   return FALLBACK_HUES[index];
 }
+
+// Shared base for zone and deal themes — available/connector are overridden at runtime
+const ZONE_DEAL_COLORS: SeatColors = {
+  available: '#8B8FA3',
+  unavailable: '#f5f0f3',
+  hover: '#7A1D59',
+  pressed: '#0d0646',
+  selected: '#cc3394',
+  connector: '#ebe0e7',
+  connectorHover: '#d7c1cf',
+  connectorPressed: '#c4c3d5',
+  connectorSelected: '#e4e1ef',
+  labelDefault: '#F7F8F9',
+  labelSelected: '#FFFFFF',
+  labelUnavailable: '#A5ADB4',
+  pinDefault: '#1a1a2e',
+  pinHovered: '#2A2E31',
+  pinPressed: '#52143B',
+  pinSelected: '#52143B',
+  venueFill: '#FFFFFF',
+  venueStroke: '#A0A2B3',
+  mapBackground: '#EFEFF6',
+};
 
 export const THEMES: Record<ThemeId, SeatColors> = {
   branded: {
@@ -63,34 +101,15 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     venueStroke: '#A0A2B3',
     mapBackground: '#EFEFF6',
   },
-  zone: {
-    // Base "available" is overridden per-section via zone palette
-    available: '#8B8FA3',
-    unavailable: '#f5f0f3',
-    hover: '#7A1D59',
-    pressed: '#0d0646',
-    selected: '#cc3394',
-    connector: '#ebe0e7',
-    connectorHover: '#d7c1cf',
-    connectorPressed: '#c4c3d5',
-    connectorSelected: '#e4e1ef',
-    labelDefault: '#F7F8F9',
-    labelSelected: '#FFFFFF',
-    labelUnavailable: '#A5ADB4',
-    pinDefault: '#1a1a2e',
-    pinHovered: '#2A2E31',
-    pinPressed: '#52143B',
-    pinSelected: '#52143B',
-    venueFill: '#FFFFFF',
-    venueStroke: '#A0A2B3',
-    mapBackground: '#EFEFF6',
-  },
+  zone: ZONE_DEAL_COLORS,
+  deal: ZONE_DEAL_COLORS,
 };
 
 export const THEME_LABELS: Record<ThemeId, string> = {
   branded: 'Branded',
   neutral: 'Neutral',
   zone: 'Zone',
+  deal: 'Deal',
 };
 
-export const THEME_IDS = ['branded', 'neutral', 'zone'] as const;
+export const THEME_IDS = ['branded', 'neutral', 'zone', 'deal'] as const;

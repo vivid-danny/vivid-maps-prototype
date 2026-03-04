@@ -21,6 +21,7 @@ interface SeatsViewProps {
   onZoneRowHover?: (rowId: string | null) => void;
   externalHoveredRowId?: string | null;
   zoneRowDisplay?: 'rows' | 'seats';
+  listingColorOverrides?: Map<string, string> | null;
 }
 
 export function SeatsView({
@@ -39,6 +40,7 @@ export function SeatsView({
   onZoneRowHover,
   externalHoveredRowId = null,
   zoneRowDisplay = 'rows',
+  listingColorOverrides = null,
 }: SeatsViewProps) {
   const [localHoveredListingId, setLocalHoveredListingId] = useState<string | null>(null);
   const [pressedListingId, setPressedListingId] = useState<string | null>(null);
@@ -118,6 +120,9 @@ export function SeatsView({
     return seatColors.connector;
   };
 
+  const getListingOverrideColor = (listingId: string | undefined, fallback: string): string =>
+    (listingColorOverrides && listingId && listingColorOverrides.get(listingId)) || fallback;
+
   const getConnectorColor = (seat: SeatData): string => {
     const state = getSeatVisualState({
       seat,
@@ -130,7 +135,7 @@ export function SeatsView({
       case 'selected': return seatColors.connectorSelected;
       case 'pressed':  return seatColors.connectorPressed;
       case 'hover':    return seatColors.connectorHover;
-      default:         return seatColors.connector;
+      default:         return getListingOverrideColor(seat.listingId, seatColors.connector);
     }
   };
 
@@ -144,17 +149,12 @@ export function SeatsView({
     });
 
     switch (state) {
-      case 'unavailable':
-        return seatColors.unavailable;
-      case 'selected':
-        return seatColors.selected;
-      case 'pressed':
-        return seatColors.pressed;
-      case 'hover':
-        return seatColors.hover;
+      case 'unavailable': return seatColors.unavailable;
+      case 'selected':    return seatColors.selected;
+      case 'pressed':     return seatColors.pressed;
+      case 'hover':       return seatColors.hover;
       case 'available':
-      default:
-        return seatColors.available;
+      default:            return getListingOverrideColor(seat.listingId, seatColors.available);
     }
   };
 

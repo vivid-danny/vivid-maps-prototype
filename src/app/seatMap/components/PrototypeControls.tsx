@@ -350,7 +350,7 @@ export function PrototypeControls({
             <div className="text-xs font-bold text-black mb-4">Inventory</div>
             <div className="space-y-3">
               {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const)
-                .filter((k) => !(config.theme === 'zone' && k === 'available'))
+                .filter((k) => !((config.theme === 'zone' || config.theme === 'deal') && k === 'available'))
                 .map((colorKey) => (
                 <ColorControl
                   key={colorKey}
@@ -376,7 +376,7 @@ export function PrototypeControls({
                 { key: 'connectorHover' as const, label: 'Hover' },
                 { key: 'connectorPressed' as const, label: 'Pressed' },
                 { key: 'connectorSelected' as const, label: 'Selected' },
-              ]).filter(({ key }) => !(config.theme === 'zone' && key === 'connector'))
+              ]).filter(({ key }) => !((config.theme === 'zone' || config.theme === 'deal') && key === 'connector'))
               .map(({ key, label }) => (
                 <ColorControl
                   key={key}
