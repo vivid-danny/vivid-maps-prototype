@@ -106,7 +106,7 @@ export function SeatsView({
 
     const isSelected = selectedRowId === rowId ||
       (!!selectedListingId && !!listingIds && listingIds.has(selectedListingId));
-    if (isSelected) return seatColors.selected;
+    if (isSelected) return seatColors.connectorSelected;
 
     if (pressedZoneRowId === rowId) return seatColors.connectorPressed;
 
@@ -127,7 +127,7 @@ export function SeatsView({
       externalHoveredListingId,
     });
     switch (state) {
-      case 'selected': return seatColors.selected;
+      case 'selected': return seatColors.connectorSelected;
       case 'pressed':  return seatColors.connectorPressed;
       case 'hover':    return seatColors.connectorHover;
       default:         return seatColors.connector;

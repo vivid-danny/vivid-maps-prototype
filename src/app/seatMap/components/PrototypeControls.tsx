@@ -375,6 +375,7 @@ export function PrototypeControls({
                 { key: 'connector' as const, label: 'Default' },
                 { key: 'connectorHover' as const, label: 'Hover' },
                 { key: 'connectorPressed' as const, label: 'Pressed' },
+                { key: 'connectorSelected' as const, label: 'Selected' },
               ]).filter(({ key }) => !(config.theme === 'zone' && key === 'connector'))
               .map(({ key, label }) => (
                 <ColorControl

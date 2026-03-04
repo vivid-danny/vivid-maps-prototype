@@ -28,6 +28,7 @@ export interface SeatColors {
   connector: string;
   connectorHover: string;
   connectorPressed: string;
+  connectorSelected: string;
   labelDefault: string;
   labelSelected: string;
   labelUnavailable: string;
