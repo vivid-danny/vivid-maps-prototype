@@ -221,6 +221,20 @@ export function SeatMapRoot() {
     return () => observer.disconnect();
   }, [isMobile, transformRef]);
 
+  const prevMobileMapHeightRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    const prev = prevMobileMapHeightRef.current;
+    if (prev !== null && prev !== config.mobileMapHeight) {
+      const dy = (config.mobileMapHeight - prev) / 2;
+      const state = transformRef.current?.instance?.transformState;
+      if (state) {
+        transformRef.current?.setTransform(state.positionX, state.positionY + dy, state.scale, 0);
+      }
+    }
+    prevMobileMapHeightRef.current = config.mobileMapHeight;
+  }, [isMobile, config.mobileMapHeight, transformRef]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey && e.key === 'H') {
