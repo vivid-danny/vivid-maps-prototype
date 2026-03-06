@@ -40,13 +40,15 @@ interface RealVenueProps {
   pinsBySection: Map<string, PinData[]>;
   pinDensity: PinDensityConfig;
   connectorWidth: number;
+  sectionStrokeWidth: number;
   selectedListing?: Listing | null;
   listingsBySection?: Map<string, Listing[]>;
   dealColorOverrides?: Map<string, string> | null;
+  zoneRowDisplay?: 'rows' | 'seats';
 }
 
 // Seat size in venue coordinate space
-const SEAT_RADIUS = 8;
+const SEAT_RADIUS = 6;
 // Padding around viewport for culling (in venue coords)
 const CULL_PADDING = 300;
 
@@ -144,9 +146,11 @@ export function RealVenue({
   pinsBySection,
   pinDensity,
   connectorWidth,
+  sectionStrokeWidth,
   selectedListing = null,
   listingsBySection,
   dealColorOverrides = null,
+  zoneRowDisplay = 'seats',
 }: RealVenueProps) {
   const { geometry } = model;
   const { frameWidth, frameHeight } = geometry;
@@ -209,7 +213,7 @@ export function RealVenue({
 
   // Compute pin positions in venue coordinates for visible sections
   const pinElements = useMemo(() => {
-    const pins: { pin: PinData; x: number; y: number; sectionId: string }[] = [];
+    const pins: { pin: PinData; x: number; y: number; sectionId: string; isHovered: boolean }[] = [];
     for (const [sectionId, sectionPins] of pinsBySection) {
       if (visibleSections && !visibleSections.has(sectionId)) continue;
       const seatRows = geometry.seatPositions.get(sectionId);
@@ -229,13 +233,15 @@ export function RealVenue({
         pinsToShow = getDensityPinSlice(sectionPins, pinDensity.seats);
       }
 
-      // Build visibility context to hide pins overlapping with overlay pins
+      // In sections mode, the section pin stays mounted and transitions to hover state in-place
+      // (avoids the opacity-0 flash from the enter animation on a hover overlay pin).
+      // In rows/seats mode, the hover overlay pin handles hover — hide the regular pin as before.
       const pinVisibilityContext = {
         displayMode,
         pins: sectionPins,
         sectionId,
         selectedListing,
-        hoverTarget: hoverState.sectionId === sectionId ? hoverPinTarget : null,
+        hoverTarget: displayMode === 'sections' ? null : (hoverState.sectionId === sectionId ? hoverPinTarget : null),
       };
 
       for (const pin of pinsToShow) {
@@ -254,7 +260,11 @@ export function RealVenue({
           x = row[seatIdx * 2];
           y = row[seatIdx * 2 + 1];
         }
-        pins.push({ pin, x, y, sectionId });
+
+        const isHovered = displayMode === 'sections' &&
+          hoverPinTarget?.listing.listingId === pin.listing.listingId;
+
+        pins.push({ pin, x, y, sectionId, isHovered });
       }
     }
     return pins;
@@ -271,7 +281,12 @@ export function RealVenue({
         {/* Venue background elements */}
         {geometry.venueElements.map((el) => (
           <g key={el.name} transform={`translate(${el.x}, ${el.y})`}>
-            <path d={el.d} fill={el.fill} />
+            <path
+            d={el.d}
+            fill={el.name === 'venue' ? seatColors.venueFill : el.fill}
+            stroke={el.name === 'venue' ? seatColors.venueStroke : 'none'}
+            strokeWidth={el.name === 'venue' ? 1 : undefined}
+          />
           </g>
         ))}
 
@@ -341,9 +356,8 @@ export function RealVenue({
                 d={boundary.d}
                 fill={fillColor}
                 fillOpacity={fillOpacity}
-                stroke="#A0A2B3"
-                strokeWidth={displayMode === 'sections' ? 1.5 : 1}
-                strokeOpacity={displayMode === 'sections' ? 0.4 : 0.25}
+                stroke={seatColors.sectionStroke}
+                strokeWidth={sectionStrokeWidth}
               />
             </g>
           );
@@ -365,6 +379,7 @@ export function RealVenue({
             connectorWidth={connectorWidth}
             dealColorOverrides={dealColorOverrides}
             listingsBySection={listingsBySection}
+            zoneRowDisplay={zoneRowDisplay}
           />
         )}
 
@@ -405,17 +420,19 @@ export function RealVenue({
       </svg>
 
       {/* Pin overlays - DOM elements positioned absolutely over the SVG */}
-      {pinElements.map(({ pin, x, y }) => (
+      {pinElements.map(({ pin, x, y, isHovered }) => (
         <Pin
           key={pin.listing.listingId}
           price={pin.listing.price}
           dealScore={pin.listing.dealScore}
           x={x}
           y={y}
+          isHovered={isHovered}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
           selectedColor={seatColors.pinSelected}
+          useTransition={displayMode === 'sections'}
         />
       ))}
 
@@ -437,8 +454,9 @@ export function RealVenue({
         />
       )}
 
-      {/* Hover pin overlay */}
-      {hoverPinPos && hoverPinTarget && (
+      {/* Hover pin overlay — sections mode handles hover in-place when the section has a pin.
+          Fall back to overlay when the section has no pin (e.g. excluded by density). */}
+      {hoverPinPos && hoverPinTarget && (displayMode !== 'sections' || !pinElements.some(el => el.isHovered)) && (
         <Pin
           isHovered
           price={hoverPinTarget.listing.price}
@@ -473,6 +491,7 @@ const RealVenueSeats = memo(function RealVenueSeats({
   connectorWidth,
   dealColorOverrides,
   listingsBySection,
+  zoneRowDisplay = 'seats',
 }: {
   geometry: VenueGeometry;
   model: VenueSeatMapModel;
@@ -487,6 +506,7 @@ const RealVenueSeats = memo(function RealVenueSeats({
   connectorWidth: number;
   dealColorOverrides?: Map<string, string> | null;
   listingsBySection?: Map<string, Listing[]>;
+  zoneRowDisplay?: 'rows' | 'seats';
 }) {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [pressedTarget, setPressedTarget] = useState<{ type: 'listing' | 'row'; id: string } | null>(null);
@@ -687,8 +707,8 @@ const RealVenueSeats = memo(function RealVenueSeats({
             );
           }
 
-          // Seats mode: zone rows render as polylines (row-level interaction)
-          if (rowData.isZoneRow) {
+          // Seats mode: zone rows render as polylines when zoneRowDisplay === 'rows'
+          if (rowData.isZoneRow && zoneRowDisplay === 'rows') {
             const points = Array.from({ length: seatCount }, (_, i) =>
               `${flatCoords[i * 2]},${flatCoords[i * 2 + 1]}`
             ).join(' ');

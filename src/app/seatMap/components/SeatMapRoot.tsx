@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { RotateCcw } from 'lucide-react';
-import { Section } from '../../components/Section';
-import { Venue } from '../../components/Venue';
-import { Stage } from '../../components/Stage';
 import { RealVenue, computeVisibleSections } from '../../components/RealVenue';
 import type { ViewportRect } from '../../components/RealVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
@@ -11,13 +8,11 @@ import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { getDealColor, getZoneColor } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
-import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
 import { createVenueSeatMapModel } from '../mock/createVenueSeatMapModel';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
-import type { VenueMode } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
 import type { TransformState } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
@@ -26,7 +21,7 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 const REAL_VENUE_SCALE_DEFAULTS = {
-  desktopInitialScale: 0.08,
+  desktopInitialScale: 0.12,
   desktopZoomThreshold: 0.3,
   mobileInitialScale: 0.03,
   mobileZoomThreshold: 0.15,
@@ -39,25 +34,18 @@ export function SeatMapRoot() {
   const isAnimatingRef = useRef(false);
   const pendingScaleRef = useRef<number | null>(null);
 
-  const [venueMode, setVenueMode] = useState<VenueMode>('real');
-  const demoModel = useMemo(() => createMockSeatMapModel(), []);
   const venueModel = useMemo(() => createVenueSeatMapModel(), []);
-  const model = venueMode === 'real' ? venueModel : demoModel;
+  const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
     ...REAL_VENUE_SCALE_DEFAULTS,
   });
   const [currentScale, setCurrentScale] = useState(REAL_VENUE_SCALE_DEFAULTS.desktopInitialScale);
 
-  // Reset config to appropriate defaults for current venue mode
   const resetConfig = useCallback(() => {
-    if (venueMode === 'real') {
-      rawResetConfig();
-      updateConfig(REAL_VENUE_SCALE_DEFAULTS);
-    } else {
-      rawResetConfig();
-    }
-  }, [venueMode, rawResetConfig, updateConfig]);
+    rawResetConfig();
+    updateConfig(REAL_VENUE_SCALE_DEFAULTS);
+  }, [rawResetConfig, updateConfig]);
 
   // Viewport rect in venue coordinates — updated during pan/zoom via rAF
   // Only triggers re-render when the set of visible sections changes
@@ -289,24 +277,6 @@ export function SeatMapRoot() {
         config={config}
         onConfigChange={updateConfig}
         onResetConfig={resetConfig}
-        venueMode={venueMode}
-        onVenueModeChange={(nextMode) => {
-          setVenueMode(nextMode);
-          if (nextMode === 'real') {
-            updateConfig(REAL_VENUE_SCALE_DEFAULTS);
-          } else {
-            updateConfig({
-              desktopInitialScale: DEFAULT_SEAT_MAP_CONFIG.desktopInitialScale,
-              desktopZoomThreshold: DEFAULT_SEAT_MAP_CONFIG.desktopZoomThreshold,
-              mobileInitialScale: DEFAULT_SEAT_MAP_CONFIG.mobileInitialScale,
-              mobileZoomThreshold: DEFAULT_SEAT_MAP_CONFIG.mobileZoomThreshold,
-            });
-          }
-          setTimeout(() => {
-            transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
-            setCurrentScale(controller.initialScale);
-          }, 50);
-        }}
       />
 
       <div
@@ -375,62 +345,29 @@ export function SeatMapRoot() {
                 mobileMapHeight={config.mobileMapHeight}
                 onScaleChange={handleScaleChange}
                 onAnimationSettle={flushPendingScale}
-                onTransformChange={venueMode === 'real' ? handleTransformChange : undefined}
-                wheelStep={venueMode === 'real' ? 0.05 : 0.2}
+                onTransformChange={handleTransformChange}
+                wheelStep={0.05}
                 background={config.seatColors.mapBackground}
               >
-                {venueMode === 'real' ? (
-                  <RealVenue
-                    model={venueModel}
-                    seatColors={config.seatColors}
-                    seatColorsBySection={seatColorsBySection}
-                    displayMode={controller.displayMode}
-                    selection={viewState.selection}
-                    onSelect={viewState.handleSelect}
-                    hoverState={viewState.hoverState}
-                    onHover={viewState.handleHoverFromMap}
-                    viewportRect={viewportRect}
-                    pinsBySection={viewState.pinsBySection}
-                    pinDensity={config.pinDensity}
-                    connectorWidth={config.connectorWidth}
-                    selectedListing={viewState.selectedListing}
-                    listingsBySection={viewState.listingsBySection}
-                    dealColorOverrides={dealColorOverrides}
-                  />
-                ) : (
-                <Venue boundary={model.boundary ? { ...model.boundary, fill: config.seatColors.venueFill, stroke: config.seatColors.venueStroke } : undefined}>
-                  <Stage
-                    x={STAGE_CONFIG.x}
-                    y={STAGE_CONFIG.y}
-                    width={STAGE_CONFIG.width}
-                    height={STAGE_CONFIG.height}
-                  />
-                  {controller.sections.map((sectionConfig) => {
-                    const sectionPins = viewState.pinsBySection.get(sectionConfig.sectionId) || [];
-                    return (
-                      <Section
-                        key={sectionConfig.sectionId}
-                        config={sectionConfig}
-                        sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
-                        seatColors={seatColorsBySection?.get(sectionConfig.sectionId) ?? config.seatColors}
-                        displayMode={controller.displayMode}
-                        selection={viewState.selection}
-                        onSelect={viewState.handleSelect}
-                        hoverState={viewState.hoverState}
-                        onHover={viewState.handleHoverFromMap}
-                        connectorWidth={config.connectorWidth}
-                        pins={isMobile ? sectionPins.slice(0, Math.ceil(sectionPins.length / 2)) : sectionPins}
-                        selectedListing={viewState.selectedListing}
-                        sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
-                        disableHover={isMobile}
-                        pinDensity={config.pinDensity}
-                        zoneRowDisplay={config.zoneRowDisplay}
-                        dealColorOverrides={dealColorOverrides}
-                      />
-                    );
-                  })}
-                </Venue>
-                )}
+                <RealVenue
+                  model={venueModel}
+                  seatColors={config.seatColors}
+                  seatColorsBySection={seatColorsBySection}
+                  displayMode={controller.displayMode}
+                  selection={viewState.selection}
+                  onSelect={viewState.handleSelect}
+                  hoverState={viewState.hoverState}
+                  onHover={viewState.handleHoverFromMap}
+                  viewportRect={viewportRect}
+                  pinsBySection={viewState.pinsBySection}
+                  pinDensity={config.pinDensity}
+                  connectorWidth={config.connectorWidth}
+                  sectionStrokeWidth={config.sectionStrokeWidth}
+                  selectedListing={viewState.selectedListing}
+                  listingsBySection={viewState.listingsBySection}
+                  dealColorOverrides={dealColorOverrides}
+                  zoneRowDisplay={config.zoneRowDisplay}
+                />
               </MapContainer>
               <button
                 onClick={() => {
