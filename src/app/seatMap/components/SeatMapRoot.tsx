@@ -388,10 +388,17 @@ export function SeatMapRoot() {
               </MapContainer>
               <button
                 onClick={() => {
-                  transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
                   viewState.setSelection(EMPTY_SELECTION);
-                  currentScaleForThresholdRef.current = controller.initialScale;
+                  // Switch display mode immediately so animation renders cheap sections, not 18K seats
                   setCurrentScale(controller.initialScale);
+                  currentScaleForThresholdRef.current = controller.initialScale;
+                  // Wait two frames for React to commit the display mode re-render, then animate
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      isAnimatingRef.current = true;
+                      transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
+                    });
+                  });
                 }}
                 className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{

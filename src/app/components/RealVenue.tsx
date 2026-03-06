@@ -423,9 +423,10 @@ export function RealVenue({
               textAnchor="middle"
               dominantBaseline="central"
               fill={labelColor}
-              fontSize={36}
+              fontSize={80}
               fontWeight={700}
               fontFamily="GT Walsheim, sans-serif"
+              textRendering="geometricPrecision"
               style={{ pointerEvents: 'none' }}
             >
               {sectionId}
