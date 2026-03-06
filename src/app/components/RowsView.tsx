@@ -84,8 +84,7 @@ export function RowsView({
             rx={cornerRadius}
             ry={cornerRadius}
             fill={getRowColor(row.rowId, isAvailable)}
-            style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
-            className={isAvailable ? 'cursor-pointer' : 'cursor-default'}
+            className={isAvailable ? 'seat-transition cursor-pointer' : 'seat-transition cursor-default'}
             onClick={isAvailable ? () => onSelectRow(row.rowId) : undefined}
             onMouseEnter={isAvailable && onRowHover ? () => {
               setLocalHoveredRowId(row.rowId);

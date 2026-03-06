@@ -121,7 +121,7 @@ export function SectionView({
           rx={borderRadius}
           ry={borderRadius}
           fill={fillColor}
-          style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
+          className="seat-transition"
         />
         <text
           x={centerX}
@@ -163,7 +163,7 @@ export function SectionView({
         rx={borderRadius}
         ry={borderRadius}
         fill={fillColor}
-        style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
+        className="seat-transition"
       />
       <text
         x={centerX}

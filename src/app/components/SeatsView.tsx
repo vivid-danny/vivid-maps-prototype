@@ -229,8 +229,7 @@ export function SeatsView({
               width={SEAT_SIZE + SEAT_GAP}
               height={connectorWidth}
               fill={getConnectorColor(seat)}
-              style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
-              className="cursor-pointer"
+              className="seat-transition cursor-pointer"
               onClick={() => handleClick(seat)}
               onMouseEnter={handleMouseEnter ? () => handleMouseEnter(seat) : undefined}
               onMouseLeave={handleMouseLeave}
@@ -256,8 +255,7 @@ export function SeatsView({
               cy={cy}
               r={radius}
               fill={getSeatColor(seat)}
-              style={{ transition: `fill ${hoverTransitionMs}ms ease-out` }}
-              className={isAvailable ? 'cursor-pointer' : 'cursor-default'}
+              className={isAvailable ? 'seat-transition cursor-pointer' : 'seat-transition cursor-default'}
               onClick={() => handleClick(seat)}
               onMouseEnter={handleMouseEnter ? () => handleMouseEnter(seat) : undefined}
               onMouseLeave={handleMouseLeave}
@@ -273,7 +271,6 @@ export function SeatsView({
         if (!row.isZoneRow) return null;
 
         const y = PADDING + rowIndex * (SEAT_SIZE + ROW_GAP);
-        const transition = `fill ${hoverTransitionMs}ms ease-out`;
 
         const zoneRowHandlers = {
           onClick: onSelectZoneRow ? () => onSelectZoneRow(row.rowId) : undefined,
@@ -310,7 +307,7 @@ export function SeatsView({
                     width={SEAT_SIZE + SEAT_GAP}
                     height={connectorWidth}
                     fill={getZoneRowConnectorColor(row.rowId)}
-                    style={{ transition }}
+                    className="seat-transition"
                   />
                 );
               })}
@@ -324,7 +321,7 @@ export function SeatsView({
                     cy={cy}
                     r={radius}
                     fill={getZoneRowColor(row.rowId)}
-                    style={{ transition }}
+                    className="seat-transition"
                   />
                 );
               })}
@@ -343,8 +340,7 @@ export function SeatsView({
             rx={cornerRadius}
             ry={cornerRadius}
             fill={getZoneRowColor(row.rowId)}
-            style={{ transition }}
-            className="cursor-pointer"
+            className="seat-transition cursor-pointer"
             {...zoneRowHandlers}
           />
         );

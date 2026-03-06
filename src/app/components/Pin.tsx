@@ -1,10 +1,10 @@
+import { memo } from 'react';
 import type { CSSProperties } from 'react';
 
 interface PinProps {
   price: number; // in cents
   x: number;
   y: number;
-  currentScale: number;
   isSelected?: boolean;
   selectedColor?: string;
   isHovered?: boolean;
@@ -18,9 +18,11 @@ interface PinProps {
   rowNumber?: number;
 }
 
-export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber }: PinProps) {
+export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber }: PinProps) {
   const displayPrice = `$${Math.round(price / 100)}`;
-  const inverseScale = (1 / currentScale) * (isSelected ? 1.875 : isHovered ? 1.5 : 1.25);
+  // Multiplier is computed at render time (only changes on selection/hover, not zoom)
+  // --map-scale CSS var is set by MapContainer via DOM mutation during zoom — no React re-render needed
+  const pinMultiplier = isSelected ? 1.875 : isHovered ? 1.5 : 1.25;
   const bgColor = isSelected ? selectedColor : isPressed ? pressedColor : isHovered ? hoverColor : defaultColor;
   const zIndex = isHovered ? 30 : isSelected ? 20 : 10;
   const showDealScore = dealScore !== undefined && dealScore > 7;
@@ -32,8 +34,8 @@ export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#1
       style={{
         left: x,
         top: y,
-        '--pin-scale': inverseScale,
-        transform: `translate(-50%, -100%) scale(var(--pin-scale))${isSelected ? ' translateY(-1px)' : ''}`,
+        '--pin-multiplier': pinMultiplier,
+        transform: `translate(-50%, -100%) scale(calc(var(--pin-multiplier, 1.25) / var(--map-scale, 1)))${isSelected ? ' translateY(-1px)' : ''}`,
         transformOrigin: 'center bottom',
         zIndex,
         animation: isSelected
@@ -79,4 +81,4 @@ export function Pin({ price, x, y, currentScale, isSelected, selectedColor = '#1
       />
     </div>
   );
-}
+});

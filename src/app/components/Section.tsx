@@ -38,7 +38,6 @@ interface SectionProps {
   connectorWidth?: number;
   hoverTransitionMs?: number;
   pins?: PinData[];
-  currentScale?: number;
   selectedListing?: Listing | null;
   sectionListings?: Listing[];
   disableHover?: boolean;
@@ -59,7 +58,6 @@ export function Section({
   connectorWidth = 1,
   hoverTransitionMs = 150,
   pins = [],
-  currentScale = 1,
   selectedListing = null,
   sectionListings = [],
   disableHover = false,
@@ -221,7 +219,7 @@ export function Section({
 
   // Compute pin positions and render Pin components
   const renderPins = () => {
-    if (pins.length === 0 || currentScale === 0) return null;
+    if (pins.length === 0) return null;
 
     const sectionWidth = getSeatRowWidth(config.seatsPerRow);
     const pinVisibilityContext = {
@@ -245,7 +243,6 @@ export function Section({
           dealScore={lowestPriceListing.listing.dealScore}
           x={sectionWidth / 2}
           y={getSectionHeight(config.numRows) * 0.3}
-          currentScale={currentScale}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
@@ -269,7 +266,7 @@ export function Section({
             dealScore={pin.listing.dealScore}
             x={sectionWidth / 2}
             y={cy}
-            currentScale={currentScale}
+
             defaultColor={seatColors.pinDefault}
             hoverColor={seatColors.pinHovered}
             pressedColor={seatColors.pinPressed}
@@ -290,7 +287,6 @@ export function Section({
           dealScore={pin.listing.dealScore}
           x={x}
           y={y}
-          currentScale={currentScale}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
@@ -302,7 +298,7 @@ export function Section({
 
   // Render a hover pin for the currently hovered listing/row/section
   const renderHoverPin = () => {
-    if (!hoverPinTarget || currentScale === 0) return null;
+    if (!hoverPinTarget) return null;
 
     const sectionWidth = getSeatRowWidth(config.seatsPerRow);
     let x = sectionWidth / 2;
@@ -328,7 +324,6 @@ export function Section({
         dealScore={hoverPinTarget.listing.dealScore}
         x={x}
         y={y}
-        currentScale={currentScale}
         defaultColor={seatColors.pinDefault}
         hoverColor={seatColors.pinHovered}
         pressedColor={seatColors.pinPressed}
@@ -343,8 +338,6 @@ export function Section({
   // Render a selected pin for the currently selected listing
   const renderSelectedPin = () => {
     if (!selectedListing || selectedListing.sectionId !== config.sectionId) return null;
-    if (currentScale === 0) return null;
-
     const sectionWidth = getSeatRowWidth(config.seatsPerRow);
 
     if (displayMode === 'sections') {
@@ -356,7 +349,6 @@ export function Section({
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={getSectionHeight(config.numRows) * 0.3}
-          currentScale={currentScale}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
@@ -381,7 +373,6 @@ export function Section({
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={cy}
-          currentScale={currentScale}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
@@ -406,7 +397,6 @@ export function Section({
           dealScore={selectedListing.dealScore}
           x={sectionWidth / 2}
           y={cy}
-          currentScale={currentScale}
           defaultColor={seatColors.pinDefault}
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
@@ -434,7 +424,6 @@ export function Section({
         dealScore={selectedListing.dealScore}
         x={x}
         y={y}
-        currentScale={currentScale}
         defaultColor={seatColors.pinDefault}
         hoverColor={seatColors.pinHovered}
         pressedColor={seatColors.pinPressed}
