@@ -15,6 +15,7 @@ import {
   getDensityPinSlice,
   getHoverPinTarget,
   isPinVisible,
+  getLowestPricePin,
 } from '../seatMap/behavior/pins';
 import type { HoverPinTarget } from '../seatMap/behavior/pins';
 import { parseSeatId } from '../seatMap/behavior/utils';
@@ -218,7 +219,8 @@ export function RealVenue({
       if (displayMode === 'sections') {
         // Density gate: skip entire section if density check fails
         if (!isDensityEnabled(sectionId, pinDensity.sections)) continue;
-        pinsToShow = sectionPins.slice(0, 1);
+        const cheapest = getLowestPricePin(sectionPins);
+        pinsToShow = cheapest ? [cheapest] : [];
       } else if (displayMode === 'rows') {
         pinsToShow = sectionPins.filter(p =>
           isDensityEnabled(p.listing.rowId, pinDensity.rows)
@@ -239,16 +241,24 @@ export function RealVenue({
       for (const pin of pinsToShow) {
         if (!isPinVisible(pin, pinVisibilityContext)) continue;
 
-        const row = seatRows[pin.rowIndex];
-        if (!row) continue;
-        const seatIdx = Math.min(pin.seatIndex, row.length / 2 - 1);
-        const x = row[seatIdx * 2];
-        const y = row[seatIdx * 2 + 1];
+        let x: number, y: number;
+        if (displayMode === 'sections') {
+          const boundary = geometry.sectionBoundaries.get(sectionId);
+          if (!boundary) continue;
+          x = boundary.bx + boundary.bw / 2;
+          y = boundary.by + boundary.bh / 2;
+        } else {
+          const row = seatRows[pin.rowIndex];
+          if (!row) continue;
+          const seatIdx = Math.min(pin.seatIndex, row.length / 2 - 1);
+          x = row[seatIdx * 2];
+          y = row[seatIdx * 2 + 1];
+        }
         pins.push({ pin, x, y, sectionId });
       }
     }
     return pins;
-  }, [pinsBySection, geometry.seatPositions, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId]);
+  }, [pinsBySection, geometry.seatPositions, geometry.sectionBoundaries, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId]);
 
   return (
     <div style={{ position: 'relative', width: frameWidth, height: frameHeight }}>
@@ -357,27 +367,6 @@ export function RealVenue({
             listingsBySection={listingsBySection}
           />
         )}
-
-        {/* Section labels in zoomed modes */}
-        {displayMode !== 'sections' && Array.from(geometry.sectionBoundaries.entries()).map(([sectionId, boundary]) => {
-          if (visibleSections && !visibleSections.has(sectionId)) return null;
-          return (
-            <text
-              key={`label-z-${sectionId}`}
-              x={boundary.bx + boundary.bw / 2}
-              y={boundary.by + 20}
-              textAnchor="middle"
-              dominantBaseline="hanging"
-              fill="#666"
-              fontSize={18}
-              fontWeight={600}
-              fontFamily="GT Walsheim, sans-serif"
-              style={{ pointerEvents: 'none' }}
-            >
-              {sectionId}
-            </text>
-          );
-        })}
 
         {/* Section labels in sections mode */}
         {displayMode === 'sections' && Array.from(geometry.sectionBoundaries.entries()).map(([sectionId, boundary]) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { SectionData, SeatColors } from '../seatMap/model/types';
 import { SEAT_SIZE, ROW_GAP, PADDING, getSeatRowWidth, getSectionHeight } from './constants';
 import { useHoverIntent } from './useHoverIntent';
@@ -30,6 +30,7 @@ export function RowsView({
   const [localHoveredRowId, setLocalHoveredRowId] = useState<string | null>(null);
   const [pressedRowId, setPressedRowId] = useState<string | null>(null);
   const hoverIntent = useHoverIntent<string | null>(onRowHover, null);
+  const clearLocalHoverRef = useRef<number | null>(null);
 
   const width = getSeatRowWidth(seatsPerRow);
   const height = getSectionHeight(section.rows.length);
@@ -87,13 +88,20 @@ export function RowsView({
             className={isAvailable ? 'seat-transition cursor-pointer' : 'seat-transition cursor-default'}
             onClick={isAvailable ? () => onSelectRow(row.rowId) : undefined}
             onMouseEnter={isAvailable && onRowHover ? () => {
+              if (clearLocalHoverRef.current !== null) {
+                window.clearTimeout(clearLocalHoverRef.current);
+                clearLocalHoverRef.current = null;
+              }
               setLocalHoveredRowId(row.rowId);
               hoverIntent.enter(row.rowId);
             } : undefined}
             onMouseLeave={isAvailable && onRowHover ? () => {
-              setLocalHoveredRowId(null);
               setPressedRowId(null);
               hoverIntent.leave();
+              clearLocalHoverRef.current = window.setTimeout(() => {
+                clearLocalHoverRef.current = null;
+                setLocalHoveredRowId(null);
+              }, 0);
             } : undefined}
             onMouseDown={isAvailable ? () => setPressedRowId(row.rowId) : undefined}
             onMouseUp={isAvailable ? () => setPressedRowId(null) : undefined}

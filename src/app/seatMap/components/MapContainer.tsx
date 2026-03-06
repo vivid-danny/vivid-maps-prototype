@@ -98,7 +98,7 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
               width: '100%',
               height: '100%',
             }}
-            contentStyle={{ willChange: 'transform' }}
+            contentStyle={{}}
           >
             <div ref={contentDivRef} style={{ padding: '300px' }}>
               {children}

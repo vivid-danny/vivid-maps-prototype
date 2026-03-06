@@ -2,6 +2,7 @@ import venueData from './venueData.json';
 import { createSeededRandom } from './seededRandom';
 import { hashString } from '../behavior/utils';
 import seatViewImg from '../../../assets/seatView.png';
+import { parseSeatId } from '../behavior/utils';
 import type {
   SeatMapModel,
   SectionConfig,
@@ -435,7 +436,20 @@ function selectPins(
     if (rowIndex >= seatPositions.length) continue;
     const rowCoords = seatPositions[rowIndex];
     const seatCount = rowCoords.length / 2;
-    const seatIndex = Math.min(Math.floor(seatCount / 2), seatCount - 1);
+
+    // Use the middle seatId of the listing to get the actual seat position,
+    // so the pin lands on an available seat rather than the geometric row center.
+    let seatIndex: number;
+    if (listing.isUnmapped) {
+      seatIndex = Math.min(Math.floor(seatCount / 2), seatCount - 1);
+    } else {
+      const middleSeatId = listing.seatIds[Math.floor(listing.seatIds.length / 2)];
+      const parsed = middleSeatId ? parseSeatId(middleSeatId) : null;
+      seatIndex = parsed
+        ? Math.min(parsed.seatNumber - 1, seatCount - 1)
+        : Math.min(Math.floor(seatCount / 2), seatCount - 1);
+    }
+
     candidates.push({ listing, rowIndex, seatIndex });
   }
 
