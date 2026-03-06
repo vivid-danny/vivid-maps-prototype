@@ -45,6 +45,7 @@ interface RealVenueProps {
   listingsBySection?: Map<string, Listing[]>;
   dealColorOverrides?: Map<string, string> | null;
   zoneRowDisplay?: 'rows' | 'seats';
+  isMobile?: boolean;
 }
 
 // Seat size in venue coordinate space
@@ -151,6 +152,7 @@ export function RealVenue({
   listingsBySection,
   dealColorOverrides = null,
   zoneRowDisplay = 'seats',
+  isMobile = false,
 }: RealVenueProps) {
   const { geometry } = model;
   const { frameWidth, frameHeight } = geometry;
@@ -270,6 +272,12 @@ export function RealVenue({
     return pins;
   }, [pinsBySection, geometry.seatPositions, geometry.sectionBoundaries, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId]);
 
+  // Mobile: show roughly half the pins to reduce clutter
+  const visiblePinElements = useMemo(() => {
+    if (!isMobile) return pinElements;
+    return pinElements.slice(0, Math.ceil(pinElements.length / 2));
+  }, [pinElements, isMobile]);
+
   // Push panel hover changes to RealVenueSeats via imperative handle (no re-render)
   useEffect(() => {
     if (displayMode === 'sections') return;
@@ -364,6 +372,7 @@ export function RealVenue({
                 fillOpacity={fillOpacity}
                 stroke={seatColors.sectionStroke}
                 strokeWidth={sectionStrokeWidth}
+                style={{ transition: 'fill 150ms ease, fill-opacity 150ms ease' }}
               />
             </g>
           );
@@ -426,7 +435,7 @@ export function RealVenue({
       </svg>
 
       {/* Pin overlays - DOM elements positioned absolutely over the SVG */}
-      {pinElements.map(({ pin, x, y, isHovered }) => (
+      {visiblePinElements.map(({ pin, x, y, isHovered }) => (
         <Pin
           key={pin.listing.listingId}
           price={pin.listing.price}
@@ -464,7 +473,7 @@ export function RealVenue({
       )}
 
       {/* Hover pin overlay — falls back to overlay when no default pin is covering the hover. */}
-      {hoverPinPos && hoverPinTarget && !pinElements.some(el => el.isHovered) && (
+      {hoverPinPos && hoverPinTarget && !visiblePinElements.some(el => el.isHovered) && (
         <Pin
           isHovered
           price={hoverPinTarget.listing.price}

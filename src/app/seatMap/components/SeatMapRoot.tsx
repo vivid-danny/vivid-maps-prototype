@@ -369,6 +369,7 @@ export function SeatMapRoot() {
                   listingsBySection={viewState.listingsBySection}
                   dealColorOverrides={dealColorOverrides}
                   zoneRowDisplay={config.zoneRowDisplay}
+                  isMobile={isMobile}
                 />
               </MapContainer>
               <button

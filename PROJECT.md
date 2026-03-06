@@ -117,9 +117,100 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 
 ---
 
-## Interaction Behaviors
+## Interaction Model Reference
 
-### Map Interactions
+This section is the **source of truth** for all user-facing interaction behaviors implemented in the prototype. Organized by category, each behavior specifies what the user does, what happens, and any platform differences (Web = desktop, MWeb = mobile).
+
+### Selection
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 1 | Section click toggles selection (single-select; click again to deselect) | ✅ | ✅ |
+| 2 | Section click zooms to `threshold + 0.5` with 300ms easeOut | ✅ | ✅ |
+| 3 | Unavailable sections: no click handler, default cursor | ✅ | ✅ |
+| 4 | Single-select only; clicking a different section replaces the previous | ✅ | ✅ |
+| 5 | Can jump directly between sections without returning to full map | ✅ | ✅ |
+| 6 | Selection propagates up (listing sets section + row + listing + seatIds) but NOT down | ✅ | ✅ |
+
+### Zoom & Display Modes
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 7 | Continuous freeform zoom (no snapping) | ✅ | ✅ |
+| 8 | Zoom-driven display mode: below threshold = sections, at/above = seats | ✅ | ✅ |
+| 9 | No intermediate rows-only state by default | ✅ | ✅ |
+| 10 | Reset Map button visible only when zoom ≥ threshold | ✅ | ✅ |
+| 11 | Reset Map clears zoom + selection (full reset — section context NOT preserved) | ✅ | ✅ |
+| 12 | Pinch zoom does not affect selection | — | ✅ |
+
+### Hover
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 13 | Bidirectional hover sync: map hover → panel highlight, panel hover → map highlight | ✅ | — |
+| 14 | Section fill transitions to hover color with 150ms CSS ease | ✅ | — |
+| 15 | Section label color changes on hover/selection | ✅ | — |
+| 16 | Panel hover uses 200ms delay (hover intent) to prevent flicker | ✅ | — |
+| 17 | Mobile: hover disabled entirely | — | ✅ |
+| 18 | Mobile: no auto-zoom on panel tap | — | ✅ |
+
+### Pins
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 19 | Pin values: lowest price per section (sections mode), per row (rows), per listing (seats) | ✅ | ✅ |
+| 20 | Deal score badge on pins when `dealScore > 7` | ✅ | ✅ |
+| 21 | Ambient pins hide when their section is selected; selected overlay pin appears | ✅ | ✅ |
+| 22 | Hover pin shows cheapest listing in section (sections mode) | ✅ | — |
+| 23 | Seat view image + section/row label on hover pin (desktop seats mode) | ✅ | — |
+| 24 | Mobile renders `ceil(pins.length / 2)` pins (fewer to reduce clutter) | — | ✅ |
+| 25 | Pin density configurable per display mode (sections/rows/seats) | ✅ | ✅ |
+
+### Detail Overlay
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 26 | Desktop: detail slides in over panel (350ms ease) | ✅ | — |
+| 27 | Mobile: detail is full-screen overlay | — | ✅ |
+| 28 | Detail back button preserves section context (zone row → row selection) | ✅ | ✅ |
+| 29 | Panel freeze prevents flash of unfiltered listings during animation | ✅ | ✅ |
+
+### Listings Panel
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 30 | Panel filters to section on section select, to row on row select | ✅ | ✅ |
+| 31 | While detail is open, panel receives EMPTY_SELECTION (shows all listings in background) | ✅ | ✅ |
+
+### Layout
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 32 | Desktop: 450px sidebar + flex map | ✅ | — |
+| 33 | Mobile: map on top (configurable height, default 200px), panel below | — | ✅ |
+| 34 | Auto-detection breakpoint: `max-width: 800px` via matchMedia | ✅ | ✅ |
+| 35 | Desktop map re-centers on container resize (ResizeObserver) | ✅ | — |
+
+### Not Implemented
+
+These behaviors are acknowledged as out of scope for the current prototype:
+
+- Fallback state if map fails to load
+- Loading state / timeout
+- Filter interaction (greying out sections, auto-zoom after filter)
+- Real-time inventory updates / mid-session sellout handling
+- Accessibility (screen reader navigation)
+- Deep linking / state persistence
+- Swipe gesture between sections on mobile
+- Double-tap / long-press handlers on mobile
+
+---
+
+### Handler Reference
+
+Implementation-level detail for each interaction surface.
+
+#### Map Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -129,7 +220,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 | Click selected item again | `getToggledSelection()` → `EMPTY_SELECTION` | Full deselect; panel returns to all listings |
 | Hover section/row/seat | `handleHoverFromMap(hover)` | Hover pin appears on map; listing card highlights in panel |
 
-### Listings Panel Interactions
+#### Listings Panel Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -137,7 +228,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 | Hover listing card | `handleHoverFromPanel(listing)` after 200ms | Hover pin appears on map over that listing's seats |
 | Leave listing card | `handleHoverFromPanel(null)` | Hover pin disappears |
 
-### Ticket Detail Interactions
+#### Ticket Detail Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -145,13 +236,13 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 
 **Back preserves section context:** if you browsed into section B and selected a listing, Back returns you to the section-B-filtered panel, not the full list. This is the key design decision.
 
-### Keyboard Shortcuts
+#### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | Shift+H | Toggle prototype controls panel |
 
-### Reset Map Button
+#### Reset Map Button
 
 Visible only when `currentScale >= zoomThreshold`. On click:
 1. Animates map back to initial scale/position
