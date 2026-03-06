@@ -2,6 +2,12 @@
 @import './tailwind.css';
 @import './theme.css';
 
+@property --pin-multiplier {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1.25;
+}
+
 @keyframes pinHoverIn {
   from {
     opacity: 0;
@@ -57,14 +63,6 @@
 }
 .detail-content {
   animation: detailContentIn var(--detail-content-duration) var(--detail-content-easing);
-}
-
-/* Seat/row fill transitions — disabled during active zoom/pan via .zooming parent */
-.seat-transition {
-  transition: fill 150ms ease-out;
-}
-.zooming .seat-transition {
-  transition: none !important;
 }
 
 html, body, #root {

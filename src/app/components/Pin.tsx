@@ -49,7 +49,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
         transformOrigin: 'center bottom',
         zIndex,
         animation,
-        transition: useTransition ? 'transform 200ms ease' : undefined,
+        transition: useTransition ? '--pin-multiplier 200ms cubic-bezier(0.075, 0.82, 0.165, 1)' : undefined,
       } as CSSProperties}
     >
       {/* Seat view card */}

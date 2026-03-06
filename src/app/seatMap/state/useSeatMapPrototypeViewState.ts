@@ -86,11 +86,9 @@ export function useSeatMapPrototypeViewState({
       fineElementId = sel.rowId;
     }
 
-    const targetScale = currentScale >= controller.zoomThreshold
-      ? currentScale
-      : controller.zoomThreshold + 0.5;
-
-    const alreadyZoomedIn = currentScale >= controller.zoomThreshold;
+    const actualScale = transformRef.current?.instance?.transformState?.scale ?? currentScale;
+    const alreadyZoomedIn = actualScale >= controller.zoomThreshold;
+    const targetScale = alreadyZoomedIn ? actualScale : controller.zoomThreshold + 0.5;
 
     if (alreadyZoomedIn) {
       // Already zoomed in — row/seat elements are in the DOM, single-step zoom
@@ -123,7 +121,7 @@ export function useSeatMapPrototypeViewState({
         }, 400);
       }
     }
-  }, [currentScale, controller.zoomThreshold, controller.initialScale, transformRef]);
+  }, [currentScale, controller.zoomThreshold, transformRef]);
 
   const handleSelect = useCallback((newSelection: SelectionState) => {
     const nextSelection = getToggledSelection(selection, newSelection);

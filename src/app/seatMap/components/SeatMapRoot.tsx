@@ -32,7 +32,9 @@ export function SeatMapRoot() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
   const isAnimatingRef = useRef(false);
+  const isGestureActiveRef = useRef(false);
   const pendingScaleRef = useRef<number | null>(null);
+  const currentScaleForThresholdRef = useRef(REAL_VENUE_SCALE_DEFAULTS.desktopInitialScale);
 
   const venueModel = useMemo(() => createVenueSeatMapModel(), []);
   const model = venueModel;
@@ -54,7 +56,6 @@ export function SeatMapRoot() {
   const lastVisibleRef = useRef<Set<string> | null>(null);
 
   const handleTransformChange = useCallback((state: TransformState) => {
-    if (isAnimatingRef.current) return;
     if (!wrapperSizeRef.current) {
       const wrapper = transformRef.current?.instance?.wrapperComponent;
       if (wrapper) {
@@ -107,35 +108,36 @@ export function SeatMapRoot() {
 
   // Gate setCurrentScale to threshold crossings only — avoids 60fps re-renders during zoom.
   // The CSS var --map-scale (set by MapContainer) handles visual pin scaling without React.
-  // During programmatic zoom animations, defer the threshold crossing to avoid mounting
-  // ~18K SVG elements mid-animation (causes choppy frames).
+  // During programmatic zoom animations AND manual gestures (scroll-wheel, pinch), defer the
+  // threshold crossing to avoid mounting ~18K SVG elements mid-gesture (causes choppy frames).
+  // Uses a ref instead of currentScale state to avoid stale closures during rapid scrolling.
   const handleScaleChange = useCallback((scale: number) => {
+    isGestureActiveRef.current = true;
     const threshold = controller.zoomThreshold;
-    const wasAbove = currentScale >= threshold;
+    const wasAbove = currentScaleForThresholdRef.current >= threshold;
+    currentScaleForThresholdRef.current = scale;
     const nowAbove = scale >= threshold;
     if (wasAbove !== nowAbove) {
-      if (isAnimatingRef.current) {
+      if (isAnimatingRef.current || isGestureActiveRef.current) {
         pendingScaleRef.current = scale;
       } else {
         setCurrentScale(scale);
       }
     }
-  }, [controller.zoomThreshold, currentScale]);
+  }, [controller.zoomThreshold]);
 
   // Called by MapContainer when gestures/animations settle — flush any deferred scale update
   const flushPendingScale = useCallback(() => {
     isAnimatingRef.current = false;
+    isGestureActiveRef.current = false;
     if (pendingScaleRef.current !== null) {
       const pending = pendingScaleRef.current;
       pendingScaleRef.current = null;
       setCurrentScale(pending);
-
-      // Force a viewport cull now that seats are about to mount
-      const state = transformRef.current?.instance?.transformState;
-      if (state) {
-        handleTransformChange(state as TransformState);
-      }
     }
+    // Always recalculate viewport after any animation or gesture settles
+    const state = transformRef.current?.instance?.transformState;
+    if (state) handleTransformChange(state as TransformState);
   }, [handleTransformChange, transformRef]);
 
   const viewState = useSeatMapPrototypeViewState({
@@ -373,6 +375,7 @@ export function SeatMapRoot() {
                 onClick={() => {
                   transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
                   viewState.setSelection(EMPTY_SELECTION);
+                  currentScaleForThresholdRef.current = controller.initialScale;
                   setCurrentScale(controller.initialScale);
                 }}
                 className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"

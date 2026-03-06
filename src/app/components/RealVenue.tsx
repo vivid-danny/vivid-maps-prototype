@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import type { VenueGeometry, VenueSeatMapModel } from '../seatMap/mock/createVenueSeatMapModel';
 import type { SeatColors, SelectionState, HoverState, DisplayMode, PinData, Listing } from '../seatMap/model/types';
 import type { PinDensityConfig } from '../seatMap/config/types';
@@ -163,6 +163,9 @@ export function RealVenue({
     prevFillOpacity: string;
   } | null>(null);
 
+  // Imperative handle to push panel hover into RealVenueSeats without re-rendering it
+  const seatsHandleRef = useRef<RealVenueSeatsHandle>(null);
+
   // Viewport culling: recompute when viewportRect changes (updated during pan via rAF)
   const visibleSections = useMemo(
     () => computeVisibleSections(geometry, viewportRect),
@@ -233,15 +236,13 @@ export function RealVenue({
         pinsToShow = getDensityPinSlice(sectionPins, pinDensity.seats);
       }
 
-      // In sections mode, the section pin stays mounted and transitions to hover state in-place
-      // (avoids the opacity-0 flash from the enter animation on a hover overlay pin).
-      // In rows/seats mode, the hover overlay pin handles hover — hide the regular pin as before.
+      // Pins stay mounted in all modes. isHovered flag + seat-view props handle hover appearance.
       const pinVisibilityContext = {
         displayMode,
         pins: sectionPins,
         sectionId,
         selectedListing,
-        hoverTarget: displayMode === 'sections' ? null : (hoverState.sectionId === sectionId ? hoverPinTarget : null),
+        hoverTarget: null,
       };
 
       for (const pin of pinsToShow) {
@@ -261,14 +262,19 @@ export function RealVenue({
           y = row[seatIdx * 2 + 1];
         }
 
-        const isHovered = displayMode === 'sections' &&
-          hoverPinTarget?.listing.listingId === pin.listing.listingId;
+        const isHovered = hoverPinTarget?.listing.listingId === pin.listing.listingId;
 
         pins.push({ pin, x, y, sectionId, isHovered });
       }
     }
     return pins;
   }, [pinsBySection, geometry.seatPositions, geometry.sectionBoundaries, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId]);
+
+  // Push panel hover changes to RealVenueSeats via imperative handle (no re-render)
+  useEffect(() => {
+    if (displayMode === 'sections') return;
+    seatsHandleRef.current?.applyPanelHover(hoverState, seatColors, seatColorsBySection);
+  }, [hoverState, displayMode, seatColors, seatColorsBySection]);
 
   return (
     <div style={{ position: 'relative', width: frameWidth, height: frameHeight }}>
@@ -366,6 +372,7 @@ export function RealVenue({
         {/* Seats/rows - only in zoomed modes, with viewport culling */}
         {displayMode !== 'sections' && (
           <RealVenueSeats
+            ref={seatsHandleRef}
             geometry={geometry}
             model={model}
             seatColors={seatColors}
@@ -373,7 +380,6 @@ export function RealVenue({
             displayMode={displayMode}
             selection={selection}
             onSelect={onSelect}
-            hoverState={hoverState}
             onHover={onHover}
             visibleSections={visibleSections}
             connectorWidth={connectorWidth}
@@ -432,7 +438,10 @@ export function RealVenue({
           hoverColor={seatColors.pinHovered}
           pressedColor={seatColors.pinPressed}
           selectedColor={seatColors.pinSelected}
-          useTransition={displayMode === 'sections'}
+          useTransition
+          seatViewUrl={pin.listing.seatViewUrl}
+          sectionLabel={pin.listing.sectionLabel}
+          rowNumber={pin.listing.rowNumber}
         />
       ))}
 
@@ -454,9 +463,8 @@ export function RealVenue({
         />
       )}
 
-      {/* Hover pin overlay — sections mode handles hover in-place when the section has a pin.
-          Fall back to overlay when the section has no pin (e.g. excluded by density). */}
-      {hoverPinPos && hoverPinTarget && (displayMode !== 'sections' || !pinElements.some(el => el.isHovered)) && (
+      {/* Hover pin overlay — falls back to overlay when no default pin is covering the hover. */}
+      {hoverPinPos && hoverPinTarget && !pinElements.some(el => el.isHovered) && (
         <Pin
           isHovered
           price={hoverPinTarget.listing.price}
@@ -476,23 +484,61 @@ export function RealVenue({
   );
 }
 
-// Separate component for seats to isolate re-renders — memo skips re-renders when props are stable
-const RealVenueSeats = memo(function RealVenueSeats({
-  geometry,
-  model,
-  seatColors,
-  seatColorsBySection,
-  displayMode,
-  selection,
-  onSelect,
-  hoverState,
-  onHover,
-  visibleSections,
-  connectorWidth,
-  dealColorOverrides,
-  listingsBySection,
-  zoneRowDisplay = 'seats',
-}: {
+// --- DOM mutation helpers for hover/pressed (avoids re-rendering 18K SVG elements) ---
+
+interface MutatedState {
+  els: Element[];
+  prevValues: string[];
+  attr: string;
+}
+
+function restoreMutated(ref: React.MutableRefObject<MutatedState | null>) {
+  const state = ref.current;
+  if (!state) return;
+  for (let i = 0; i < state.els.length; i++) {
+    state.els[i].setAttribute(state.attr, state.prevValues[i]);
+  }
+  ref.current = null;
+}
+
+function mutateElements(els: Element[], attr: string, color: string): MutatedState {
+  const prevValues = els.map(el => el.getAttribute(attr) ?? '');
+  for (const el of els) el.setAttribute(attr, color);
+  return { els, prevValues, attr };
+}
+
+/** Find all SVG elements matching a row polyline or listing seats+connectors */
+function findHoverTargets(wrapper: SVGGElement, dataset: DOMStringMap): { fills: Element[]; strokes: Element[] } {
+  if (dataset.isRow || dataset.isZoneRow) {
+    // Row polylines: stroke is the visual attr
+    const selector = dataset.isRow
+      ? `[data-row-id="${dataset.rowId}"][data-is-row]`
+      : `[data-row-id="${dataset.rowId}"][data-is-zone-row]`;
+    return { fills: [], strokes: Array.from(wrapper.querySelectorAll(selector)) };
+  }
+  if (dataset.listingId) {
+    // Seats (circles → fill) and connectors (lines → stroke) sharing the same listing
+    const all = Array.from(wrapper.querySelectorAll(`[data-listing-id="${dataset.listingId}"]`));
+    const fills: Element[] = [];
+    const strokes: Element[] = [];
+    for (const el of all) {
+      if (el.tagName === 'circle') fills.push(el);
+      else if (el.tagName === 'line') strokes.push(el);
+    }
+    return { fills, strokes };
+  }
+  return { fills: [], strokes: [] };
+}
+
+// Imperative handle so the parent can apply panel hover without triggering re-renders
+export interface RealVenueSeatsHandle {
+  applyPanelHover: (hover: HoverState, colors: SeatColors, sectionColors?: Map<string, SeatColors> | null) => void;
+}
+
+// Separate component for seats to isolate re-renders — memo skips re-renders when props are stable.
+// Hover and pressed visuals are handled via direct DOM mutation (not React state) to avoid
+// re-rendering ~18K SVG elements on every mouse move. Only selection changes trigger re-renders.
+const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
   geometry: VenueGeometry;
   model: VenueSeatMapModel;
   seatColors: SeatColors;
@@ -500,18 +546,79 @@ const RealVenueSeats = memo(function RealVenueSeats({
   displayMode: DisplayMode;
   selection: SelectionState;
   onSelect: (selection: SelectionState) => void;
-  hoverState: HoverState;
   onHover: (hover: HoverState) => void;
   visibleSections: Set<string> | null;
   connectorWidth: number;
   dealColorOverrides?: Map<string, string> | null;
   listingsBySection?: Map<string, Listing[]>;
   zoneRowDisplay?: 'rows' | 'seats';
-}) {
-  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
-  const [pressedTarget, setPressedTarget] = useState<{ type: 'listing' | 'row'; id: string } | null>(null);
+}>(function RealVenueSeats({
+  geometry,
+  model,
+  seatColors,
+  seatColorsBySection,
+  displayMode,
+  selection,
+  onSelect,
+  onHover,
+  visibleSections,
+  connectorWidth,
+  dealColorOverrides,
+  listingsBySection,
+  zoneRowDisplay = 'seats',
+}, ref) {
+  const wrapperRef = useRef<SVGGElement>(null);
+  const hoveredFillsRef = useRef<MutatedState | null>(null);
+  const hoveredStrokesRef = useRef<MutatedState | null>(null);
+  const pressedFillsRef = useRef<MutatedState | null>(null);
+  const pressedStrokesRef = useRef<MutatedState | null>(null);
 
-  // Build listing lookup for click/hover
+  // Keep latest colors in refs so DOM mutation callbacks don't go stale
+  const colorsRef = useRef(seatColors);
+  colorsRef.current = seatColors;
+  const sectionColorsRef = useRef(seatColorsBySection);
+  sectionColorsRef.current = seatColorsBySection;
+
+  // Shared hover apply/clear used by both map events and panel hover
+  const applyHoverDOM = useCallback((hover: HoverState, sc: SeatColors) => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    // Build a synthetic dataset to reuse findHoverTargets
+    const dataset: DOMStringMap = {} as DOMStringMap;
+    if (hover.rowId && !hover.listingId) {
+      dataset.rowId = hover.rowId;
+      // Check if it's a zone row or regular row — try zone row first
+      const zoneEl = wrapper.querySelector(`[data-row-id="${hover.rowId}"][data-is-zone-row]`);
+      if (zoneEl) dataset.isZoneRow = 'true';
+      else dataset.isRow = 'true';
+    } else if (hover.listingId) {
+      dataset.listingId = hover.listingId;
+    } else {
+      return;
+    }
+
+    const { fills, strokes } = findHoverTargets(wrapper, dataset);
+    if (fills.length > 0) hoveredFillsRef.current = mutateElements(fills, 'fill', sc.hover);
+    if (strokes.length > 0) hoveredStrokesRef.current = mutateElements(strokes, 'stroke', hover.listingId ? sc.connectorHover : sc.hover);
+  }, []);
+
+  const clearHoverDOM = useCallback(() => {
+    restoreMutated(hoveredFillsRef);
+    restoreMutated(hoveredStrokesRef);
+  }, []);
+
+  // Expose imperative handle for panel hover
+  useImperativeHandle(ref, () => ({
+    applyPanelHover: (hover: HoverState, colors: SeatColors, sectionColors?: Map<string, SeatColors> | null) => {
+      clearHoverDOM();
+      if (!hover.sectionId && !hover.listingId) return;
+      const sc = (hover.sectionId && sectionColors?.get(hover.sectionId)) ?? colors;
+      applyHoverDOM(hover, sc);
+    },
+  }), [applyHoverDOM, clearHoverDOM]);
+
+  // Build listing lookup for click
   const seatToListing = useMemo(() => {
     const map = new Map<string, { listingId: string; seatIds: string[] }>();
     for (const [, sectionData] of model.sectionDataById) {
@@ -589,62 +696,74 @@ const RealVenueSeats = memo(function RealVenueSeats({
   const handleSeatMouseOver = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
     const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
-    if (!dataset) return;
+    if (!dataset || dataset.available === 'false') return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    // Clear previous hover
+    clearHoverDOM();
+
+    const sc = (dataset.sectionId && sectionColorsRef.current?.get(dataset.sectionId)) ?? colorsRef.current;
 
     // Row-level hover
     if (dataset.rowId && dataset.sectionId && (dataset.isRow || dataset.isZoneRow)) {
-      if (dataset.available === 'false') return;
-      setHoveredRowId(dataset.rowId);
+      const { strokes } = findHoverTargets(wrapper, dataset);
+      if (strokes.length > 0) hoveredStrokesRef.current = mutateElements(strokes, 'stroke', sc.hover);
       onHover(buildRowHover(dataset.sectionId, dataset.rowId));
       return;
     }
 
     // Seat-level hover
     if (dataset.listingId && dataset.sectionId && dataset.rowId) {
-      if (dataset.available === 'false') return;
+      const { fills, strokes } = findHoverTargets(wrapper, dataset);
+      if (fills.length > 0) hoveredFillsRef.current = mutateElements(fills, 'fill', sc.hover);
+      if (strokes.length > 0) hoveredStrokesRef.current = mutateElements(strokes, 'stroke', sc.connectorHover);
       onHover({
         listingId: dataset.listingId,
         sectionId: dataset.sectionId,
         rowId: dataset.rowId,
       });
     }
-  }, [onHover]);
+  }, [onHover, clearHoverDOM]);
 
   const handleSeatMouseOut = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
     const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
-    if (!dataset) return;
+    if (!dataset || dataset.available === 'false') return;
 
-    if (dataset.isRow || dataset.isZoneRow) {
-      if (dataset.available === 'false') return;
-      setHoveredRowId(null);
-      onHover(clearHover());
-      return;
-    }
-
-    if (dataset.available !== 'false' && (dataset.listingId || dataset.seatId)) {
+    if (dataset.isRow || dataset.isZoneRow || dataset.listingId || dataset.seatId) {
+      clearHoverDOM();
       onHover(clearHover());
     }
-  }, [onHover]);
+  }, [onHover, clearHoverDOM]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
     const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
     if (!dataset || dataset.available === 'false') return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
-    if (dataset.isRow === 'true' || dataset.isZoneRow === 'true') {
-      if (dataset.rowId) setPressedTarget({ type: 'row', id: dataset.rowId });
+    const sc = (dataset.sectionId && sectionColorsRef.current?.get(dataset.sectionId)) ?? colorsRef.current;
+
+    if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
+      const { strokes } = findHoverTargets(wrapper, dataset);
+      if (strokes.length > 0) pressedStrokesRef.current = mutateElements(strokes, 'stroke', sc.pressed);
     } else if (dataset.listingId) {
-      setPressedTarget({ type: 'listing', id: dataset.listingId });
+      const { fills, strokes } = findHoverTargets(wrapper, dataset);
+      if (fills.length > 0) pressedFillsRef.current = mutateElements(fills, 'fill', sc.pressed);
+      if (strokes.length > 0) pressedStrokesRef.current = mutateElements(strokes, 'stroke', sc.connectorPressed);
     }
   }, []);
 
   const handleMouseUp = useCallback(() => {
-    setPressedTarget(null);
+    restoreMutated(pressedFillsRef);
+    restoreMutated(pressedStrokesRef);
   }, []);
 
   return (
     <g
+      ref={wrapperRef}
       onClick={handleSeatClick}
       onMouseOver={handleSeatMouseOver}
       onMouseOut={handleSeatMouseOut}
@@ -673,18 +792,12 @@ const RealVenueSeats = memo(function RealVenueSeats({
 
             const hasAvailable = rowData.seats.some((s) => s.status === 'available');
             const isRowSelected = selection.rowId === rowData.rowId;
-            const isRowHovered = hoveredRowId === rowData.rowId || hoverState.rowId === rowData.rowId;
-            const isRowPressed = pressedTarget?.type === 'row' && pressedTarget.id === rowData.rowId;
 
             let strokeColor: string;
             if (!hasAvailable) {
               strokeColor = sc.unavailable;
             } else if (isRowSelected) {
               strokeColor = sc.selected;
-            } else if (isRowPressed) {
-              strokeColor = sc.pressed;
-            } else if (isRowHovered) {
-              strokeColor = sc.hover;
             } else {
               strokeColor = rowDealColors?.get(rowData.rowId) ?? sc.available;
             }
@@ -715,18 +828,12 @@ const RealVenueSeats = memo(function RealVenueSeats({
 
             const hasAvailable = rowData.seats.some(s => s.status === 'available');
             const isRowSelected = selection.rowId === rowData.rowId;
-            const isRowHovered = hoveredRowId === rowData.rowId || hoverState.rowId === rowData.rowId;
-            const isRowPressed = pressedTarget?.type === 'row' && pressedTarget.id === rowData.rowId;
 
             let strokeColor: string;
             if (!hasAvailable) {
               strokeColor = sc.unavailable;
             } else if (isRowSelected) {
               strokeColor = sc.selected;
-            } else if (isRowPressed) {
-              strokeColor = sc.pressed;
-            } else if (isRowHovered) {
-              strokeColor = sc.hover;
             } else {
               strokeColor = sc.available;
             }
@@ -750,6 +857,7 @@ const RealVenueSeats = memo(function RealVenueSeats({
           }
 
           // Seats mode: connectors first (behind seats), then circles
+          // Renders base colors only — hover/pressed are applied via DOM mutation
           const connectors: React.ReactElement[] = [];
           const circles: React.ReactElement[] = [];
 
@@ -760,18 +868,12 @@ const RealVenueSeats = memo(function RealVenueSeats({
             const cy = flatCoords[seatIndex * 2 + 1];
             const isAvailable = seat.status === 'available';
             const isSelected = selectedSeatSet.has(seat.seatId);
-            const isListingHovered = seat.listingId && hoverState.listingId === seat.listingId;
-            const isListingPressed = seat.listingId && pressedTarget?.type === 'listing' && pressedTarget.id === seat.listingId;
 
             let color: string;
             if (!isAvailable) {
               color = sc.unavailable;
             } else if (isSelected) {
               color = sc.selected;
-            } else if (isListingPressed) {
-              color = sc.pressed;
-            } else if (isListingHovered) {
-              color = sc.hover;
             } else if (dealColorOverrides && seat.listingId) {
               color = dealColorOverrides.get(seat.listingId) ?? sc.available;
             } else {
@@ -786,8 +888,6 @@ const RealVenueSeats = memo(function RealVenueSeats({
                 const ny = flatCoords[(seatIndex + 1) * 2 + 1];
                 let connColor = sc.connector;
                 if (isSelected) connColor = sc.connectorSelected;
-                else if (isListingPressed) connColor = sc.connectorPressed;
-                else if (isListingHovered) connColor = sc.connectorHover;
                 else if (dealColorOverrides && seat.listingId) {
                   connColor = dealColorOverrides.get(seat.listingId) ?? sc.connector;
                 }
@@ -837,4 +937,4 @@ const RealVenueSeats = memo(function RealVenueSeats({
       })}
     </g>
   );
-});
+}));
