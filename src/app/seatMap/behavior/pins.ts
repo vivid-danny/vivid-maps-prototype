@@ -30,26 +30,55 @@ export function declutterPins<T extends ResolvedPin>(
   density: number,
   isMobile = false,
 ): T[] {
-  if (density <= 0) return [];
+  if (density <= 0 || resolvedPins.length === 0) return [];
 
   const base = DECLUTTER_BASE_DISTANCE[displayMode] * (isMobile ? MOBILE_DECLUTTER_MULTIPLIER[displayMode] : 1);
   const minDistance = base / density;
 
+  // Sort by deal score so seed is the best deal and ties break by deal quality
   const sorted = [...resolvedPins].sort((a, b) => {
     const scoreDiff = b.pin.listing.dealScore - a.pin.listing.dealScore;
     if (scoreDiff !== 0) return scoreDiff;
     return a.pin.listing.price - b.pin.listing.price;
   });
 
-  const placed: T[] = [];
-  for (const candidate of sorted) {
-    const tooClose = placed.some((p) => {
-      const dx = p.x - candidate.x;
-      const dy = p.y - candidate.y;
-      return Math.sqrt(dx * dx + dy * dy) < minDistance;
-    });
-    if (!tooClose) placed.push(candidate);
+  // Seed with the best deal, then use farthest-first insertion to maximize coverage
+  const placed: T[] = [sorted[0]];
+  const remaining = new Set(sorted.slice(1));
+
+  while (remaining.size > 0) {
+    let bestCandidate: T | null = null;
+    let bestMinDist = -1;
+
+    for (const candidate of remaining) {
+      let nearestDist = Infinity;
+      for (const p of placed) {
+        const dx = p.x - candidate.x;
+        const dy = p.y - candidate.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < nearestDist) nearestDist = dist;
+      }
+
+      // Prune candidates that will never pass the minimum distance
+      if (nearestDist < minDistance) {
+        remaining.delete(candidate);
+        continue;
+      }
+
+      // Pick farthest from all placed pins; break ties by deal score
+      if (nearestDist > bestMinDist ||
+          (nearestDist === bestMinDist && bestCandidate &&
+           candidate.pin.listing.dealScore > bestCandidate.pin.listing.dealScore)) {
+        bestCandidate = candidate;
+        bestMinDist = nearestDist;
+      }
+    }
+
+    if (!bestCandidate) break;
+    placed.push(bestCandidate);
+    remaining.delete(bestCandidate);
   }
+
   return placed;
 }
 
