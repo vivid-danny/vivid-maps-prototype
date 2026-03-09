@@ -1,6 +1,58 @@
 import { hashString, parseSeatId } from './utils';
 import type { DisplayMode, HoverState, Listing, PinData } from '../model/types';
 
+export interface ResolvedPin {
+  pin: PinData;
+  x: number;
+  y: number;
+  sectionId: string;
+}
+
+// Base distances calibrated to desktop initial scale (0.12).
+// At default densities: sections → ~333 units (40px), rows → ~100 units (30px), seats → ~50 units (25px).
+const DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
+  sections: 100,
+  rows: 20,
+  seats: 5,
+};
+
+// Mobile initial scale (0.03) is 4x more zoomed out than desktop (0.12), so
+// pins need proportionally larger venue-unit separation to avoid overlapping on screen.
+const MOBILE_DECLUTTER_MULTIPLIER: Record<DisplayMode, number> = {
+  sections: 3,
+  rows: 2,
+  seats: 1.5,
+};
+
+export function declutterPins<T extends ResolvedPin>(
+  resolvedPins: T[],
+  displayMode: DisplayMode,
+  density: number,
+  isMobile = false,
+): T[] {
+  if (density <= 0) return [];
+
+  const base = DECLUTTER_BASE_DISTANCE[displayMode] * (isMobile ? MOBILE_DECLUTTER_MULTIPLIER[displayMode] : 1);
+  const minDistance = base / density;
+
+  const sorted = [...resolvedPins].sort((a, b) => {
+    const scoreDiff = b.pin.listing.dealScore - a.pin.listing.dealScore;
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.pin.listing.price - b.pin.listing.price;
+  });
+
+  const placed: T[] = [];
+  for (const candidate of sorted) {
+    const tooClose = placed.some((p) => {
+      const dx = p.x - candidate.x;
+      const dy = p.y - candidate.y;
+      return Math.sqrt(dx * dx + dy * dy) < minDistance;
+    });
+    if (!tooClose) placed.push(candidate);
+  }
+  return placed;
+}
+
 export type PinVisualState = 'default' | 'hover' | 'selected' | 'hidden';
 
 export interface PinVisibilityContext {

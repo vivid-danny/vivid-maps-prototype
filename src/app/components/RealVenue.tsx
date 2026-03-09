@@ -16,6 +16,7 @@ import {
   getHoverPinTarget,
   isPinVisible,
   getLowestPricePin,
+  declutterPins,
 } from '../seatMap/behavior/pins';
 import type { HoverPinTarget } from '../seatMap/behavior/pins';
 import { parseSeatId } from '../seatMap/behavior/utils';
@@ -269,8 +270,13 @@ export function RealVenue({
         pins.push({ pin, x, y, sectionId, isHovered });
       }
     }
-    return pins;
-  }, [pinsBySection, geometry.seatPositions, geometry.sectionBoundaries, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId]);
+
+    const currentDensity =
+      displayMode === 'sections' ? pinDensity.sections
+      : displayMode === 'rows' ? pinDensity.rows
+      : pinDensity.seats;
+    return declutterPins(pins, displayMode, currentDensity, isMobile);
+  }, [pinsBySection, geometry.seatPositions, geometry.sectionBoundaries, visibleSections, displayMode, pinDensity, selectedListing, hoverPinTarget, hoverState.sectionId, isMobile]);
 
   // Mobile: show roughly half the pins to reduce clutter
   const visiblePinElements = useMemo(() => {
