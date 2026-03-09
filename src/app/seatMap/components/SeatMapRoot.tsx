@@ -306,7 +306,7 @@ export function SeatMapRoot() {
     panelSelectionRef.current = viewState.selection;
   }
   const panelSelection = isDetailOpen
-    ? panelSelectionRef.current
+    ? { ...panelSelectionRef.current, listingId: viewState.selection.listingId }
     : viewState.selection;
 
   return (

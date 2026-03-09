@@ -170,6 +170,20 @@ export function RealVenue({
     prevFillOpacity: string;
   } | null>(null);
 
+  // DOM ref for pressed state on section boundaries
+  const pressedSectionRef = useRef<{
+    path: SVGPathElement;
+    prevFill: string;
+    prevFillOpacity: string;
+  } | null>(null);
+
+  // When selection changes, React re-renders section fills with correct colors.
+  // Null out stale hover/pressed refs so onMouseLeave doesn't restore pre-selection colors.
+  useEffect(() => {
+    hoveredSectionRef.current = null;
+    pressedSectionRef.current = null;
+  }, [selection.sectionId]);
+
   // Imperative handle to push panel hover into RealVenueSeats without re-rendering it
   const seatsHandleRef = useRef<RealVenueSeatsHandle>(null);
 
@@ -378,6 +392,7 @@ export function RealVenue({
                 onHover(buildSectionHover(sectionId));
               } : undefined}
               onMouseLeave={isAvailable && displayMode === 'sections' ? () => {
+                pressedSectionRef.current = null; // clear — hoveredSectionRef restores original fill
                 const prev = hoveredSectionRef.current;
                 if (prev) {
                   prev.path.setAttribute('fill', prev.prevFill);
@@ -386,6 +401,26 @@ export function RealVenue({
                   hoveredSectionRef.current = null;
                 }
                 onHover(clearHover());
+              } : undefined}
+              onMouseDown={isAvailable && displayMode === 'sections' ? (e) => {
+                const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
+                if (path) {
+                  pressedSectionRef.current = {
+                    path,
+                    prevFill: path.getAttribute('fill') ?? '',
+                    prevFillOpacity: path.getAttribute('fill-opacity') ?? '',
+                  };
+                  path.setAttribute('fill', sectionColors.pressed);
+                  path.setAttribute('fill-opacity', '1.0');
+                }
+              } : undefined}
+              onMouseUp={isAvailable && displayMode === 'sections' ? () => {
+                const prev = pressedSectionRef.current;
+                if (prev) {
+                  prev.path.setAttribute('fill', prev.prevFill);
+                  prev.path.setAttribute('fill-opacity', prev.prevFillOpacity);
+                  pressedSectionRef.current = null;
+                }
               } : undefined}
             >
               <path
@@ -685,6 +720,13 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
   colorsRef.current = seatColors;
   const sectionColorsRef = useRef(seatColorsBySection);
   sectionColorsRef.current = seatColorsBySection;
+
+  // When selection changes, React re-renders circles with correct colors.
+  // Null out stale hover refs so clearHoverDOM doesn't restore pre-selection colors.
+  useEffect(() => {
+    hoveredFillsRef.current = null;
+    hoveredStrokesRef.current = null;
+  }, [selection.listingId]);
 
   // Shared hover apply/clear used by both map events and panel hover
   const applyHoverDOM = useCallback((hover: HoverState, sc: SeatColors) => {
