@@ -32,7 +32,8 @@ src/
 └── app/
     ├── App.tsx                           # Root - renders SeatMapRoot
     ├── components/                       # Shared UI components
-    │   ├── Venue.tsx                     # Venue map canvas
+    │   ├── Venue.tsx                     # Demo venue map canvas
+    │   ├── RealVenue.tsx                 # Real venue renderer (absolute coords, viewport culling)
     │   ├── Stage.tsx                     # Stage element
     │   ├── VenueBoundary.tsx             # Venue boundary SVG
     │   ├── Section.tsx                   # Orchestrates display mode per section
@@ -68,7 +69,9 @@ src/
         │   ├── generateListings.ts       # SectionData → Listing[]
         │   ├── generatePins.ts           # Listings → PinData
         │   ├── seededRandom.ts           # Mulberry32 PRNG
-        │   └── createMockSeatMapModel.ts # Orchestrates generation
+        │   ├── createMockSeatMapModel.ts # Orchestrates demo generation
+        │   ├── createVenueSeatMapModel.ts # venueData.json → VenueSeatMapModel
+        │   └── venueData.json            # Extracted Figma data (69 sections, ~18K seats)
         ├── state/
         │   ├── useSeatMapConfig.ts       # Config state management
         │   ├── useLayoutMode.ts          # Viewport layout mode detection (mobile vs desktop)
@@ -119,6 +122,9 @@ This format assumes single-character section IDs. Numeric IDs (e.g., "101") woul
 
 ### Seeded Randomization
 All data generation is deterministic via Mulberry32 PRNG. Each phase creates its own RNG with a derived seed — RNG instances are **not shared** across sections. Changing the map seed regenerates everything. See the generation files for seed derivation patterns.
+
+### Real Venue Default
+`venueMode` defaults to `'real'` with `REAL_VENUE_SCALE_DEFAULTS` (desktop: initial 0.08, threshold 0.3). Switching to demo restores demo scale defaults. The venue toggle lives in PrototypeControls > Map tab.
 
 ### Pin Placement
 Uses **Chebyshev distance** (not Euclidean): `max(|Δrow|, |Δseat|) >= 2`. This creates a 3×3 exclusion zone around each placed pin. Up to 3 pins per section via greedy selection.

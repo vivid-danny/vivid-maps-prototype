@@ -3,6 +3,7 @@ import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
+import { MAP_REGISTRY } from '../mock/mapRegistry';
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -11,6 +12,8 @@ interface PrototypeControlsProps {
   config: SeatMapConfig;
   onConfigChange: (updates: Partial<SeatMapConfig>) => void;
   onResetConfig: () => void;
+  mapId: string;
+  onMapChange: (id: string) => void;
 }
 
 function ToggleGroup<T extends string>({
@@ -120,8 +123,10 @@ export function PrototypeControls({
   config,
   onConfigChange,
   onResetConfig,
+  mapId,
+  onMapChange,
 }: PrototypeControlsProps) {
-  const [activeTab, setActiveTab] = useState<'controls' | 'styles'>('controls');
+  const [activeTab, setActiveTab] = useState<'controls' | 'styles' | 'map'>('controls');
 
   const handleColorChange = (key: keyof SeatMapConfig['seatColors'], value: string) => {
     onConfigChange({
@@ -156,6 +161,7 @@ export function PrototypeControls({
         {([
           { id: 'controls', label: 'Interaction' },
           { id: 'styles', label: 'Styles' },
+          { id: 'map', label: 'Map' },
         ] as const).map(({ id, label }) => (
           <button
             key={id}
@@ -250,25 +256,25 @@ export function PrototypeControls({
                 label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
                 value={config.desktopInitialScale}
                 onChange={(desktopInitialScale) => onConfigChange({ desktopInitialScale })}
-                min={0.5} max={3} step={0.1}
+                min={0.02} max={0.25} step={0.01}
               />
               <SliderControl
                 label={`Desktop Zoom Threshold: ${config.desktopZoomThreshold}x`}
                 value={config.desktopZoomThreshold}
                 onChange={(desktopZoomThreshold) => onConfigChange({ desktopZoomThreshold })}
-                min={2} max={15} step={0.5}
+                min={0.1} max={1.0} step={0.05}
               />
               <SliderControl
                 label={`Mobile Initial Scale: ${config.mobileInitialScale}`}
                 value={config.mobileInitialScale}
                 onChange={(mobileInitialScale) => onConfigChange({ mobileInitialScale })}
-                min={0.2} max={1.5} step={0.1}
+                min={0.01} max={0.1} step={0.005}
               />
               <SliderControl
                 label={`Mobile Zoom Threshold: ${config.mobileZoomThreshold}x`}
                 value={config.mobileZoomThreshold}
                 onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
-                min={1} max={10} step={0.5}
+                min={0.05} max={0.5} step={0.05}
               />
               <SliderControl
                 label={`Mobile Map Height: ${config.mobileMapHeight}px`}
@@ -312,6 +318,25 @@ export function PrototypeControls({
         </>
       )}
 
+      {activeTab === 'map' && (
+        <div className="space-y-3">
+          <label className="text-xs text-black font-bold block mb-4">Select Map</label>
+          {MAP_REGISTRY.map((def) => (
+            <button
+              key={def.id}
+              onClick={() => onMapChange(def.id)}
+              className={`w-full text-left px-4 py-3 rounded border transition-colors cursor-pointer ${
+                mapId === def.id
+                  ? 'border-gray-800 bg-gray-800 text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <div className="text-sm font-medium">{def.label}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
       {activeTab === 'styles' && (
         <>
           {/* Theme */}
@@ -338,6 +363,12 @@ export function PrototypeControls({
                 value={config.seatColors.venueStroke}
                 onChange={(value) => handleColorChange('venueStroke', value)}
               />
+              <SliderControl
+                label={`Stroke Width: ${config.venueStrokeWidth}px`}
+                value={config.venueStrokeWidth}
+                onChange={(venueStrokeWidth) => onConfigChange({ venueStrokeWidth })}
+                min={0} max={16} step={1}
+              />
               <ColorControl
                 label="Map Background"
                 value={config.seatColors.mapBackground}
@@ -363,13 +394,30 @@ export function PrototypeControls({
           </div>
 
           <div className="mb-8">
+            <div className="text-xs font-bold text-black mb-4">Section Boundaries</div>
+            <div className="space-y-3">
+              <ColorControl
+                label="Stroke"
+                value={config.seatColors.sectionStroke}
+                onChange={(value) => handleColorChange('sectionStroke', value)}
+              />
+              <SliderControl
+                label={`Stroke Width: ${config.sectionStrokeWidth}px`}
+                value={config.sectionStrokeWidth}
+                onChange={(sectionStrokeWidth) => onConfigChange({ sectionStrokeWidth })}
+                min={0.5} max={16} step={0.5}
+              />
+            </div>
+          </div>
+
+          <div className="mb-8">
             <div className="text-xs font-bold text-black mb-4">Connector</div>
             <div className="space-y-3">
               <SliderControl
                 label={`Connector Width: ${config.connectorWidth}px`}
                 value={config.connectorWidth}
                 onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-                min={0} max={4} step={0.5}
+                min={0} max={12} step={1}
               />
               {([
                 { key: 'connector' as const, label: 'Default' },

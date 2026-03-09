@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
@@ -13,6 +13,7 @@ interface UseSeatMapPrototypeViewStateParams {
   currentScale: number;
   setCurrentScale: Dispatch<SetStateAction<number>>;
   transformRef: MutableRefObject<ReactZoomPanPinchRef | null>;
+  isAnimatingRef: MutableRefObject<boolean>;
 }
 
 export function useSeatMapPrototypeViewState({
@@ -22,6 +23,7 @@ export function useSeatMapPrototypeViewState({
   currentScale,
   setCurrentScale,
   transformRef,
+  isAnimatingRef,
 }: UseSeatMapPrototypeViewStateParams) {
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
@@ -62,8 +64,12 @@ export function useSeatMapPrototypeViewState({
     return () => clearTimeout(timeout);
   }, [controller.initialScale, layoutMode, setCurrentScale, transformRef]);
 
-  const navigateToSelection = (sel: SelectionState) => {
+  const navigateToSelection = useCallback((sel: SelectionState) => {
     if (!sel.sectionId) return;
+
+    // Signal that a programmatic zoom is in progress — SeatMapRoot will
+    // defer display-mode switches until the animation settles
+    isAnimatingRef.current = true;
 
     // Cancel any in-flight step-2 zoom
     if (pendingZoomRef.current) {
@@ -80,15 +86,18 @@ export function useSeatMapPrototypeViewState({
       fineElementId = sel.rowId;
     }
 
-    const targetScale = currentScale >= controller.zoomThreshold
-      ? currentScale
-      : controller.zoomThreshold + 0.5;
-
-    const alreadyZoomedIn = currentScale >= controller.zoomThreshold;
+    const actualScale = transformRef.current?.instance?.transformState?.scale ?? currentScale;
+    const alreadyZoomedIn = actualScale >= controller.zoomThreshold;
+    const targetScale = alreadyZoomedIn ? actualScale : controller.zoomThreshold + 0.5;
 
     if (alreadyZoomedIn) {
       // Already zoomed in — row/seat elements are in the DOM, single-step zoom
-      const elementId = fineElementId ?? `section-${sel.sectionId}`;
+      // Fall back through: seat → row → section (seats may lack DOM ids in real venue)
+      const elementId = (fineElementId && document.getElementById(fineElementId))
+        ? fineElementId
+        : (sel.rowId && document.getElementById(sel.rowId))
+          ? sel.rowId
+          : `section-${sel.sectionId}`;
       transformRef.current?.zoomToElement(elementId, targetScale, 300, 'easeOut');
     } else {
       // Zoomed out — row/seat elements not in DOM yet.
@@ -96,19 +105,25 @@ export function useSeatMapPrototypeViewState({
       transformRef.current?.zoomToElement(`section-${sel.sectionId}`, targetScale, 300, 'easeOut');
 
       // Step 2: after animation + re-render, refine to row/seat
-      if (fineElementId) {
-        const targetElementId = fineElementId;
+      if (fineElementId || sel.rowId) {
+        const candidateId = fineElementId ?? sel.rowId!;
+        const fallbackRowId = sel.rowId;
         pendingZoomRef.current = setTimeout(() => {
           pendingZoomRef.current = null;
-          if (document.getElementById(targetElementId)) {
-            transformRef.current?.zoomToElement(targetElementId, targetScale, 200, 'easeOut');
+          const targetId = document.getElementById(candidateId)
+            ? candidateId
+            : fallbackRowId && document.getElementById(fallbackRowId)
+              ? fallbackRowId
+              : null;
+          if (targetId) {
+            transformRef.current?.zoomToElement(targetId, targetScale, 200, 'easeOut');
           }
         }, 400);
       }
     }
-  };
+  }, [currentScale, controller.zoomThreshold, transformRef]);
 
-  const handleSelect = (newSelection: SelectionState) => {
+  const handleSelect = useCallback((newSelection: SelectionState) => {
     const nextSelection = getToggledSelection(selection, newSelection);
 
     if (nextSelection === EMPTY_SELECTION) {
@@ -119,9 +134,9 @@ export function useSeatMapPrototypeViewState({
       navigateToSelection(nextSelection);
       setViewMode(nextSelection.listingId ? 'detail' : 'listings');
     }
-  };
+  }, [selection, navigateToSelection]);
 
-  const handleSelectFromPanel = (listing: Listing) => {
+  const handleSelectFromPanel = useCallback((listing: Listing) => {
     // If already viewing this listing's detail, go back to listings
     if (viewMode === 'detail' && selection.listingId === listing.listingId) {
       setViewMode('listings');
@@ -148,9 +163,9 @@ export function useSeatMapPrototypeViewState({
     if (layoutMode !== 'mobile') {
       navigateToSelection(newSelection);
     }
-  };
+  }, [viewMode, selection, model.sectionDataById, layoutMode, navigateToSelection]);
 
-  const handleBackToListings = () => {
+  const handleBackToListings = useCallback(() => {
     setViewMode('listings');
     // If current selection is in a zone row, return to row-level selection
     if (selection.rowId && selection.sectionId) {
@@ -162,9 +177,9 @@ export function useSeatMapPrototypeViewState({
       }
     }
     setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
-  };
+  }, [selection, model.sectionDataById]);
 
-  const handleHoverFromPanel = (listing: Listing | null) => {
+  const handleHoverFromPanel = useCallback((listing: Listing | null) => {
     if (layoutMode === 'mobile') return;
     if (listing) {
       setHoverState({
@@ -175,12 +190,12 @@ export function useSeatMapPrototypeViewState({
     } else {
       setHoverState(clearHover());
     }
-  };
+  }, [layoutMode]);
 
-  const handleHoverFromMap = (hover: HoverState) => {
+  const handleHoverFromMap = useCallback((hover: HoverState) => {
     if (layoutMode === 'mobile') return;
     setHoverState(hover);
-  };
+  }, [layoutMode]);
 
   return {
     selection,

@@ -14,6 +14,8 @@ export interface SeatMapConfig {
   mobileInitialScale: number;
   mobileZoomThreshold: number;
   connectorWidth: number;
+  sectionStrokeWidth: number;
+  venueStrokeWidth: number;
   seatColors: SeatColors;
   pinDensity: PinDensityConfig;
   zoneRowDisplay: 'rows' | 'seats';

@@ -1,9 +1,16 @@
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { SeatMapController } from '../state/useSeatMapController';
 
 const MAX_SCALE = 25;
 const DEFAULT_WHEEL_STEP = 0.2;
+const GESTURE_IDLE_MS = 150;
+
+export interface TransformState {
+  positionX: number;
+  positionY: number;
+  scale: number;
+}
 
 interface MapContainerProps {
   controller: SeatMapController;
@@ -11,19 +18,64 @@ interface MapContainerProps {
   mobileMapHeight: number;
   children: ReactNode;
   onScaleChange?: (scale: number) => void;
+  onAnimationSettle?: () => void;
+  onTransformChange?: (state: TransformState) => void;
   wheelStep?: number;
   background?: string;
 }
 
 export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
-  function MapContainer({ controller, isSimulatedMobile, mobileMapHeight, children, onScaleChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
+  function MapContainer({ controller, isSimulatedMobile, mobileMapHeight, children, onScaleChange, onAnimationSettle, onTransformChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
     const width = isSimulatedMobile ? 390 : '100%';
     const height = isSimulatedMobile ? mobileMapHeight : '100%';
     const initialScale = controller.initialScale;
     const minScale = controller.minScale;
+    const outerDivRef = useRef<HTMLDivElement>(null);
+    const contentDivRef = useRef<HTMLDivElement>(null);
+    const rafRef = useRef<number>(0);
+    const gestureTimerRef = useRef<ReturnType<typeof setTimeout>>(0 as unknown as ReturnType<typeof setTimeout>);
+    const lastScaleRef = useRef<number>(initialScale);
+
+    useEffect(() => {
+      return () => {
+        cancelAnimationFrame(rafRef.current);
+        clearTimeout(gestureTimerRef.current);
+      };
+    }, []);
+
+    const handleTransformed = useCallback((_: unknown, state: { scale: number; positionX: number; positionY: number }) => {
+      // Update CSS var directly — no React state, so pins maintain screen size without re-rendering
+      outerDivRef.current?.style.setProperty('--map-scale', String(state.scale));
+
+      // Disable pointer-events & transitions during active gestures (avoids 18K+ hit-tests per frame)
+      if (contentDivRef.current) {
+        contentDivRef.current.style.pointerEvents = 'none';
+      }
+      outerDivRef.current?.classList.add('zooming');
+      clearTimeout(gestureTimerRef.current);
+      gestureTimerRef.current = setTimeout(() => {
+        if (contentDivRef.current) {
+          contentDivRef.current.style.pointerEvents = 'auto';
+        }
+        outerDivRef.current?.classList.remove('zooming');
+        onAnimationSettle?.();
+      }, GESTURE_IDLE_MS);
+
+      if (state.scale !== lastScaleRef.current) {
+        lastScaleRef.current = state.scale;
+        onScaleChange?.(state.scale);
+      }
+      if (onTransformChange) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+          onTransformChange(state);
+        });
+      }
+    }, [onScaleChange, onAnimationSettle, onTransformChange]);
 
     return (
       <div
+        ref={outerDivRef}
         className="border-1 border-gray-200"
         style={{
           width: typeof width === 'number' ? `${width}px` : width,
@@ -38,7 +90,7 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
           maxScale={MAX_SCALE}
           centerOnInit
           limitToBounds={false}
-          onTransformed={(_, state) => onScaleChange?.(state.scale)}
+          onTransformed={handleTransformed}
           wheel={{ step: wheelStep }}
         >
           <TransformComponent
@@ -46,8 +98,9 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
               width: '100%',
               height: '100%',
             }}
+            contentStyle={{}}
           >
-            <div style={{ padding: '300px' }}>
+            <div ref={contentDivRef} style={{ padding: '300px' }}>
               {children}
             </div>
           </TransformComponent>

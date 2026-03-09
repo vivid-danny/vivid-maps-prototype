@@ -1,33 +1,104 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { RotateCcw } from 'lucide-react';
-import { Section } from '../../components/Section';
-import { Venue } from '../../components/Venue';
-import { Stage } from '../../components/Stage';
+import { RealVenue, computeVisibleSections } from '../../components/RealVenue';
+import type { ViewportRect } from '../../components/RealVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { getDealColor, getZoneColor } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
-import { createMockSeatMapModel, STAGE_CONFIG } from '../mock/createMockSeatMapModel';
+import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
 import { MapContainer } from './MapContainer';
+import type { TransformState } from './MapContainer';
 import { EMPTY_SELECTION } from '../model/types';
 import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
+  const [mapId, setMapId] = useState<string>(DEFAULT_MAP_ID);
+  const mapDef = MAP_REGISTRY.find((m) => m.id === mapId) ?? MAP_REGISTRY[0]!;
+
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const isAnimatingRef = useRef(false);
+  const isGestureActiveRef = useRef(false);
+  const pendingScaleRef = useRef<number | null>(null);
+  const currentScaleForThresholdRef = useRef(mapDef.scaleDefaults.desktopInitialScale);
 
-  const model = useMemo(() => createMockSeatMapModel(), []);
-  const { config, updateConfig, resetConfig } = useSeatMapConfig(DEFAULT_SEAT_MAP_CONFIG);
-  const [currentScale, setCurrentScale] = useState(DEFAULT_SEAT_MAP_CONFIG.desktopInitialScale);
+  const venueModel = useMemo(() => mapDef.createModel(), [mapId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const model = venueModel;
+  const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
+    ...DEFAULT_SEAT_MAP_CONFIG,
+    ...mapDef.scaleDefaults,
+  });
+  const [currentScale, setCurrentScale] = useState(mapDef.scaleDefaults.desktopInitialScale);
+
+  const resetConfig = useCallback(() => {
+    rawResetConfig();
+    updateConfig(mapDef.scaleDefaults);
+  }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
+
+  const handleMapChange = useCallback((id: string) => {
+    const def = MAP_REGISTRY.find((m) => m.id === id);
+    if (!def) return;
+    setMapId(id);
+    updateConfig(def.scaleDefaults);
+    setCurrentScale(def.scaleDefaults.desktopInitialScale);
+    currentScaleForThresholdRef.current = def.scaleDefaults.desktopInitialScale;
+  }, [updateConfig]);
+
+  // Viewport rect in venue coordinates — updated during pan/zoom via rAF
+  // Only triggers re-render when the set of visible sections changes
+  const [viewportRect, setViewportRect] = useState<ViewportRect | null>(null);
+  const wrapperSizeRef = useRef<{ w: number; h: number } | null>(null);
+  const lastVisibleRef = useRef<Set<string> | null>(null);
+
+  const handleTransformChange = useCallback((state: TransformState) => {
+    if (!wrapperSizeRef.current) {
+      const wrapper = transformRef.current?.instance?.wrapperComponent;
+      if (wrapper) {
+        const rect = wrapper.getBoundingClientRect();
+        wrapperSizeRef.current = { w: rect.width, h: rect.height };
+      }
+    }
+    const ws = wrapperSizeRef.current;
+    if (!ws) return;
+
+    const newRect: ViewportRect = {
+      x: -state.positionX / state.scale,
+      y: -state.positionY / state.scale,
+      w: ws.w / state.scale,
+      h: ws.h / state.scale,
+    };
+
+    // Reuse RealVenue's culling logic (applies CULL_PADDING on section side)
+    const newVisible = computeVisibleSections(venueModel.geometry, newRect);
+    const prev = lastVisibleRef.current;
+
+    // Only update React state if the visible section set changed
+    let changed = !prev || !newVisible;
+    if (!changed && prev && newVisible) {
+      if (prev.size !== newVisible.size) {
+        changed = true;
+      } else {
+        for (const id of newVisible) {
+          if (!prev.has(id)) { changed = true; break; }
+        }
+      }
+    }
+
+    if (changed) {
+      setViewportRect(newRect);
+      lastVisibleRef.current = newVisible;
+    }
+  }, [venueModel.geometry]);
 
   const layoutMode = useLayoutMode(config.layoutModeOverride);
   const isSimulatedMobile = config.layoutModeOverride === 'mobile';
@@ -40,6 +111,40 @@ export function SeatMapRoot() {
     currentScale,
   });
 
+  // Gate setCurrentScale to threshold crossings only — avoids 60fps re-renders during zoom.
+  // The CSS var --map-scale (set by MapContainer) handles visual pin scaling without React.
+  // During programmatic zoom animations AND manual gestures (scroll-wheel, pinch), defer the
+  // threshold crossing to avoid mounting ~18K SVG elements mid-gesture (causes choppy frames).
+  // Uses a ref instead of currentScale state to avoid stale closures during rapid scrolling.
+  const handleScaleChange = useCallback((scale: number) => {
+    isGestureActiveRef.current = true;
+    const threshold = controller.zoomThreshold;
+    const wasAbove = currentScaleForThresholdRef.current >= threshold;
+    currentScaleForThresholdRef.current = scale;
+    const nowAbove = scale >= threshold;
+    if (wasAbove !== nowAbove) {
+      if (isAnimatingRef.current || isGestureActiveRef.current) {
+        pendingScaleRef.current = scale;
+      } else {
+        setCurrentScale(scale);
+      }
+    }
+  }, [controller.zoomThreshold]);
+
+  // Called by MapContainer when gestures/animations settle — flush any deferred scale update
+  const flushPendingScale = useCallback(() => {
+    isAnimatingRef.current = false;
+    isGestureActiveRef.current = false;
+    if (pendingScaleRef.current !== null) {
+      const pending = pendingScaleRef.current;
+      pendingScaleRef.current = null;
+      setCurrentScale(pending);
+    }
+    // Always recalculate viewport after any animation or gesture settles
+    const state = transformRef.current?.instance?.transformState;
+    if (state) handleTransformChange(state as TransformState);
+  }, [handleTransformChange, transformRef]);
+
   const viewState = useSeatMapPrototypeViewState({
     model,
     layoutMode,
@@ -47,6 +152,7 @@ export function SeatMapRoot() {
     currentScale,
     setCurrentScale,
     transformRef,
+    isAnimatingRef,
   });
 
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
@@ -112,11 +218,27 @@ export function SeatMapRoot() {
       }
 
       prevSizeRef.current = { width: rect.width, height: rect.height };
+      // Invalidate cached wrapper size so viewport culling recalculates
+      wrapperSizeRef.current = null;
     });
 
     observer.observe(el);
     return () => observer.disconnect();
   }, [isMobile, transformRef]);
+
+  const prevMobileMapHeightRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    const prev = prevMobileMapHeightRef.current;
+    if (prev !== null && prev !== config.mobileMapHeight) {
+      const dy = (config.mobileMapHeight - prev) / 2;
+      const state = transformRef.current?.instance?.transformState;
+      if (state) {
+        transformRef.current?.setTransform(state.positionX, state.positionY + dy, state.scale, 0);
+      }
+    }
+    prevMobileMapHeightRef.current = config.mobileMapHeight;
+  }, [isMobile, config.mobileMapHeight, transformRef]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -176,6 +298,8 @@ export function SeatMapRoot() {
         config={config}
         onConfigChange={updateConfig}
         onResetConfig={resetConfig}
+        mapId={mapId}
+        onMapChange={handleMapChange}
       />
 
       <div
@@ -242,49 +366,48 @@ export function SeatMapRoot() {
                 controller={controller}
                 isSimulatedMobile={isSimulatedMobile}
                 mobileMapHeight={config.mobileMapHeight}
-                onScaleChange={setCurrentScale}
-                wheelStep={0.2}
+                onScaleChange={handleScaleChange}
+                onAnimationSettle={flushPendingScale}
+                onTransformChange={handleTransformChange}
+                wheelStep={0.05}
                 background={config.seatColors.mapBackground}
               >
-                <Venue boundary={model.boundary ? { ...model.boundary, fill: config.seatColors.venueFill, stroke: config.seatColors.venueStroke } : undefined}>
-                  <Stage
-                    x={STAGE_CONFIG.x}
-                    y={STAGE_CONFIG.y}
-                    width={STAGE_CONFIG.width}
-                    height={STAGE_CONFIG.height}
-                  />
-                  {controller.sections.map((sectionConfig) => {
-                    const sectionPins = viewState.pinsBySection.get(sectionConfig.sectionId) || [];
-                    return (
-                      <Section
-                        key={sectionConfig.sectionId}
-                        config={sectionConfig}
-                        sectionData={model.sectionDataById.get(sectionConfig.sectionId)!}
-                        seatColors={seatColorsBySection?.get(sectionConfig.sectionId) ?? config.seatColors}
-                        displayMode={controller.displayMode}
-                        selection={viewState.selection}
-                        onSelect={viewState.handleSelect}
-                        hoverState={viewState.hoverState}
-                        onHover={viewState.handleHoverFromMap}
-                        connectorWidth={config.connectorWidth}
-                        pins={isMobile ? sectionPins.slice(0, Math.ceil(sectionPins.length / 2)) : sectionPins}
-                        currentScale={viewState.currentScale}
-                        selectedListing={viewState.selectedListing}
-                        sectionListings={viewState.listingsBySection.get(sectionConfig.sectionId) || []}
-                        disableHover={isMobile}
-                        pinDensity={config.pinDensity}
-                        zoneRowDisplay={config.zoneRowDisplay}
-                        dealColorOverrides={dealColorOverrides}
-                      />
-                    );
-                  })}
-                </Venue>
+                <RealVenue
+                  model={venueModel}
+                  seatColors={config.seatColors}
+                  seatColorsBySection={seatColorsBySection}
+                  displayMode={controller.displayMode}
+                  selection={viewState.selection}
+                  onSelect={viewState.handleSelect}
+                  hoverState={viewState.hoverState}
+                  onHover={viewState.handleHoverFromMap}
+                  viewportRect={viewportRect}
+                  pinsBySection={viewState.pinsBySection}
+                  pinDensity={config.pinDensity}
+                  connectorWidth={config.connectorWidth}
+                  sectionStrokeWidth={config.sectionStrokeWidth}
+                  venueStrokeWidth={config.venueStrokeWidth}
+                  selectedListing={viewState.selectedListing}
+                  listingsBySection={viewState.listingsBySection}
+                  dealColorOverrides={dealColorOverrides}
+                  zoneRowDisplay={config.zoneRowDisplay}
+                  isMobile={isMobile}
+                  seatRadius={mapId === 'theater' ? 12 : undefined}
+                />
               </MapContainer>
               <button
                 onClick={() => {
-                  transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
                   viewState.setSelection(EMPTY_SELECTION);
+                  // Switch display mode immediately so animation renders cheap sections, not 18K seats
                   setCurrentScale(controller.initialScale);
+                  currentScaleForThresholdRef.current = controller.initialScale;
+                  // Wait two frames for React to commit the display mode re-render, then animate
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      isAnimatingRef.current = true;
+                      transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
+                    });
+                  });
                 }}
                 className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{

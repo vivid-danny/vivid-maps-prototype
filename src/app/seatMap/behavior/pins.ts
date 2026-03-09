@@ -1,6 +1,87 @@
 import { hashString, parseSeatId } from './utils';
 import type { DisplayMode, HoverState, Listing, PinData } from '../model/types';
 
+export interface ResolvedPin {
+  pin: PinData;
+  x: number;
+  y: number;
+  sectionId: string;
+}
+
+// Base distances calibrated to desktop initial scale (0.12).
+// At default densities: sections → ~333 units (40px), rows → ~100 units (30px), seats → ~50 units (25px).
+const DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
+  sections: 100,
+  rows: 20,
+  seats: 5,
+};
+
+// Mobile initial scale (0.03) is 4x more zoomed out than desktop (0.12), so
+// pins need proportionally larger venue-unit separation to avoid overlapping on screen.
+const MOBILE_DECLUTTER_MULTIPLIER: Record<DisplayMode, number> = {
+  sections: 3,
+  rows: 2,
+  seats: 1.5,
+};
+
+export function declutterPins<T extends ResolvedPin>(
+  resolvedPins: T[],
+  displayMode: DisplayMode,
+  density: number,
+  isMobile = false,
+): T[] {
+  if (density <= 0 || resolvedPins.length === 0) return [];
+
+  const base = DECLUTTER_BASE_DISTANCE[displayMode] * (isMobile ? MOBILE_DECLUTTER_MULTIPLIER[displayMode] : 1);
+  const minDistance = base / density;
+
+  // Sort by deal score so seed is the best deal and ties break by deal quality
+  const sorted = [...resolvedPins].sort((a, b) => {
+    const scoreDiff = b.pin.listing.dealScore - a.pin.listing.dealScore;
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.pin.listing.price - b.pin.listing.price;
+  });
+
+  // Seed with the best deal, then use farthest-first insertion to maximize coverage
+  const placed: T[] = [sorted[0]];
+  const remaining = new Set(sorted.slice(1));
+
+  while (remaining.size > 0) {
+    let bestCandidate: T | null = null;
+    let bestMinDist = -1;
+
+    for (const candidate of remaining) {
+      let nearestDist = Infinity;
+      for (const p of placed) {
+        const dx = p.x - candidate.x;
+        const dy = p.y - candidate.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < nearestDist) nearestDist = dist;
+      }
+
+      // Prune candidates that will never pass the minimum distance
+      if (nearestDist < minDistance) {
+        remaining.delete(candidate);
+        continue;
+      }
+
+      // Pick farthest from all placed pins; break ties by deal score
+      if (nearestDist > bestMinDist ||
+          (nearestDist === bestMinDist && bestCandidate &&
+           candidate.pin.listing.dealScore > bestCandidate.pin.listing.dealScore)) {
+        bestCandidate = candidate;
+        bestMinDist = nearestDist;
+      }
+    }
+
+    if (!bestCandidate) break;
+    placed.push(bestCandidate);
+    remaining.delete(bestCandidate);
+  }
+
+  return placed;
+}
+
 export type PinVisualState = 'default' | 'hover' | 'selected' | 'hidden';
 
 export interface PinVisibilityContext {

@@ -117,9 +117,100 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 
 ---
 
-## Interaction Behaviors
+## Interaction Model Reference
 
-### Map Interactions
+This section is the **source of truth** for all user-facing interaction behaviors implemented in the prototype. Organized by category, each behavior specifies what the user does, what happens, and any platform differences (Web = desktop, MWeb = mobile).
+
+### Selection
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 1 | Section click toggles selection (single-select; click again to deselect) | ✅ | ✅ |
+| 2 | Section click zooms to `threshold + 0.5` with 300ms easeOut | ✅ | ✅ |
+| 3 | Unavailable sections: no click handler, default cursor | ✅ | ✅ |
+| 4 | Single-select only; clicking a different section replaces the previous | ✅ | ✅ |
+| 5 | Can jump directly between sections without returning to full map | ✅ | ✅ |
+| 6 | Selection propagates up (listing sets section + row + listing + seatIds) but NOT down | ✅ | ✅ |
+
+### Zoom & Display Modes
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 7 | Continuous freeform zoom (no snapping) | ✅ | ✅ |
+| 8 | Zoom-driven display mode: below threshold = sections, at/above = seats | ✅ | ✅ |
+| 9 | No intermediate rows-only state by default | ✅ | ✅ |
+| 10 | Reset Map button visible only when zoom ≥ threshold | ✅ | ✅ |
+| 11 | Reset Map clears zoom + selection (full reset — section context NOT preserved) | ✅ | ✅ |
+| 12 | Pinch zoom does not affect selection | — | ✅ |
+
+### Hover
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 13 | Bidirectional hover sync: map hover → panel highlight, panel hover → map highlight | ✅ | — |
+| 14 | Section fill transitions to hover color with 150ms CSS ease | ✅ | — |
+| 15 | Section label color changes on hover/selection | ✅ | — |
+| 16 | Panel hover uses 200ms delay (hover intent) to prevent flicker | ✅ | — |
+| 17 | Mobile: hover disabled entirely | — | ✅ |
+| 18 | Mobile: no auto-zoom on panel tap | — | ✅ |
+
+### Pins
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 19 | Pin values: lowest price per section (sections mode), per row (rows), per listing (seats) | ✅ | ✅ |
+| 20 | Deal score badge on pins when `dealScore > 7` | ✅ | ✅ |
+| 21 | Ambient pins hide when their section is selected; selected overlay pin appears | ✅ | ✅ |
+| 22 | Hover pin shows cheapest listing in section (sections mode) | ✅ | — |
+| 23 | Seat view image + section/row label on hover pin (desktop seats mode) | ✅ | — |
+| 24 | Mobile renders `ceil(pins.length / 2)` pins (fewer to reduce clutter) | — | ✅ |
+| 25 | Pin density configurable per display mode (sections/rows/seats) | ✅ | ✅ |
+
+### Detail Overlay
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 26 | Desktop: detail slides in over panel (350ms ease) | ✅ | — |
+| 27 | Mobile: detail is full-screen overlay | — | ✅ |
+| 28 | Detail back button preserves section context (zone row → row selection) | ✅ | ✅ |
+| 29 | Panel freeze prevents flash of unfiltered listings during animation | ✅ | ✅ |
+
+### Listings Panel
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 30 | Panel filters to section on section select, to row on row select | ✅ | ✅ |
+| 31 | While detail is open, panel receives EMPTY_SELECTION (shows all listings in background) | ✅ | ✅ |
+
+### Layout
+
+| # | Behavior | Web | MWeb |
+|---|----------|-----|------|
+| 32 | Desktop: 450px sidebar + flex map | ✅ | — |
+| 33 | Mobile: map on top (configurable height, default 200px), panel below | — | ✅ |
+| 34 | Auto-detection breakpoint: `max-width: 800px` via matchMedia | ✅ | ✅ |
+| 35 | Desktop map re-centers on container resize (ResizeObserver) | ✅ | — |
+
+### Not Implemented
+
+These behaviors are acknowledged as out of scope for the current prototype:
+
+- Fallback state if map fails to load
+- Loading state / timeout
+- Filter interaction (greying out sections, auto-zoom after filter)
+- Real-time inventory updates / mid-session sellout handling
+- Accessibility (screen reader navigation)
+- Deep linking / state persistence
+- Swipe gesture between sections on mobile
+- Double-tap / long-press handlers on mobile
+
+---
+
+### Handler Reference
+
+Implementation-level detail for each interaction surface.
+
+#### Map Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -129,7 +220,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 | Click selected item again | `getToggledSelection()` → `EMPTY_SELECTION` | Full deselect; panel returns to all listings |
 | Hover section/row/seat | `handleHoverFromMap(hover)` | Hover pin appears on map; listing card highlights in panel |
 
-### Listings Panel Interactions
+#### Listings Panel Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -137,7 +228,7 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 | Hover listing card | `handleHoverFromPanel(listing)` after 200ms | Hover pin appears on map over that listing's seats |
 | Leave listing card | `handleHoverFromPanel(null)` | Hover pin disappears |
 
-### Ticket Detail Interactions
+#### Ticket Detail Interactions
 
 | Action | Handler | Result |
 |--------|---------|--------|
@@ -145,13 +236,13 @@ After hitting Back, `listingId` is null again, so the panel gets the real `selec
 
 **Back preserves section context:** if you browsed into section B and selected a listing, Back returns you to the section-B-filtered panel, not the full list. This is the key design decision.
 
-### Keyboard Shortcuts
+#### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | Shift+H | Toggle prototype controls panel |
 
-### Reset Map Button
+#### Reset Map Button
 
 Visible only when `currentScale >= zoomThreshold`. On click:
 1. Animates map back to initial scale/position
@@ -357,14 +448,28 @@ at runtime via prototype controls.
 
 ### Zone Theme
 
-Zone group names map to preset colors:
+Zone names map to a 5-tier preset palette with primary/secondary/tertiary variants. Tiers represent seat proximity (1 = closest/most premium):
 
 | Zone Name | Color |
 |-----------|-------|
-| `lower` | `#D95BA0` |
-| `lower-edge` | `#EB78A4` |
-| `upper` | `#5690D6` |
-| `upper-edge` | `#55ADD4` |
+| `tier-1-primary` | `#D95BA0` |
+| `tier-1-secondary` | `#EB78A4` |
+| `tier-1-tertiary` | `#F29BBC` |
+| `tier-2-primary` | `#D9C154` |
+| `tier-2-secondary` | `#C1DC6B` |
+| `tier-2-tertiary` | `#E3D284` |
+| `tier-3-primary` | `#5AADB8` |
+| `tier-3-secondary` | `#37C7A0` |
+| `tier-3-tertiary` | `#80DAC2` |
+| `tier-4-primary` | `#5690D6` |
+| `tier-4-secondary` | `#55ADD4` |
+| `tier-4-tertiary` | `#82CBF4` |
+| `tier-5-primary` | `#7082E5` |
+| `tier-5-secondary` | `#8799FF` |
+| `tier-5-tertiary` | `#ABB6F4` |
+| `alt-close` | `#B99872` |
+| `alt-mid` | `#E0B87B` |
+| `alt-far` | `#F3BA65` |
 
 Unknown zone names fall back to a deterministic 5-color palette via `hashString(zoneName)`.
 
@@ -583,4 +688,201 @@ Restructured codebase from a flat organization to a domain-driven feature folder
 - Added `TicketDetail` overlay with six content sections (Header, Info, Checkout, Perks,
   Delivery, EventInfo). Desktop: Checkout inline. Mobile: Checkout pinned as fixed footer.
 
-*Last updated: Mar 4, 2026*
+---
+
+### March 5, 2026 — Large Map Build (Performance + Polish)
+
+**Changes:**
+- **Zone palette overhauled:** from 4 flat names (`lower`, `upper`, etc.) to a 5-tier system with
+  primary/secondary/tertiary variants (`tier-1-primary` through `tier-5-tertiary`) plus `alt-close/mid/far`.
+  Each tier represents seat proximity to the field.
+- **`SeatColors` expanded:** added `connectorSelected` (selected connector state), `pinDefault/pinHovered/
+  pinPressed/pinSelected` (configurable pin colors), `venueFill`, `venueStroke`, `mapBackground`. All
+  now editable at runtime via prototype controls.
+- **`PrototypeControls` reorganized** into 3 tabs: Map (venue toggle), Interaction (zoom, layout, pin density,
+  scale sliders), Styles (venue colors, inventory colors, connectors, pin colors, section labels).
+- **`MapContainer` improvements:** content wrapped in a `div` with 300px padding (provides space for
+  viewport culling calculations); `wheelStep` configurable (0.05 for real venue, 0.2 for demo);
+  `background` prop drives map background color; gesture idle detection (150ms) disables pointer events
+  during active zoom/pan to avoid 18K+ hit-tests per frame; `onAnimationSettle` fires after gesture idle.
+- **Scale change optimization:** `handleScaleChange` only triggers React state on threshold crossings
+  (not every zoom frame). During programmatic zoom animations (`isAnimatingRef`), threshold crossings are
+  deferred until the animation settles — prevents mounting ~18K SVG elements mid-animation.
+- **Two-step zoom navigation:** when zoomed out and a listing/row is selected, Step 1 zooms to the section
+  (always in DOM) to trigger the display mode switch; Step 2 fires 400ms later to refine to the specific
+  row or seat element. Falls back gracefully: seat → row → section if the target element isn't in the DOM.
+- **Zone row back navigation:** `handleBackToListings` and `handleSelectFromPanel` detect zone rows
+  and return to row-level selection (not section-level) so the zone row listing pair remains filtered.
+- **Panel selection freeze:** `panelSelection` now uses a `panelSelectionRef` that freezes on detail
+  entry to prevent a flash of unfiltered listings while the overlay animates in.
+- **Real venue is default:** `venueMode` starts as `'real'`; `REAL_VENUE_SCALE_DEFAULTS` are applied
+  as the initial config defaults (initial: 0.08, threshold: 0.3 for desktop).
+
+---
+
+### March 5, 2026 — Real Venue Map Integration
+
+**Changes:**
+- Added a parallel rendering path for real venue SVG data extracted from Figma (Wrigley Field).
+  Toggle between demo and real venue via button in the map corner.
+- New files: `venueData.json` (extracted data), `createVenueSeatMapModel.ts` (data loader),
+  `RealVenue.tsx` (renderer).
+- Performance: viewport culling, smart re-render gating, rAF-throttled transforms, no CSS
+  transitions on individual elements (~18K seats).
+- Wired prototype controls (pin density, connector width, scale sliders, themes) to the real venue.
+- Inventory profiles per section: sold-out sections, zone rows, single-listing rows, sold-out
+  rows, varied unavailable ratios (72–84%).
+
+See [Figma to Prototype Pipeline](#figma-to-prototype-pipeline) for the repeatable extraction process.
+
+---
+
+## Figma to Prototype Pipeline
+
+A repeatable process for taking any venue SVG in Figma and rendering it in the prototype.
+
+### Prerequisites
+
+- **Figma Desktop** with the Desktop Bridge plugin installed (enables MCP communication)
+- **figma-console MCP server** connected to Claude Code
+- The venue map must be structured in Figma as described below
+
+### Step 1: Structure the SVG in Figma
+
+The Figma file should follow this hierarchy:
+
+```
+Venue Map (frame)
+├── Venue Elements (group) — background shapes
+│   ├── venue-outline (path)
+│   ├── grass (path)
+│   ├── dirt (path)
+│   └── field (path)
+├── Sections (group)
+│   ├── section-101 (group)
+│   │   ├── boundary (path — section outline/fill shape)
+│   │   ├── label (text — "101")
+│   │   └── seats (group)
+│   │       ├── row-1 (group)
+│   │       │   └── circle, circle, circle...
+│   │       └── row-2 (group)
+│   │           └── circle, circle, circle...
+│   ├── section-102 (group)
+│   └── ...
+└── Stage (path or group, optional)
+```
+
+**Key requirements:**
+- Seats must be `<circle>` elements (cx/cy used as coordinates)
+- Labels must be `<text>` elements (used for section ID extraction)
+- Sections must be named groups (name becomes the section ID)
+- Boundaries must be `<path>` elements (d attribute preserved for SVG rendering)
+- Do NOT outline text on export — keep as `<text>` nodes for label extraction
+
+### Step 2: Extract Data via Figma MCP
+
+Use Claude Code with the Figma MCP tools to traverse the document and extract:
+
+1. **Frame metadata** — overall dimensions (`frameSize: [width, height]`)
+2. **Venue elements** — background paths with name, position, dimensions, fill color, and SVG `d` attribute
+3. **Section boundaries** — for each section: bounding box (`bx, by, bw, bh`), SVG path `d`, label position (`lx, ly`), row count
+4. **Seat positions** — for each section: array of rows, each row is a flat coordinate array `[x1, y1, x2, y2, ...]` in absolute frame coordinates
+
+The extracted data is written to `src/app/seatMap/mock/venueData.json`:
+
+```json
+{
+  "meta": { "frameSize": [5897, 5978], "sectionCount": 69 },
+  "venue": [
+    { "name": "outline", "x": 0, "y": 0, "w": 5897, "h": 5978, "fill": "#FFFFFF", "d": "M..." }
+  ],
+  "sections": {
+    "101": { "bx": 100, "by": 200, "bw": 300, "bh": 400, "d": "M...", "lx": 250, "ly": 400, "rows": 15 }
+  },
+  "seats": {
+    "101": [
+      [x1, y1, x2, y2, x3, y3, ...],
+      [x1, y1, x2, y2, ...]
+    ]
+  }
+}
+```
+
+### Step 3: Build the Data Loader
+
+`createVenueSeatMapModel.ts` converts `venueData.json` into a `VenueSeatMapModel`:
+
+1. Parse the JSON into `VenueGeometry` (Maps for section boundaries and seat positions)
+2. Build `SectionConfig[]` with inventory profiles per section (unavailable ratios, zone rows, sold-out rows, etc.)
+3. Generate `SectionData` using seeded RNG — seat availability, listing grouping
+4. Generate `Listing[]` with tiered pricing based on section level
+5. Generate `PinData[]` using greedy placement with Chebyshev distance
+6. Return the assembled model with geometry attached
+
+**Inventory profiles** are assigned per section via `getInventoryProfile(sectionId)`, which maps section numbers to configurations: unavailable ratio, sold-out rows, zone rows, single-listing rows, and seats-per-listing ranges.
+
+**Pricing tiers** are based on section number:
+| Level | Section Numbers | Price Range |
+|-------|----------------|-------------|
+| Field | < 100 | $150–450 |
+| 100-level | 100–199 | $80–250 |
+| 200-level | 200+ | $30–120 |
+
+### Step 4: Build the Renderer
+
+`RealVenue.tsx` renders the venue using absolute coordinates (vs. the demo's grid-based layout):
+
+```
+<div> (position: relative — enables DOM pin overlays)
+  <svg> (full frame dimensions)
+    1. Venue background paths (fill from Figma data)
+    2. Section boundary paths (interactive in sections mode)
+    3. Seats/rows via RealVenueSeats sub-component (viewport-culled)
+    4. Section labels
+  </svg>
+  Pin overlays (DOM elements, absolutely positioned)
+</div>
+```
+
+**Display modes:**
+- `sections` — colored/interactive boundary paths, one pin per section
+- `rows` — polylines through seat centers (`strokeWidth = SEAT_RADIUS * 2`), row-level interaction
+- `seats` — individual circles with connectors; zone rows render as polylines
+
+**Viewport culling:** only sections whose bounding box intersects the viewport (+ 300px padding) render their seats. The visible set is tracked via AABB intersection and React state only updates when the set changes.
+
+### Step 5: Wire into SeatMapRoot
+
+- Add a toggle state (`venueMode: 'demo' | 'real'`)
+- Load both models via `useMemo` (demo + real)
+- Pass `viewportRect` and transform callbacks for culling
+- Real venue uses different scale defaults (initial: 0.08, threshold: 0.3 for desktop)
+- All prototype controls (pin density, connector width, themes, scale sliders) pass through to both paths
+
+### Adapting for a New Venue
+
+To integrate a different venue:
+
+1. Set up the SVG in Figma following the structure above
+2. Use Figma MCP to extract data into a new JSON file (or overwrite `venueData.json`)
+3. Update `getInventoryProfile()` if the new venue has different section numbering
+4. Adjust pricing tiers if needed
+5. Adjust scale defaults in `REAL_VENUE_SCALE_DEFAULTS` based on the new frame dimensions
+
+The renderer (`RealVenue.tsx`) and data loader are venue-agnostic — they work with any `venueData.json` that follows the schema.
+
+### ID Format (Real Venue)
+
+Real venue uses delimited IDs (unlike the demo's concatenated format):
+
+| Level | Format | Example |
+|-------|--------|---------|
+| Section | Numeric string | `"12"` |
+| Row | `{sectionId}-{rowNum}` | `"12-3"` |
+| Seat | `{rowId}-{seatNum}` | `"12-3-5"` |
+| Zone seat | `{rowId}-zone-{seatNum}` | `"12-3-zone-5"` |
+| Listing | `"listing-{sectionId}-{n}"` | `"listing-12-1"` |
+| Zone listing | `"listing-{sectionId}-zone-{rowNum}-{1\|2}"` | `"listing-12-zone-3-1"` |
+| Row listing | `"listing-{sectionId}-row-{rowNum}"` | `"listing-12-row-10"` |
+
+*Last updated: Mar 5, 2026 (large-map-build branch)*

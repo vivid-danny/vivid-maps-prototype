@@ -1,7 +1,7 @@
 import type { SeatColors } from '../model/types';
 import { hashString } from '../behavior/utils';
 
-export type ThemeId = 'branded' | 'neutral' | 'zone' | 'deal';
+export type ThemeId = 'branded' | 'zone' | 'deal';
 
 // Deal score color tiers
 export const DEAL_SCORE_COLORS = {
@@ -19,11 +19,32 @@ export function getDealColor(dealScore: number): string {
 }
 
 // Zone palette: maps zone group names → hex colors
+// Based on Vivid Seats color key: tiers 1-5 (close → far), each with primary/secondary/tertiary
 export const ZONE_PALETTE: Record<string, string> = {
-  'lower': '#D95BA0',
-  'lower-edge': '#EB78A4',
-  'upper': '#5690D6',
-  'upper-edge': '#55ADD4',
+  // Tier 1 — closest (field behind home plate)
+  'tier-1-primary': '#D95BA0',
+  'tier-1-secondary': '#EB78A4',
+  'tier-1-tertiary': '#F29BBC',
+  // Tier 2
+  'tier-2-primary': '#D9C154',
+  'tier-2-secondary': '#C1DC6B',
+  'tier-2-tertiary': '#E3D284',
+  // Tier 3
+  'tier-3-primary': '#5AADB8',
+  'tier-3-secondary': '#37C7A0',
+  'tier-3-tertiary': '#80DAC2',
+  // Tier 4 — higher floors close
+  'tier-4-primary': '#5690D6',
+  'tier-4-secondary': '#55ADD4',
+  'tier-4-tertiary': '#82CBF4',
+  // Tier 5 — higher floors far
+  'tier-5-primary': '#7082E5',
+  'tier-5-secondary': '#8799FF',
+  'tier-5-tertiary': '#ABB6F4',
+  // Alt — outfield / edge sections
+  'alt-close': '#B99872',
+  'alt-mid': '#E0B87B',
+  'alt-far': '#F3BA65',
 };
 
 // Deterministic fallback hue for unmapped zone names
@@ -55,6 +76,7 @@ const ZONE_DEAL_COLORS: SeatColors = {
   pinSelected: '#52143B',
   venueFill: '#FFFFFF',
   venueStroke: '#A0A2B3',
+  sectionStroke: '#A0A2B3',
   mapBackground: '#EFEFF6',
 };
 
@@ -78,27 +100,7 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     pinSelected: '#141035',
     venueFill: '#FFFFFF',
     venueStroke: '#A0A2B3',
-    mapBackground: '#EFEFF6',
-  },
-  neutral: {
-    available: '#5B6166',
-    unavailable: '#F0F1F2',
-    hover: '#6A737B',
-    pressed: '#3F464C',
-    selected: '#cc3394',
-    connector: '#8F969C',
-    connectorHover: '#A2AAB1',
-    connectorPressed: '#6C757D',
-    connectorSelected: '#6C757D',
-    labelDefault: '#F7F8F9',
-    labelSelected: '#FFFFFF',
-    labelUnavailable: '#A5ADB4',
-    pinDefault: '#1a1a2e',
-    pinHovered: '#2A2E31',
-    pinPressed: '#52143B',
-    pinSelected: '#52143B',
-    venueFill: '#FFFFFF',
-    venueStroke: '#A0A2B3',
+    sectionStroke: '#A0A2B3',
     mapBackground: '#EFEFF6',
   },
   zone: ZONE_DEAL_COLORS,
@@ -107,9 +109,8 @@ export const THEMES: Record<ThemeId, SeatColors> = {
 
 export const THEME_LABELS: Record<ThemeId, string> = {
   branded: 'Branded',
-  neutral: 'Neutral',
   zone: 'Zone',
   deal: 'Deal',
 };
 
-export const THEME_IDS = ['branded', 'neutral', 'zone', 'deal'] as const;
+export const THEME_IDS = ['branded', 'zone', 'deal'] as const;

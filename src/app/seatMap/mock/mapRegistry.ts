@@ -1,0 +1,44 @@
+import { createVenueSeatMapModel } from './createVenueSeatMapModel';
+import { createTheaterSeatMapModel } from './createTheaterSeatMapModel';
+import type { VenueSeatMapModel } from './createVenueSeatMapModel';
+
+export interface MapScaleDefaults {
+  desktopInitialScale: number;
+  desktopZoomThreshold: number;
+  mobileInitialScale: number;
+  mobileZoomThreshold: number;
+}
+
+export interface MapDefinition {
+  id: string;
+  label: string;
+  createModel: () => VenueSeatMapModel;
+  scaleDefaults: MapScaleDefaults;
+}
+
+export const MAP_REGISTRY: MapDefinition[] = [
+  {
+    id: 'stadium',
+    label: 'Stadium',
+    createModel: createVenueSeatMapModel,
+    scaleDefaults: {
+      desktopInitialScale: 0.12,
+      desktopZoomThreshold: 0.3,
+      mobileInitialScale: 0.03,
+      mobileZoomThreshold: 0.15,
+    },
+  },
+  {
+    id: 'theater',
+    label: 'Theater',
+    createModel: createTheaterSeatMapModel,
+    scaleDefaults: {
+      desktopInitialScale: 0.15,
+      desktopZoomThreshold: 0.35,
+      mobileInitialScale: 0.05,
+      mobileZoomThreshold: 0.2,
+    },
+  },
+];
+
+export const DEFAULT_MAP_ID = 'stadium';

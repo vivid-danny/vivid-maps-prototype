@@ -25,7 +25,7 @@ export function useSeatMapController({ model, config, layoutMode, currentScale }
   const initialScale =
     layoutMode === 'mobile' ? config.mobileInitialScale : config.desktopInitialScale;
 
-  const minScale = layoutMode === 'mobile' ? config.mobileInitialScale : 1;
+  const minScale = layoutMode === 'mobile' ? config.mobileInitialScale : Math.min(1, initialScale);
 
   const displayMode: DisplayMode =
     currentScale >= zoomThreshold ? config.zoomedDisplay : config.initialDisplay;
