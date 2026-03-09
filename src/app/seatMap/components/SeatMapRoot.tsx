@@ -6,9 +6,10 @@ import type { ViewportRect } from '../../components/RealVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
-import { getDealColor, getZoneColor } from '../config/themes';
+import { getDealColor, getZoneColor, THEMES } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
+import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
@@ -21,7 +22,10 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
-  const [mapId, setMapId] = useState<string>(DEFAULT_MAP_ID);
+  const [mapId, setMapId] = useState<string>(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('seat-map-prototype-map-id') : null;
+    return stored ?? INITIAL_URL_PARAMS.mapId ?? DEFAULT_MAP_ID;
+  });
   const mapDef = MAP_REGISTRY.find((m) => m.id === mapId) ?? MAP_REGISTRY[0]!;
 
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
@@ -37,6 +41,9 @@ export function SeatMapRoot() {
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
     ...mapDef.scaleDefaults,
+    ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
+    ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
+    ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
   });
   const [currentScale, setCurrentScale] = useState(mapDef.scaleDefaults.desktopInitialScale);
 
@@ -44,6 +51,19 @@ export function SeatMapRoot() {
     rawResetConfig();
     updateConfig(mapDef.scaleDefaults);
   }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
+
+  // Persist mapId to localStorage and sync all URL params live
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('seat-map-prototype-map-id', mapId);
+    }
+    syncToUrl({
+      mapId,
+      initialDisplay: config.initialDisplay,
+      zoomedDisplay: config.zoomedDisplay,
+      theme: config.theme,
+    });
+  }, [mapId, config.initialDisplay, config.zoomedDisplay, config.theme]);
 
   const handleMapChange = useCallback((id: string) => {
     const def = MAP_REGISTRY.find((m) => m.id === id);
