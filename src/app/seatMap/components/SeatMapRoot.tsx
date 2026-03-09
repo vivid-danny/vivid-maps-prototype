@@ -8,7 +8,7 @@ import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { getDealColor, getZoneColor } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
-import { createVenueSeatMapModel } from '../mock/createVenueSeatMapModel';
+import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
@@ -20,34 +20,39 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
-const REAL_VENUE_SCALE_DEFAULTS = {
-  desktopInitialScale: 0.12,
-  desktopZoomThreshold: 0.3,
-  mobileInitialScale: 0.03,
-  mobileZoomThreshold: 0.15,
-};
-
 export function SeatMapRoot() {
+  const [mapId, setMapId] = useState<string>(DEFAULT_MAP_ID);
+  const mapDef = MAP_REGISTRY.find((m) => m.id === mapId) ?? MAP_REGISTRY[0]!;
+
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
   const isAnimatingRef = useRef(false);
   const isGestureActiveRef = useRef(false);
   const pendingScaleRef = useRef<number | null>(null);
-  const currentScaleForThresholdRef = useRef(REAL_VENUE_SCALE_DEFAULTS.desktopInitialScale);
+  const currentScaleForThresholdRef = useRef(mapDef.scaleDefaults.desktopInitialScale);
 
-  const venueModel = useMemo(() => createVenueSeatMapModel(), []);
+  const venueModel = useMemo(() => mapDef.createModel(), [mapId]); // eslint-disable-line react-hooks/exhaustive-deps
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
-    ...REAL_VENUE_SCALE_DEFAULTS,
+    ...mapDef.scaleDefaults,
   });
-  const [currentScale, setCurrentScale] = useState(REAL_VENUE_SCALE_DEFAULTS.desktopInitialScale);
+  const [currentScale, setCurrentScale] = useState(mapDef.scaleDefaults.desktopInitialScale);
 
   const resetConfig = useCallback(() => {
     rawResetConfig();
-    updateConfig(REAL_VENUE_SCALE_DEFAULTS);
-  }, [rawResetConfig, updateConfig]);
+    updateConfig(mapDef.scaleDefaults);
+  }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
+
+  const handleMapChange = useCallback((id: string) => {
+    const def = MAP_REGISTRY.find((m) => m.id === id);
+    if (!def) return;
+    setMapId(id);
+    updateConfig(def.scaleDefaults);
+    setCurrentScale(def.scaleDefaults.desktopInitialScale);
+    currentScaleForThresholdRef.current = def.scaleDefaults.desktopInitialScale;
+  }, [updateConfig]);
 
   // Viewport rect in venue coordinates — updated during pan/zoom via rAF
   // Only triggers re-render when the set of visible sections changes
@@ -293,6 +298,8 @@ export function SeatMapRoot() {
         config={config}
         onConfigChange={updateConfig}
         onResetConfig={resetConfig}
+        mapId={mapId}
+        onMapChange={handleMapChange}
       />
 
       <div
@@ -384,6 +391,7 @@ export function SeatMapRoot() {
                   dealColorOverrides={dealColorOverrides}
                   zoneRowDisplay={config.zoneRowDisplay}
                   isMobile={isMobile}
+                  seatRadius={mapId === 'theater' ? 12 : undefined}
                 />
               </MapContainer>
               <button

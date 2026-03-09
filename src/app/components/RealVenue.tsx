@@ -47,6 +47,7 @@ interface RealVenueProps {
   dealColorOverrides?: Map<string, string> | null;
   zoneRowDisplay?: 'rows' | 'seats';
   isMobile?: boolean;
+  seatRadius?: number;
 }
 
 // Seat size in venue coordinate space
@@ -154,6 +155,7 @@ export function RealVenue({
   dealColorOverrides = null,
   zoneRowDisplay = 'seats',
   isMobile = false,
+  seatRadius = SEAT_RADIUS,
 }: RealVenueProps) {
   const { geometry } = model;
   const { frameWidth, frameHeight } = geometry;
@@ -401,6 +403,7 @@ export function RealVenue({
             dealColorOverrides={dealColorOverrides}
             listingsBySection={listingsBySection}
             zoneRowDisplay={zoneRowDisplay}
+            seatRadius={seatRadius}
           />
         )}
 
@@ -568,6 +571,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
   dealColorOverrides?: Map<string, string> | null;
   listingsBySection?: Map<string, Listing[]>;
   zoneRowDisplay?: 'rows' | 'seats';
+  seatRadius?: number;
 }>(function RealVenueSeats({
   geometry,
   model,
@@ -582,6 +586,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
   dealColorOverrides,
   listingsBySection,
   zoneRowDisplay = 'seats',
+  seatRadius = SEAT_RADIUS,
 }, ref) {
   const wrapperRef = useRef<SVGGElement>(null);
   const hoveredFillsRef = useRef<MutatedState | null>(null);
@@ -824,7 +829,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
                 points={points}
                 fill="none"
                 stroke={strokeColor}
-                strokeWidth={SEAT_RADIUS * 2}
+                strokeWidth={seatRadius * 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className={hasAvailable ? 'cursor-pointer' : undefined}
@@ -860,7 +865,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
                 points={points}
                 fill="none"
                 stroke={strokeColor}
-                strokeWidth={SEAT_RADIUS * 2}
+                strokeWidth={seatRadius * 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className={hasAvailable ? 'cursor-pointer' : undefined}
@@ -931,7 +936,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
                 key={seat.seatId}
                 cx={cx}
                 cy={cy}
-                r={SEAT_RADIUS}
+                r={seatRadius}
                 fill={color}
                 className={isAvailable ? 'cursor-pointer' : undefined}
                 data-seat-id={seat.seatId}
