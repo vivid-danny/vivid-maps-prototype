@@ -42,6 +42,7 @@ interface RealVenueProps {
   pinDensity: PinDensityConfig;
   connectorWidth: number;
   sectionStrokeWidth: number;
+  venueStrokeWidth: number;
   selectedListing?: Listing | null;
   listingsBySection?: Map<string, Listing[]>;
   dealColorOverrides?: Map<string, string> | null;
@@ -150,6 +151,7 @@ export function RealVenue({
   pinDensity,
   connectorWidth,
   sectionStrokeWidth,
+  venueStrokeWidth,
   selectedListing = null,
   listingsBySection,
   dealColorOverrides = null,
@@ -300,17 +302,29 @@ export function RealVenue({
         viewBox={`0 0 ${frameWidth} ${frameHeight}`}
         className="block"
       >
-        {/* Venue background elements */}
+        <defs>
+          {geometry.venueElements
+            .filter((el) => el.name === 'venue')
+            .map((el) => (
+              <clipPath key={`clip-${el.name}`} id="venue-clip">
+                <path d={el.d} transform={`translate(${el.x}, ${el.y})`} />
+              </clipPath>
+            ))}
+        </defs>
+
+        {/* Venue background elements (fill only — stroke rendered on top of sections) */}
         {geometry.venueElements.map((el) => (
           <g key={el.name} transform={`translate(${el.x}, ${el.y})`}>
             <path
             d={el.d}
             fill={el.name === 'venue' ? seatColors.venueFill : el.fill}
-            stroke={el.name === 'venue' ? seatColors.venueStroke : 'none'}
-            strokeWidth={el.name === 'venue' ? 1 : undefined}
+            stroke="none"
           />
           </g>
         ))}
+
+        {/* Sections + seats clipped to venue boundary */}
+        <g clipPath="url(#venue-clip)">
 
         {/* Section boundaries */}
         {Array.from(geometry.sectionBoundaries.entries()).map(([sectionId, boundary]) => {
@@ -385,6 +399,22 @@ export function RealVenue({
             </g>
           );
         })}
+
+        </g>{/* end venue-clip */}
+
+        {/* Venue boundary stroke — rendered on top of sections so stroke is never covered */}
+        {venueStrokeWidth > 0 && geometry.venueElements
+          .filter((el) => el.name === 'venue')
+          .map((el) => (
+            <g key={`${el.name}-stroke`} transform={`translate(${el.x}, ${el.y})`}>
+              <path
+                d={el.d}
+                fill="none"
+                stroke={seatColors.venueStroke}
+                strokeWidth={venueStrokeWidth}
+              />
+            </g>
+          ))}
 
         {/* Seats/rows - only in zoomed modes, with viewport culling */}
         {displayMode !== 'sections' && (

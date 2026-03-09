@@ -280,10 +280,14 @@ export function createTheaterSeatMapModel(): VenueSeatMapModel {
     seatPositions.set(id, rows);
   }
 
+  const venueElements = data.venue.map((el: { name: string; [key: string]: unknown }) =>
+    el.name === 'venue_boundary' ? { ...el, name: 'venue' } : el
+  );
+
   const geometry: VenueGeometry = {
     frameWidth,
     frameHeight,
-    venueElements: data.venue,
+    venueElements,
     sectionBoundaries,
     seatPositions,
   };

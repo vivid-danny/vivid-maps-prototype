@@ -11,6 +11,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   mobileZoomThreshold: 3,
   connectorWidth: 3,
   sectionStrokeWidth: 1.5,
+  venueStrokeWidth: 2,
   zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.30, rows: 0.20, seats: 0.10 },
   theme: 'branded',

@@ -363,6 +363,12 @@ export function PrototypeControls({
                 value={config.seatColors.venueStroke}
                 onChange={(value) => handleColorChange('venueStroke', value)}
               />
+              <SliderControl
+                label={`Stroke Width: ${config.venueStrokeWidth}px`}
+                value={config.venueStrokeWidth}
+                onChange={(venueStrokeWidth) => onConfigChange({ venueStrokeWidth })}
+                min={0} max={16} step={1}
+              />
               <ColorControl
                 label="Map Background"
                 value={config.seatColors.mapBackground}

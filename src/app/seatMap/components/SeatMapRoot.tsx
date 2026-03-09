@@ -386,6 +386,7 @@ export function SeatMapRoot() {
                   pinDensity={config.pinDensity}
                   connectorWidth={config.connectorWidth}
                   sectionStrokeWidth={config.sectionStrokeWidth}
+                  venueStrokeWidth={config.venueStrokeWidth}
                   selectedListing={viewState.selectedListing}
                   listingsBySection={viewState.listingsBySection}
                   dealColorOverrides={dealColorOverrides}
