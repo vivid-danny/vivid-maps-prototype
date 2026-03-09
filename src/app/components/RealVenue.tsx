@@ -423,22 +423,78 @@ export function RealVenue({
             labelColor = seatColors.labelDefault;
           }
 
+          // Use seat centroid for label position — more accurate than bbox center for arc-shaped sections
+          let labelX = boundary.bx + boundary.bw / 2;
+          let labelY = boundary.by + boundary.bh / 2;
+          const seatRows = geometry.seatPositions.get(sectionId);
+          if (seatRows && seatRows.length > 0) {
+            let sumX = 0, sumY = 0, count = 0;
+            for (const row of seatRows) {
+              for (let i = 0; i < row.length; i += 2) { sumX += row[i]; sumY += row[i + 1]; count++; }
+            }
+            if (count > 0) { labelX = sumX / count; labelY = sumY / count; }
+          }
+
+          // Format display label: vip_01 → VIP 1, others as-is
+          const displayLabel = sectionId.startsWith('vip_')
+            ? `VIP ${parseInt(sectionId.slice(4), 10)}`
+            : sectionId;
+
+          // Detect side/curved sections that need rotated labels
+          const isLeftSide = sectionId.endsWith('L') || sectionId === '101';
+          const isRightSide = sectionId.endsWith('R') || sectionId === '105';
+          const isSide = isLeftSide || isRightSide;
+          const isVip = sectionId.startsWith('vip_');
+          const fontSize = isSide ? 55 : isVip ? 55 : 80;
+
+          // Compute rotation for curved side sections so labels follow the arc
+          let rotation = 0;
+          if (isSide && seatRows && seatRows.length >= 3) {
+            const mid = Math.floor(seatRows.length / 2);
+            const prev = seatRows[mid - 1];
+            const next = seatRows[mid + 1];
+            if (prev.length >= 2 && next.length >= 2) {
+              const dx = next[0] - prev[0];
+              const dy = next[1] - prev[1];
+              let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+              // Normalize: keep text right-side-up
+              if (angle > 90) angle -= 180;
+              if (angle < -90) angle += 180;
+              // Force letter tops toward venue center: left sections negative, right sections positive
+              rotation = isLeftSide ? -Math.abs(angle) : Math.abs(angle);
+            }
+          }
+
+          // Per-section label nudge overrides — edit these to fine-tune individual label positions
+          // rotation: added to the computed arc rotation (degrees); positive = clockwise
+          const LABEL_NUDGE: Record<string, { x?: number; y?: number; rotation?: number }> = {
+            '100L': { x: 0, y: 0, rotation: 0 },
+            '100R': { x: 0, y: 0, rotation: 0 },
+            '200L': { x: -60, y: 0, rotation: -30 },
+            '200R': { x: 60, y: 0, rotation: 30 },
+            '300L': { x: -40, y: 0, rotation: -60 },
+            '300R': { x: 40, y: 0, rotation: 60 },
+          };
+          const nudge = LABEL_NUDGE[sectionId];
+          if (nudge) { labelX += nudge.x ?? 0; labelY += nudge.y ?? 0; rotation += nudge.rotation ?? 0; }
+
           return (
             <text
               key={`label-${sectionId}`}
               id={`section-label-${sectionId}`}
-              x={boundary.bx + boundary.bw / 2}
-              y={boundary.by + boundary.bh / 2}
+              x={labelX}
+              y={labelY}
               textAnchor="middle"
               dominantBaseline="central"
               fill={labelColor}
-              fontSize={80}
+              fontSize={fontSize}
               fontWeight={700}
               fontFamily="GT Walsheim, sans-serif"
               textRendering="geometricPrecision"
               style={{ pointerEvents: 'none' }}
+              transform={rotation ? `rotate(${rotation} ${labelX} ${labelY})` : undefined}
             >
-              {sectionId}
+              {displayLabel}
             </text>
           );
         })}
@@ -511,7 +567,7 @@ interface MutatedState {
   attr: string;
 }
 
-function restoreMutated(ref: React.MutableRefObject<MutatedState | null>) {
+function restoreMutated(ref: React.RefObject<MutatedState | null>) {
   const state = ref.current;
   if (!state) return;
   for (let i = 0; i < state.els.length; i++) {
@@ -634,7 +690,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     applyPanelHover: (hover: HoverState, colors: SeatColors, sectionColors?: Map<string, SeatColors> | null) => {
       clearHoverDOM();
       if (!hover.sectionId && !hover.listingId) return;
-      const sc = (hover.sectionId && sectionColors?.get(hover.sectionId)) ?? colors;
+      const sc = (hover.sectionId ? sectionColors?.get(hover.sectionId) : undefined) ?? colors;
       applyHoverDOM(hover, sc);
     },
   }), [applyHoverDOM, clearHoverDOM]);
@@ -724,7 +780,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     // Clear previous hover
     clearHoverDOM();
 
-    const sc = (dataset.sectionId && sectionColorsRef.current?.get(dataset.sectionId)) ?? colorsRef.current;
+    const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
 
     // Row-level hover
     if (dataset.rowId && dataset.sectionId && (dataset.isRow || dataset.isZoneRow)) {
@@ -765,7 +821,7 @@ const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    const sc = (dataset.sectionId && sectionColorsRef.current?.get(dataset.sectionId)) ?? colorsRef.current;
+    const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
 
     if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
       const { strokes } = findHoverTargets(wrapper, dataset);
