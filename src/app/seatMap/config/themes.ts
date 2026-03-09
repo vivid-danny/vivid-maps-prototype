@@ -1,7 +1,7 @@
 import type { SeatColors } from '../model/types';
 import { hashString } from '../behavior/utils';
 
-export type ThemeId = 'branded' | 'neutral' | 'zone' | 'deal';
+export type ThemeId = 'branded' | 'zone' | 'deal';
 
 // Deal score color tiers
 export const DEAL_SCORE_COLORS = {
@@ -103,37 +103,14 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     sectionStroke: '#A0A2B3',
     mapBackground: '#EFEFF6',
   },
-  neutral: {
-    available: '#5B6166',
-    unavailable: '#F0F1F2',
-    hover: '#6A737B',
-    pressed: '#3F464C',
-    selected: '#cc3394',
-    connector: '#8F969C',
-    connectorHover: '#A2AAB1',
-    connectorPressed: '#6C757D',
-    connectorSelected: '#6C757D',
-    labelDefault: '#F7F8F9',
-    labelSelected: '#FFFFFF',
-    labelUnavailable: '#A5ADB4',
-    pinDefault: '#1a1a2e',
-    pinHovered: '#2A2E31',
-    pinPressed: '#52143B',
-    pinSelected: '#52143B',
-    venueFill: '#FFFFFF',
-    venueStroke: '#A0A2B3',
-    sectionStroke: '#A0A2B3',
-    mapBackground: '#EFEFF6',
-  },
   zone: ZONE_DEAL_COLORS,
   deal: ZONE_DEAL_COLORS,
 };
 
 export const THEME_LABELS: Record<ThemeId, string> = {
   branded: 'Branded',
-  neutral: 'Neutral',
   zone: 'Zone',
   deal: 'Deal',
 };
 
-export const THEME_IDS = ['branded', 'neutral', 'zone', 'deal'] as const;
+export const THEME_IDS = ['branded', 'zone', 'deal'] as const;
