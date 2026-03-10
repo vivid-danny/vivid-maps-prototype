@@ -6,6 +6,8 @@ const MAX_SCALE = 25;
 const DEFAULT_WHEEL_STEP = 0.2;
 const GESTURE_IDLE_MS = 150;
 
+export const CONTENT_PADDING = 300;
+
 export interface TransformState {
   positionX: number;
   positionY: number;
@@ -100,7 +102,7 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
             }}
             contentStyle={{}}
           >
-            <div ref={contentDivRef} style={{ padding: '300px' }}>
+            <div ref={contentDivRef} style={{ padding: `${CONTENT_PADDING}px` }}>
               {children}
             </div>
           </TransformComponent>

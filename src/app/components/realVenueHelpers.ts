@@ -1,5 +1,5 @@
 import type { VenueGeometry, VenueSeatMapModel } from '../seatMap/mock/createVenueSeatMapModel';
-import type { DisplayMode, Listing } from '../seatMap/model/types';
+import type { DisplayMode, Listing, SelectionState } from '../seatMap/model/types';
 import type { HoverPinTarget } from '../seatMap/behavior/pins';
 import { parseSeatId } from '../seatMap/behavior/utils';
 
@@ -67,6 +67,62 @@ export function resolveTargetPosition(
   if (!row || row.length === 0) return null;
   const seatIdx = Math.max(0, Math.min(target.seatIndex, row.length / 2 - 1));
   return { x: row[seatIdx * 2], y: row[seatIdx * 2 + 1] - SEAT_RADIUS };
+}
+
+// Resolve the row index (0-based) from a rowId, given its sectionId.
+// rowId format: "{sectionId}-{rowNum}" (e.g. "14-3" → rowIndex 2)
+function resolveRowIndex(rowId: string, sectionId: string): number | null {
+  const prefix = sectionId + '-';
+  if (!rowId.startsWith(prefix)) return null;
+  const rowNum = parseInt(rowId.slice(prefix.length), 10);
+  if (isNaN(rowNum)) return null;
+  return rowNum - 1;
+}
+
+// Resolve the venue-coordinate center of a SelectionState (seat → row → section fallback)
+export function resolveSelectionCenter(
+  sel: SelectionState,
+  geometry: VenueGeometry,
+): { x: number; y: number } | null {
+  if (!sel.sectionId) return null;
+  const sectionId = sel.sectionId;
+
+  // Try seat level
+  if (sel.seatIds.length > 0) {
+    const midSeatId = sel.seatIds[Math.floor(sel.seatIds.length / 2)];
+    if (midSeatId) {
+      const parsed = parseSeatId(midSeatId);
+      if (parsed) {
+        const rowIndex = resolveRowIndex(parsed.rowId, sectionId);
+        if (rowIndex !== null) {
+          const seatRows = geometry.seatPositions.get(sectionId);
+          const row = seatRows?.[rowIndex];
+          if (row && row.length > 0) {
+            const seatIdx = Math.max(0, Math.min(parsed.seatNumber - 1, row.length / 2 - 1));
+            return { x: row[seatIdx * 2], y: row[seatIdx * 2 + 1] };
+          }
+        }
+      }
+    }
+  }
+
+  // Try row level
+  if (sel.rowId) {
+    const rowIndex = resolveRowIndex(sel.rowId, sectionId);
+    if (rowIndex !== null) {
+      const seatRows = geometry.seatPositions.get(sectionId);
+      const row = seatRows?.[rowIndex];
+      if (row && row.length > 0) {
+        const midSeat = Math.floor(row.length / 4); // row.length/2 seats; pick middle
+        return { x: row[midSeat * 2], y: row[midSeat * 2 + 1] };
+      }
+    }
+  }
+
+  // Fallback: section center
+  const boundary = geometry.sectionBoundaries.get(sectionId);
+  if (!boundary) return null;
+  return { x: boundary.bx + boundary.bw / 2, y: boundary.by + boundary.bh / 2 };
 }
 
 // Build a HoverPinTarget from a selected listing for overlay pin positioning

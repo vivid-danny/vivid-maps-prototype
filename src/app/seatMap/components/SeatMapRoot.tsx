@@ -91,12 +91,18 @@ export function SeatMapRoot() {
     const ws = wrapperSizeRef.current;
     if (!ws) return;
 
+    if (!Number.isFinite(state.positionX) || !Number.isFinite(state.positionY) ||
+        !Number.isFinite(state.scale) || state.scale === 0) return;
+
     const newRect: ViewportRect = {
       x: -state.positionX / state.scale,
       y: -state.positionY / state.scale,
       w: ws.w / state.scale,
       h: ws.h / state.scale,
     };
+
+    if (!Number.isFinite(newRect.x) || !Number.isFinite(newRect.y) ||
+        !Number.isFinite(newRect.w) || !Number.isFinite(newRect.h)) return;
 
     // Reuse RealVenue's culling logic (applies CULL_PADDING on section side)
     const newVisible = computeVisibleSections(venueModel.geometry, newRect);
@@ -173,6 +179,7 @@ export function SeatMapRoot() {
     setCurrentScale,
     transformRef,
     isAnimatingRef,
+    geometry: venueModel.geometry,
   });
 
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
