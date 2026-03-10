@@ -85,9 +85,11 @@ export function useSeatMapPrototypeViewState({
     const ref = transformRef.current;
     if (!ref) return;
 
-    const actualScale = ref.instance?.transformState?.scale ?? currentScale;
-    const alreadyZoomedIn = actualScale >= controller.zoomThreshold;
-    const targetScale = alreadyZoomedIn ? actualScale : controller.zoomThreshold + 0.5;
+    // Use currentScale (React state, only updates on threshold crossings) instead of
+    // transformState.scale (mid-animation value) to avoid capturing inconsistent
+    // intermediate scales during rapid clicks — see rapid-selection-bug.md
+    const alreadyZoomedIn = currentScale >= controller.zoomThreshold;
+    const targetScale = alreadyZoomedIn ? currentScale : controller.zoomThreshold + 0.5;
 
     // Get wrapper dimensions (stable; not affected by zoom animation)
     const wrapper = ref.instance?.wrapperComponent;
