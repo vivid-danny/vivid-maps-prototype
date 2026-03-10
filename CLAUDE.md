@@ -33,7 +33,9 @@ src/
     ├── App.tsx                           # Root - renders SeatMapRoot
     ├── components/                       # Shared UI components
     │   ├── Venue.tsx                     # Demo venue map canvas
-    │   ├── RealVenue.tsx                 # Real venue renderer (absolute coords, viewport culling)
+    │   ├── RealVenue.tsx                 # Real venue renderer: venue chrome, section boundaries, pin overlays (~250 lines)
+    │   ├── RealVenueSeats.tsx            # Seat/row rendering + event delegation for ~18K SVG elements
+    │   ├── realVenueHelpers.ts           # Pure utilities: computeVisibleSections, resolveTargetPosition, buildSelectedPinTarget
     │   ├── Stage.tsx                     # Stage element
     │   ├── VenueBoundary.tsx             # Venue boundary SVG
     │   ├── Section.tsx                   # Orchestrates display mode per section
@@ -61,7 +63,9 @@ src/
         ├── model/
         │   └── types.ts                  # Core domain types (SeatMapModel, etc.)
         ├── behavior/
-        │   ├── rules.ts                  # Selection/hover/visual state rules
+        │   ├── rules.ts                  # Selection/hover/visual state rules (delegates to visualState.ts)
+        │   ├── visualState.ts            # Canonical visual resolution: InteractionState, resolveInteractionState, resolveSectionFill
+        │   ├── domMutation.ts            # Canonical imperative update pattern: MutationManager, findHoverTargets
         │   ├── pins.ts                   # Pin visibility/overlay rules
         │   └── utils.ts                  # Shared behavior utilities
         ├── mock/

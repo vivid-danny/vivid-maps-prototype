@@ -1,8 +1,10 @@
 import { parseSeatId } from './utils';
 import type { HoverState, RowData, SeatData, SectionData, SelectionState } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
+import { resolveInteractionState } from './visualState';
 
-export type SeatVisualState = 'available' | 'unavailable' | 'hover' | 'pressed' | 'selected';
+// Re-export InteractionState as SeatVisualState for backward compatibility
+export type { InteractionState as SeatVisualState } from './visualState';
 
 export interface SeatVisualStateInput {
   seat: SeatData;
@@ -28,10 +30,12 @@ export function getSeatVisualState({
   const listingId = seat.listingId;
   if (!listingId) return 'available';
 
-  if (selectedListingId === listingId) return 'selected';
-  if (pressedListingId === listingId) return 'pressed';
-  if (localHoveredListingId === listingId || externalHoveredListingId === listingId) return 'hover';
-  return 'available';
+  return resolveInteractionState({
+    isAvailable: true,
+    isSelected: selectedListingId === listingId,
+    isPressed: pressedListingId === listingId,
+    isHovered: localHoveredListingId === listingId || externalHoveredListingId === listingId,
+  });
 }
 
 export interface RowVisualStateInput {
@@ -56,10 +60,12 @@ export function getRowVisualState({
   externalHoveredRowId,
 }: RowVisualStateInput): SeatVisualState {
   if (!isAvailable) return 'unavailable';
-  if (selectedRowId === rowId) return 'selected';
-  if (pressedRowId === rowId) return 'pressed';
-  if (localHoveredRowId === rowId || externalHoveredRowId === rowId) return 'hover';
-  return 'available';
+  return resolveInteractionState({
+    isAvailable: true,
+    isSelected: selectedRowId === rowId,
+    isPressed: pressedRowId === rowId,
+    isHovered: localHoveredRowId === rowId || externalHoveredRowId === rowId,
+  });
 }
 
 export interface SectionVisualStateInput {
@@ -81,11 +87,7 @@ export function getSectionVisualState({
   isPressed,
   isHovered,
 }: SectionVisualStateInput): SeatVisualState {
-  if (!isAvailable) return 'unavailable';
-  if (isSelected) return 'selected';
-  if (isPressed) return 'pressed';
-  if (isHovered) return 'hover';
-  return 'available';
+  return resolveInteractionState({ isAvailable, isSelected, isPressed, isHovered });
 }
 
 export function getSectionLabelVisualState({

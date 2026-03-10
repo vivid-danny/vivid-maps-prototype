@@ -3,6 +3,7 @@ import type { Listing } from '../seatMap/model/types';
 import type { ListingCardSize } from '../seatMap/config/types';
 import { useHoverIntent } from './useHoverIntent';
 import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
+import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
 const LISTING_CARD_PADDING: Record<ListingCardSize, { top: number; right: number; bottom: number; left: number }> = {
   dense:    { top: 4,  right: 12, bottom: 4,  left: 4  },
@@ -41,22 +42,25 @@ export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, 
     hoverIntent.leave();
   };
 
-  // Determine style based on state priority: selected > pressed > hover > default
   const cardBase = 'flex items-center justify-between rounded border cursor-pointer transition-colors ';
   let cardClass = cardBase;
   const pad = LISTING_CARD_PADDING[size];
   const paddingStyle = { paddingTop: pad.top, paddingRight: pad.right, paddingBottom: pad.bottom, paddingLeft: pad.left };
   let cardStyle: CSSProperties;
 
-  if (isSelected) {
-    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(selectedColor, 80), borderColor: selectedColor };
-  } else if (!disableHover && localPressed) {
-    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(pressedColor, 80), borderColor: pressedColor };
-  } else if (!disableHover && (isHovered || localHover)) {
-    cardStyle = { ...paddingStyle, backgroundColor: lightenColor(hoverColor, 80), borderColor: hoverColor };
-  } else {
-    cardStyle = { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
-  }
+  const state = resolveInteractionState({
+    isAvailable: true,
+    isSelected,
+    isPressed: !disableHover && localPressed,
+    isHovered: !disableHover && (isHovered || localHover),
+  });
+  const resolvedColor =
+    state === 'selected' ? selectedColor :
+    state === 'pressed'  ? pressedColor  :
+    state === 'hover'    ? hoverColor    : null;
+  cardStyle = resolvedColor
+    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80), borderColor: resolvedColor }
+    : { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
 
   return (
     <div
