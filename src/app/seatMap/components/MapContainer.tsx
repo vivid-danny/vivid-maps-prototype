@@ -17,6 +17,7 @@ export interface TransformState {
 interface MapContainerProps {
   controller: SeatMapController;
   isSimulatedMobile: boolean;
+  isMobile?: boolean;
   mobileMapHeight: number;
   children: ReactNode;
   onScaleChange?: (scale: number) => void;
@@ -27,7 +28,7 @@ interface MapContainerProps {
 }
 
 export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
-  function MapContainer({ controller, isSimulatedMobile, mobileMapHeight, children, onScaleChange, onAnimationSettle, onTransformChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
+  function MapContainer({ controller, isSimulatedMobile, isMobile = false, mobileMapHeight, children, onScaleChange, onAnimationSettle, onTransformChange, wheelStep = DEFAULT_WHEEL_STEP, background }, ref) {
     const width = isSimulatedMobile ? 390 : '100%';
     const height = isSimulatedMobile ? mobileMapHeight : '100%';
     const initialScale = controller.initialScale;
@@ -51,8 +52,10 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
       // Update CSS var directly — no React state, so pins maintain screen size without re-rendering
       outerDivRef.current?.style.setProperty('--map-scale', String(state.scale));
 
-      // Disable pointer-events & transitions during active gestures (avoids 18K+ hit-tests per frame)
-      if (contentDivRef.current) {
+      // Disable pointer-events & transitions during active gestures (avoids 18K+ hit-tests per frame).
+      // Skip on mobile: no mousemove hover events during touch gestures, so the guard is unnecessary
+      // and would block the synthetic click that follows touchend.
+      if (contentDivRef.current && !isMobile) {
         contentDivRef.current.style.pointerEvents = 'none';
       }
       outerDivRef.current?.classList.add('zooming');

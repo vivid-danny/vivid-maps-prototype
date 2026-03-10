@@ -1,4 +1,5 @@
 import { memo, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { useTapHandler } from './useTapHandler';
 import type { VenueGeometry, VenueSeatMapModel } from '../seatMap/mock/createVenueSeatMapModel';
 import type { SeatColors, SelectionState, HoverState, DisplayMode, Listing } from '../seatMap/model/types';
 import {
@@ -154,28 +155,54 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     return result;
   }, [dealColorOverrides, displayMode, listingsBySection]);
 
-  // Event delegation handlers — single handler on <g> wrapper instead of 18K individual handlers
-  const handleSeatClick = useCallback((e: React.MouseEvent<SVGGElement>) => {
-    const el = e.target as SVGElement;
-    const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
-    if (!dataset) return;
+  // Tap handler — pointer-event based tap detection for mobile + desktop.
+  // Uses event delegation: onTap/onPressStart inspect e.target for data attributes.
+  // Hover remains on onMouseOver/onMouseOut (bubbling, desktop-only) — no change needed.
+  const seatTap = useTapHandler<null>({
+    onTap: (_, e) => {
+      const el = e.target as SVGElement;
+      const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
+      if (!dataset) return;
 
-    // Row-level click (polylines in rows mode or zone rows)
-    if (dataset.rowId && dataset.sectionId && (dataset.isRow || dataset.isZoneRow)) {
-      if (dataset.available === 'false') return;
-      onSelect(buildRowSelection(dataset.sectionId, dataset.rowId));
-      return;
-    }
-
-    // Seat-level click
-    if (dataset.listingId && dataset.sectionId && dataset.rowId) {
-      if (dataset.available === 'false') return;
-      const listing = seatToListing.get(dataset.listingId);
-      if (listing) {
-        onSelect(buildListingSelection(dataset.sectionId, listing.listingId, listing.seatIds, dataset.rowId));
+      // Row-level tap (polylines in rows mode or zone rows)
+      if (dataset.rowId && dataset.sectionId && (dataset.isRow || dataset.isZoneRow)) {
+        if (dataset.available === 'false') return;
+        onSelect(buildRowSelection(dataset.sectionId, dataset.rowId));
+        return;
       }
-    }
-  }, [onSelect, seatToListing]);
+
+      // Seat-level tap
+      if (dataset.listingId && dataset.sectionId && dataset.rowId) {
+        if (dataset.available === 'false') return;
+        const listing = seatToListing.get(dataset.listingId);
+        if (listing) {
+          onSelect(buildListingSelection(dataset.sectionId, listing.listingId, listing.seatIds, dataset.rowId));
+        }
+      }
+    },
+    onPressStart: (_, e) => {
+      const el = e.target as SVGElement;
+      const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
+      if (!dataset || dataset.available === 'false') return;
+      const wrapper = wrapperRef.current;
+      if (!wrapper) return;
+
+      const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
+
+      if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
+        const { strokes } = findHoverTargets(wrapper, dataset);
+        if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.pressed);
+      } else if (dataset.listingId) {
+        const { fills, strokes } = findHoverTargets(wrapper, dataset);
+        if (fills.length > 0) fillMutations.current.applyPressed(fills, 'fill', sc.pressed);
+        if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.connectorPressed);
+      }
+    },
+    onPressEnd: () => {
+      fillMutations.current.clearPressed();
+      strokeMutations.current.clearPressed();
+    },
+  });
 
   const handleSeatMouseOver = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
@@ -217,39 +244,13 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     }
   }, [onHover, clearHoverDOM]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<SVGGElement>) => {
-    const el = e.target as SVGElement;
-    const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
-    if (!dataset || dataset.available === 'false') return;
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-
-    const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
-
-    if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
-      const { strokes } = findHoverTargets(wrapper, dataset);
-      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.pressed);
-    } else if (dataset.listingId) {
-      const { fills, strokes } = findHoverTargets(wrapper, dataset);
-      if (fills.length > 0) fillMutations.current.applyPressed(fills, 'fill', sc.pressed);
-      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.connectorPressed);
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    fillMutations.current.clearPressed();
-    strokeMutations.current.clearPressed();
-  }, []);
 
   return (
     <g
       ref={wrapperRef}
-      onClick={handleSeatClick}
+      {...seatTap.getHandlers(null)}
       onMouseOver={handleSeatMouseOver}
       onMouseOut={handleSeatMouseOut}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
     >
       {Array.from(geometry.seatPositions.entries()).map(([sectionId, rows]) => {
         // Viewport culling: skip sections not in view

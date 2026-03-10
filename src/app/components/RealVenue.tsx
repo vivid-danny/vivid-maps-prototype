@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { VenueSeatMapModel } from '../seatMap/mock/createVenueSeatMapModel';
 import type { SeatColors, SelectionState, HoverState, DisplayMode, PinData, Listing } from '../seatMap/model/types';
 import type { PinDensityConfig } from '../seatMap/config/types';
@@ -27,6 +27,7 @@ import {
 } from './realVenueHelpers';
 import type { ViewportRect } from './realVenueHelpers';
 import { RealVenueSeats } from './RealVenueSeats';
+import { useTapHandler } from './useTapHandler';
 import type { RealVenueSeatsHandle } from './RealVenueSeats';
 
 // Re-export for consumers (SeatMapRoot imports these from here)
@@ -227,46 +228,46 @@ export function RealVenue({
   const sectionColorsMapRef = useRef(seatColorsBySection);
   sectionColorsMapRef.current = seatColorsBySection;
 
-  const handleSectionMouseEnter = useCallback((sectionId: string) => (e: React.MouseEvent<SVGGElement>) => {
-    const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
-    if (!path) return;
-    const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
-    const label = document.getElementById(`section-label-${sectionId}`) as SVGTextElement | null;
-    hoveredLabelRef.current = label;
-    hoveredLabelOriginalFillRef.current = label?.getAttribute('fill') ?? null;
-    sectionFillMutations.current.applyHover([path], 'fill', sectionColors.hover);
-    sectionOpacityMutations.current.applyHover([path], 'fill-opacity', '0.85');
-    label?.setAttribute('fill', seatColorsRef.current.labelSelected);
-    onHover(buildSectionHover(sectionId));
-  }, [onHover]);
-
-  const handleSectionMouseLeave = useCallback(() => {
-    // Discard pressed (don't restore — hover restore below returns us to original fill)
-    sectionFillMutations.current.discardPressed();
-    sectionOpacityMutations.current.discardPressed();
-    // Restore to pre-hover (original available) fill
-    sectionFillMutations.current.clearHover();
-    sectionOpacityMutations.current.clearHover();
-    if (hoveredLabelRef.current && hoveredLabelOriginalFillRef.current !== null) {
-      hoveredLabelRef.current.setAttribute('fill', hoveredLabelOriginalFillRef.current);
-    }
-    hoveredLabelRef.current = null;
-    hoveredLabelOriginalFillRef.current = null;
-    onHover(clearHover());
-  }, [onHover]);
-
-  const handleSectionMouseDown = useCallback((sectionId: string) => (e: React.MouseEvent<SVGGElement>) => {
-    const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
-    if (!path) return;
-    const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
-    sectionFillMutations.current.applyPressed([path], 'fill', sectionColors.pressed);
-    sectionOpacityMutations.current.applyPressed([path], 'fill-opacity', '1.0');
-  }, []);
-
-  const handleSectionMouseUp = useCallback(() => {
-    sectionFillMutations.current.clearPressed();
-    sectionOpacityMutations.current.clearPressed();
-  }, []);
+  const sectionTap = useTapHandler<string>({
+    onTap: (sectionId) => onSelect(buildSectionSelection(sectionId)),
+    onPressStart: (sectionId, e) => {
+      const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
+      if (!path) return;
+      const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
+      sectionFillMutations.current.applyPressed([path], 'fill', sectionColors.pressed);
+      sectionOpacityMutations.current.applyPressed([path], 'fill-opacity', '1.0');
+    },
+    onPressEnd: () => {
+      sectionFillMutations.current.clearPressed();
+      sectionOpacityMutations.current.clearPressed();
+    },
+    onHoverEnter: (sectionId, e) => {
+      const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
+      if (!path) return;
+      const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
+      const label = document.getElementById(`section-label-${sectionId}`) as SVGTextElement | null;
+      hoveredLabelRef.current = label;
+      hoveredLabelOriginalFillRef.current = label?.getAttribute('fill') ?? null;
+      sectionFillMutations.current.applyHover([path], 'fill', sectionColors.hover);
+      sectionOpacityMutations.current.applyHover([path], 'fill-opacity', '0.85');
+      label?.setAttribute('fill', seatColorsRef.current.labelSelected);
+      onHover(buildSectionHover(sectionId));
+    },
+    onHoverLeave: () => {
+      // Discard pressed (don't restore — hover restore below returns us to original fill)
+      sectionFillMutations.current.discardPressed();
+      sectionOpacityMutations.current.discardPressed();
+      // Restore to pre-hover (original available) fill
+      sectionFillMutations.current.clearHover();
+      sectionOpacityMutations.current.clearHover();
+      if (hoveredLabelRef.current && hoveredLabelOriginalFillRef.current !== null) {
+        hoveredLabelRef.current.setAttribute('fill', hoveredLabelOriginalFillRef.current);
+      }
+      hoveredLabelRef.current = null;
+      hoveredLabelOriginalFillRef.current = null;
+      onHover(clearHover());
+    },
+  });
 
   return (
     <div style={{ position: 'relative', width: frameWidth, height: frameHeight }}>
@@ -324,11 +325,7 @@ export function RealVenue({
               id={`section-${sectionId}`}
               transform={`translate(${boundary.bx}, ${boundary.by})`}
               className={isInteractive ? 'cursor-pointer' : undefined}
-              onClick={isInteractive ? () => onSelect(buildSectionSelection(sectionId)) : undefined}
-              onMouseEnter={isInteractive ? handleSectionMouseEnter(sectionId) : undefined}
-              onMouseLeave={isInteractive ? handleSectionMouseLeave : undefined}
-              onMouseDown={isInteractive ? handleSectionMouseDown(sectionId) : undefined}
-              onMouseUp={isInteractive ? handleSectionMouseUp : undefined}
+              {...(isInteractive ? sectionTap.getHandlers(sectionId) : {})}
             >
               <path
                 d={boundary.d}
