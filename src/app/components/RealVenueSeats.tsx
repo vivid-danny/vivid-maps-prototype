@@ -67,7 +67,7 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
   useEffect(() => {
     fillMutations.current.discardAll();
     strokeMutations.current.discardAll();
-  }, [selection.listingId]);
+  }, [selection.rowId, selection.listingId]);
 
   const applyHoverDOM = useCallback((hover: HoverState, sc: SeatColors) => {
     const wrapper = wrapperRef.current;
