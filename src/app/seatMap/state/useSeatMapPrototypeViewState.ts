@@ -5,9 +5,6 @@ import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, Vie
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
-import type { VenueGeometry } from '../mock/createVenueSeatMapModel';
-import { resolveSelectionCenter } from '../../components/realVenueHelpers';
-import { CONTENT_PADDING } from '../components/MapContainer';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
@@ -17,7 +14,6 @@ interface UseSeatMapPrototypeViewStateParams {
   setCurrentScale: Dispatch<SetStateAction<number>>;
   transformRef: MutableRefObject<ReactZoomPanPinchRef | null>;
   isAnimatingRef: MutableRefObject<boolean>;
-  geometry: VenueGeometry;
 }
 
 export function useSeatMapPrototypeViewState({
@@ -28,7 +24,6 @@ export function useSeatMapPrototypeViewState({
   setCurrentScale,
   transformRef,
   isAnimatingRef,
-  geometry,
 }: UseSeatMapPrototypeViewStateParams) {
   const [selection, setSelection] = useState<SelectionState>(EMPTY_SELECTION);
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
@@ -82,62 +77,51 @@ export function useSeatMapPrototypeViewState({
       pendingZoomRef.current = null;
     }
 
-    const ref = transformRef.current;
-    if (!ref) return;
+    // Determine the fine-grained target element (row or seat)
+    let fineElementId: string | null = null;
+    if (sel.seatIds.length > 0) {
+      const midIndex = Math.floor(sel.seatIds.length / 2);
+      fineElementId = sel.seatIds[midIndex];
+    } else if (sel.rowId) {
+      fineElementId = sel.rowId;
+    }
 
-    // currentScale (React state) only updates on threshold crossings, so it reliably
-    // tells us whether we're in zoomed-in mode. But for the actual target scale when
-    // already zoomed in, read transformState.scale to preserve the user's real zoom
-    // level (currentScale may be stale at the old threshold-crossing value).
-    const alreadyZoomedIn = currentScale >= controller.zoomThreshold;
-    const actualScale = ref.instance?.transformState?.scale ?? currentScale;
+    const actualScale = transformRef.current?.instance?.transformState?.scale ?? currentScale;
+    const alreadyZoomedIn = actualScale >= controller.zoomThreshold;
     const targetScale = alreadyZoomedIn ? actualScale : controller.zoomThreshold + 0.5;
 
-    // Get wrapper dimensions (stable; not affected by zoom animation)
-    const wrapper = ref.instance?.wrapperComponent;
-    if (!wrapper) return;
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const wrapperW = wrapperRect.width;
-    const wrapperH = wrapperRect.height;
-
-    // Convert venue coordinates to transform position (centers the point in the viewport)
-    const toTransform = (x: number, y: number, scale: number) => ({
-      posX: wrapperW / 2 - (x + CONTENT_PADDING) * scale,
-      posY: wrapperH / 2 - (y + CONTENT_PADDING) * scale,
-    });
-
-    // Section center (step-1 target or single-step fallback)
-    const boundary = geometry.sectionBoundaries.get(sel.sectionId);
-    const sectionCenter = boundary
-      ? { x: boundary.bx + boundary.bw / 2, y: boundary.by + boundary.bh / 2 }
-      : null;
-
-    // Fine-grained center (seat → row → section)
-    const fineCenter = resolveSelectionCenter(sel, geometry);
-    const hasFineTarget = sel.seatIds.length > 0 || !!sel.rowId;
-
     if (alreadyZoomedIn) {
-      // Single step: zoom directly to fine target (or section center as fallback)
-      const center = fineCenter ?? sectionCenter;
-      if (!center) return;
-      const { posX, posY } = toTransform(center.x, center.y, targetScale);
-      ref.setTransform(posX, posY, targetScale, 300, 'easeOut');
+      // Already zoomed in — row/seat elements are in the DOM, single-step zoom
+      // Fall back through: seat → row → section (seats may lack DOM ids in real venue)
+      const elementId = (fineElementId && document.getElementById(fineElementId))
+        ? fineElementId
+        : (sel.rowId && document.getElementById(sel.rowId))
+          ? sel.rowId
+          : `section-${sel.sectionId}`;
+      transformRef.current?.zoomToElement(elementId, targetScale, 300, 'easeOut');
     } else {
-      // Step 1: zoom to section center to trigger display-mode change
-      if (!sectionCenter) return;
-      const { posX: posX1, posY: posY1 } = toTransform(sectionCenter.x, sectionCenter.y, targetScale);
-      ref.setTransform(posX1, posY1, targetScale, 300, 'easeOut');
+      // Zoomed out — row/seat elements not in DOM yet.
+      // Step 1: zoom to the section (always in DOM) to trigger display mode change
+      transformRef.current?.zoomToElement(`section-${sel.sectionId}`, targetScale, 300, 'easeOut');
 
-      // Step 2: refine to row/seat after animation + re-render settle
-      if (hasFineTarget && fineCenter) {
+      // Step 2: after animation + re-render, refine to row/seat
+      if (fineElementId || sel.rowId) {
+        const candidateId = fineElementId ?? sel.rowId!;
+        const fallbackRowId = sel.rowId;
         pendingZoomRef.current = setTimeout(() => {
           pendingZoomRef.current = null;
-          const { posX: posX2, posY: posY2 } = toTransform(fineCenter.x, fineCenter.y, targetScale);
-          transformRef.current?.setTransform(posX2, posY2, targetScale, 200, 'easeOut');
+          const targetId = document.getElementById(candidateId)
+            ? candidateId
+            : fallbackRowId && document.getElementById(fallbackRowId)
+              ? fallbackRowId
+              : null;
+          if (targetId) {
+            transformRef.current?.zoomToElement(targetId, targetScale, 200, 'easeOut');
+          }
         }, 400);
       }
     }
-  }, [currentScale, controller.zoomThreshold, transformRef, geometry]);
+  }, [currentScale, controller.zoomThreshold, transformRef]);
 
   const handleSelect = useCallback((newSelection: SelectionState) => {
     const nextSelection = getToggledSelection(selection, newSelection);
