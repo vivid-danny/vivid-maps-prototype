@@ -155,13 +155,17 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     return result;
   }, [dealColorOverrides, displayMode, listingsBySection]);
 
+  // Save pointerdown dataset so onTap can use it — on mobile touch, pointerup may land on a
+  // different element (finger drifts slightly off thin polylines), so reading e.target in onTap
+  // is unreliable. pointerdown is always accurate.
+  const pressDatasetRef = useRef<DOMStringMap | null>(null);
+
   // Tap handler — pointer-event based tap detection for mobile + desktop.
   // Uses event delegation: onTap/onPressStart inspect e.target for data attributes.
   // Hover remains on onMouseOver/onMouseOut (bubbling, desktop-only) — no change needed.
   const seatTap = useTapHandler<null>({
-    onTap: (_, e) => {
-      const el = e.target as SVGElement;
-      const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
+    onTap: () => {
+      const dataset = pressDatasetRef.current;
       if (!dataset) return;
 
       // Row-level tap (polylines in rows mode or zone rows)
@@ -183,6 +187,7 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     onPressStart: (_, e) => {
       const el = e.target as SVGElement;
       const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
+      pressDatasetRef.current = dataset ?? null;
       if (!dataset || dataset.available === 'false') return;
       const wrapper = wrapperRef.current;
       if (!wrapper) return;
@@ -199,6 +204,7 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
       }
     },
     onPressEnd: () => {
+      pressDatasetRef.current = null;
       fillMutations.current.clearPressed();
       strokeMutations.current.clearPressed();
     },
