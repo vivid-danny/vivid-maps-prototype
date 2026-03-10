@@ -86,6 +86,7 @@ export function RealVenue({
   const sectionOpacityMutations = useRef(createMutationManager());
   // Track the hovered label element for restore on mouse leave
   const hoveredLabelRef = useRef<SVGTextElement | null>(null);
+  const hoveredLabelOriginalFillRef = useRef<string | null>(null);
 
   // When selection changes, React re-renders section fills with correct colors.
   // Discard stale hover/pressed state so leave handlers don't restore pre-selection colors.
@@ -93,6 +94,7 @@ export function RealVenue({
     sectionFillMutations.current.discardAll();
     sectionOpacityMutations.current.discardAll();
     hoveredLabelRef.current = null;
+    hoveredLabelOriginalFillRef.current = null;
   }, [selection.sectionId]);
 
   // Imperative handle to push panel hover into RealVenueSeats without re-rendering it
@@ -231,6 +233,7 @@ export function RealVenue({
     const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
     const label = document.getElementById(`section-label-${sectionId}`) as SVGTextElement | null;
     hoveredLabelRef.current = label;
+    hoveredLabelOriginalFillRef.current = label?.getAttribute('fill') ?? null;
     sectionFillMutations.current.applyHover([path], 'fill', sectionColors.hover);
     sectionOpacityMutations.current.applyHover([path], 'fill-opacity', '0.85');
     label?.setAttribute('fill', seatColorsRef.current.labelSelected);
@@ -244,8 +247,11 @@ export function RealVenue({
     // Restore to pre-hover (original available) fill
     sectionFillMutations.current.clearHover();
     sectionOpacityMutations.current.clearHover();
-    hoveredLabelRef.current?.setAttribute('fill', seatColorsRef.current.labelDefault);
+    if (hoveredLabelRef.current && hoveredLabelOriginalFillRef.current !== null) {
+      hoveredLabelRef.current.setAttribute('fill', hoveredLabelOriginalFillRef.current);
+    }
     hoveredLabelRef.current = null;
+    hoveredLabelOriginalFillRef.current = null;
     onHover(clearHover());
   }, [onHover]);
 
