@@ -10,7 +10,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   mobileInitialScale: 0.5,
   mobileZoomThreshold: 3,
   connectorWidth: 3,
-  sectionStrokeWidth: 1.5,
+  sectionStrokeWidth: 16,
   venueStrokeWidth: 2,
   zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.30, rows: 0.20, seats: 0.10 },
@@ -37,7 +37,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     pinSelected: '#141035',
     venueFill: '#FFFFFF',
     venueStroke: '#A0A2B3',
-    sectionStroke: '#A0A2B3',
+    sectionStroke: '#ffffff',
     mapBackground: '#EFEFF6',
   },
 };
