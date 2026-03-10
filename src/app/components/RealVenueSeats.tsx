@@ -154,7 +154,6 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     return result;
   }, [dealColorOverrides, displayMode, listingsBySection]);
 
-  // Event delegation handlers — single handler on <g> wrapper instead of 18K individual handlers
   const handleSeatClick = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
     const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
@@ -176,6 +175,30 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
       }
     }
   }, [onSelect, seatToListing]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<SVGGElement>) => {
+    const el = e.target as SVGElement;
+    const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
+    if (!dataset || dataset.available === 'false') return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
+
+    if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
+      const { strokes } = findHoverTargets(wrapper, dataset);
+      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.pressed);
+    } else if (dataset.listingId) {
+      const { fills, strokes } = findHoverTargets(wrapper, dataset);
+      if (fills.length > 0) fillMutations.current.applyPressed(fills, 'fill', sc.pressed);
+      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.connectorPressed);
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    fillMutations.current.clearPressed();
+    strokeMutations.current.clearPressed();
+  }, []);
 
   const handleSeatMouseOver = useCallback((e: React.MouseEvent<SVGGElement>) => {
     const el = e.target as SVGElement;
@@ -217,39 +240,16 @@ export const RealVenueSeats = memo(forwardRef<RealVenueSeatsHandle, {
     }
   }, [onHover, clearHoverDOM]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<SVGGElement>) => {
-    const el = e.target as SVGElement;
-    const dataset = (el as SVGElement & { dataset: DOMStringMap }).dataset;
-    if (!dataset || dataset.available === 'false') return;
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-
-    const sc = (dataset.sectionId ? sectionColorsRef.current?.get(dataset.sectionId) : undefined) ?? colorsRef.current;
-
-    if ((dataset.isRow === 'true' || dataset.isZoneRow === 'true') && dataset.rowId) {
-      const { strokes } = findHoverTargets(wrapper, dataset);
-      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.pressed);
-    } else if (dataset.listingId) {
-      const { fills, strokes } = findHoverTargets(wrapper, dataset);
-      if (fills.length > 0) fillMutations.current.applyPressed(fills, 'fill', sc.pressed);
-      if (strokes.length > 0) strokeMutations.current.applyPressed(strokes, 'stroke', sc.connectorPressed);
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    fillMutations.current.clearPressed();
-    strokeMutations.current.clearPressed();
-  }, []);
 
   return (
     <g
       ref={wrapperRef}
       onClick={handleSeatClick}
-      onMouseOver={handleSeatMouseOver}
-      onMouseOut={handleSeatMouseOut}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onMouseOver={handleSeatMouseOver}
+      onMouseOut={handleSeatMouseOut}
     >
       {Array.from(geometry.seatPositions.entries()).map(([sectionId, rows]) => {
         // Viewport culling: skip sections not in view

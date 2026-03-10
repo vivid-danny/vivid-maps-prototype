@@ -385,6 +385,7 @@ export function SeatMapRoot() {
                 ref={transformRef}
                 controller={controller}
                 isSimulatedMobile={isSimulatedMobile}
+                isMobile={isMobile}
                 mobileMapHeight={config.mobileMapHeight}
                 onScaleChange={handleScaleChange}
                 onAnimationSettle={flushPendingScale}

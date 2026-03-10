@@ -227,7 +227,11 @@ export function RealVenue({
   const sectionColorsMapRef = useRef(seatColorsBySection);
   sectionColorsMapRef.current = seatColorsBySection;
 
-  const handleSectionMouseEnter = useCallback((sectionId: string) => (e: React.MouseEvent<SVGGElement>) => {
+  const handleSectionClick = useCallback((sectionId: string) => {
+    onSelect(buildSectionSelection(sectionId));
+  }, [onSelect]);
+
+  const handleSectionMouseEnter = useCallback((sectionId: string, e: React.MouseEvent<SVGGElement>) => {
     const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
     if (!path) return;
     const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
@@ -255,7 +259,7 @@ export function RealVenue({
     onHover(clearHover());
   }, [onHover]);
 
-  const handleSectionMouseDown = useCallback((sectionId: string) => (e: React.MouseEvent<SVGGElement>) => {
+  const handleSectionMouseDown = useCallback((sectionId: string, e: React.MouseEvent<SVGGElement>) => {
     const path = (e.currentTarget as SVGGElement).querySelector('path') as SVGPathElement | null;
     if (!path) return;
     const sectionColors = sectionColorsMapRef.current?.get(sectionId) ?? seatColorsRef.current;
@@ -324,11 +328,13 @@ export function RealVenue({
               id={`section-${sectionId}`}
               transform={`translate(${boundary.bx}, ${boundary.by})`}
               className={isInteractive ? 'cursor-pointer' : undefined}
-              onClick={isInteractive ? () => onSelect(buildSectionSelection(sectionId)) : undefined}
-              onMouseEnter={isInteractive ? handleSectionMouseEnter(sectionId) : undefined}
-              onMouseLeave={isInteractive ? handleSectionMouseLeave : undefined}
-              onMouseDown={isInteractive ? handleSectionMouseDown(sectionId) : undefined}
-              onMouseUp={isInteractive ? handleSectionMouseUp : undefined}
+              {...(isInteractive ? {
+                onClick: () => handleSectionClick(sectionId),
+                onMouseEnter: (e: React.MouseEvent<SVGGElement>) => handleSectionMouseEnter(sectionId, e),
+                onMouseLeave: handleSectionMouseLeave,
+                onMouseDown: (e: React.MouseEvent<SVGGElement>) => handleSectionMouseDown(sectionId, e),
+                onMouseUp: handleSectionMouseUp,
+              } : {})}
             >
               <path
                 d={boundary.d}
