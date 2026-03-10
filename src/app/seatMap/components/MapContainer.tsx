@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import type { SeatMapController } from '../state/useSeatMapController';
 
@@ -32,6 +32,7 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
     const height = isSimulatedMobile ? mobileMapHeight : '100%';
     const initialScale = controller.initialScale;
     const minScale = controller.minScale;
+    const [mounted, setMounted] = useState(false);
     const outerDivRef = useRef<HTMLDivElement>(null);
     const contentDivRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef<number>(0);
@@ -39,6 +40,7 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
     const lastScaleRef = useRef<number>(initialScale);
 
     useEffect(() => {
+      setMounted(true);
       return () => {
         cancelAnimationFrame(rafRef.current);
         clearTimeout(gestureTimerRef.current);
@@ -83,6 +85,8 @@ export const MapContainer = forwardRef<ReactZoomPanPinchRef, MapContainerProps>(
           width: typeof width === 'number' ? `${width}px` : width,
           height: typeof height === 'number' ? `${height}px` : height,
           backgroundColor: background ?? '#EFEFF6',
+          opacity: mounted ? 1 : 0,
+          transition: 'opacity 400ms ease',
         }}
       >
         <TransformWrapper
