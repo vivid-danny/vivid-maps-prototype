@@ -306,7 +306,7 @@ export function SeatMapRoot() {
     panelSelectionRef.current = viewState.selection;
   }
   const panelSelection = isDetailOpen
-    ? panelSelectionRef.current
+    ? { ...panelSelectionRef.current, listingId: viewState.selection.listingId }
     : viewState.selection;
 
   return (
@@ -385,6 +385,7 @@ export function SeatMapRoot() {
                 ref={transformRef}
                 controller={controller}
                 isSimulatedMobile={isSimulatedMobile}
+                isMobile={isMobile}
                 mobileMapHeight={config.mobileMapHeight}
                 onScaleChange={handleScaleChange}
                 onAnimationSettle={flushPendingScale}

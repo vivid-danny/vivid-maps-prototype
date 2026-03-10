@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { CSSProperties } from 'react';
+import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
 interface PinProps {
   price: number; // in cents
@@ -27,7 +28,16 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
   // Multiplier is computed at render time (only changes on selection/hover, not zoom)
   // --map-scale CSS var is set by MapContainer via DOM mutation during zoom — no React re-render needed
   const pinMultiplier = isSelected ? 1.875 : isHovered ? 1.5 : 1.25;
-  const bgColor = isSelected ? selectedColor : isPressed ? pressedColor : isHovered ? hoverColor : defaultColor;
+  const pinState = resolveInteractionState({
+    isAvailable: true,
+    isSelected: !!isSelected,
+    isPressed: !!isPressed,
+    isHovered: !!isHovered,
+  });
+  const bgColor =
+    pinState === 'selected' ? selectedColor :
+    pinState === 'pressed'  ? pressedColor  :
+    pinState === 'hover'    ? hoverColor    : defaultColor;
   const zIndex = isHovered ? 30 : isSelected ? 20 : 10;
   const showDealScore = dealScore !== undefined && dealScore > 7;
   const showSeatView = isHovered && !isSelected && seatViewUrl;
