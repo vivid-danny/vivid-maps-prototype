@@ -1,6 +1,7 @@
 import { createVenueSeatMapModel } from './createVenueSeatMapModel';
 import { createTheaterSeatMapModel } from './createTheaterSeatMapModel';
 import type { VenueSeatMapModel } from './createVenueSeatMapModel';
+import type { VenueAssets } from '../maplibre/types';
 
 export interface MapScaleDefaults {
   desktopInitialScale: number;
@@ -14,6 +15,7 @@ export interface MapDefinition {
   label: string;
   createModel: () => VenueSeatMapModel;
   scaleDefaults: MapScaleDefaults;
+  assets: VenueAssets;
 }
 
 export const MAP_REGISTRY: MapDefinition[] = [
@@ -21,6 +23,13 @@ export const MAP_REGISTRY: MapDefinition[] = [
     id: 'stadium',
     label: 'Stadium',
     createModel: createVenueSeatMapModel,
+    assets: {
+      manifestUrl: '/manifest.json',
+      backgroundUrl: '/background.png',
+      sectionsUrl: '/sections.geojson',
+      rowsUrl: '/rows.geojson',
+      seatsUrl: '/seats.geojson',
+    },
     scaleDefaults: {
       desktopInitialScale: 0.12,
       desktopZoomThreshold: 0.3,
@@ -32,6 +41,13 @@ export const MAP_REGISTRY: MapDefinition[] = [
     id: 'theater',
     label: 'Theater',
     createModel: createTheaterSeatMapModel,
+    assets: {
+      manifestUrl: '',
+      backgroundUrl: '',
+      sectionsUrl: '',
+      rowsUrl: '',
+      seatsUrl: '',
+    },
     scaleDefaults: {
       desktopInitialScale: 0.15,
       desktopZoomThreshold: 0.35,

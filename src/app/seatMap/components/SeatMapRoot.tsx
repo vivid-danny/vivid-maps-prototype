@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { RotateCcw } from 'lucide-react';
+import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { RealVenue, computeVisibleSections } from '../../components/RealVenue';
 import type { ViewportRect } from '../../components/RealVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
@@ -11,6 +12,7 @@ import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
 import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
+import { useVenueManifest } from '../maplibre/useVenueManifest';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
@@ -37,6 +39,7 @@ export function SeatMapRoot() {
   const currentScaleForThresholdRef = useRef(mapDef.scaleDefaults.desktopInitialScale);
 
   const venueModel = useMemo(() => mapDef.createModel(), [mapId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { seatableIds } = useVenueManifest(mapDef.assets.manifestUrl);
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
@@ -381,41 +384,20 @@ export function SeatMapRoot() {
             style={isMobile ? { height: config.mobileMapHeight } : undefined}
           >
             <div ref={mapContainerRef} className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
-              <MapContainer
-                ref={transformRef}
-                controller={controller}
-                isSimulatedMobile={isSimulatedMobile}
+              <MapLibreVenue
+                seatColors={config.seatColors}
+                model={venueModel}
+                theme={config.theme}
+                displayMode={controller.displayMode}
+                seatableIds={seatableIds}
+                assets={mapDef.assets}
+                selection={viewState.selection}
+                hoverState={viewState.hoverState}
+                onSelect={viewState.handleSelect}
+                onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
-                mobileMapHeight={config.mobileMapHeight}
-                onScaleChange={handleScaleChange}
-                onAnimationSettle={flushPendingScale}
-                onTransformChange={handleTransformChange}
-                wheelStep={0.05}
-                background={config.seatColors.mapBackground}
-              >
-                <RealVenue
-                  model={venueModel}
-                  seatColors={config.seatColors}
-                  seatColorsBySection={seatColorsBySection}
-                  displayMode={controller.displayMode}
-                  selection={viewState.selection}
-                  onSelect={viewState.handleSelect}
-                  hoverState={viewState.hoverState}
-                  onHover={viewState.handleHoverFromMap}
-                  viewportRect={viewportRect}
-                  pinsBySection={viewState.pinsBySection}
-                  pinDensity={config.pinDensity}
-                  connectorWidth={config.connectorWidth}
-                  sectionStrokeWidth={config.sectionStrokeWidth}
-                  venueStrokeWidth={config.venueStrokeWidth}
-                  selectedListing={viewState.selectedListing}
-                  listingsBySection={viewState.listingsBySection}
-                  dealColorOverrides={dealColorOverrides}
-                  zoneRowDisplay={config.zoneRowDisplay}
-                  isMobile={isMobile}
-                  seatRadius={mapId === 'theater' ? 12 : undefined}
-                />
-              </MapContainer>
+                onZoomChange={setCurrentScale}
+              />
               <button
                 onClick={() => {
                   viewState.setSelection(EMPTY_SELECTION);
