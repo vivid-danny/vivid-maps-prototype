@@ -12,8 +12,8 @@ import type { SeatMapModel } from '../model/types';
  *   row:     sectionId:rowNum        (e.g. "101:3")  — rowNum is 1-indexed in GeoJSON
  *   seat:    sectionId:rowNum:sN     (e.g. "101:3:s5")
  *
- * Model row IDs are sectionId-rowNum (e.g. "101-3") — same rowNum, different separator.
- * We reconstruct GeoJSON IDs using array index.
+ * Model row IDs are the raw rowId string (e.g. "3"), combined with sectionId to build
+ * the GeoJSON feature ID (e.g. "101:3"). Seat IDs in the model match GeoJSON ids directly.
  */
 export function useFeatureState({
   mapRef,
@@ -42,9 +42,8 @@ export function useFeatureState({
 
       if (!sectionData) continue;
 
-      sectionData.rows.forEach((row, rowIndex) => {
-        const rowNum = rowIndex + 1;
-        const rowGeoId = `${sectionId}:${rowNum}`;
+      sectionData.rows.forEach((row) => {
+        const rowGeoId = `${sectionId}:${row.rowId}`;
         const rowHasAvailable = row.seats.some(s => s.status === 'available');
 
         map.setFeatureState(
@@ -52,10 +51,9 @@ export function useFeatureState({
           { unavailable: !rowHasAvailable },
         );
 
-        row.seats.forEach((seat, seatIndex) => {
-          const seatGeoId = `${sectionId}:${rowNum}:s${seatIndex + 1}`;
+        row.seats.forEach((seat) => {
           map.setFeatureState(
-            { source: SOURCE_SEATS, id: seatGeoId },
+            { source: SOURCE_SEATS, id: seat.seatId },
             { unavailable: seat.status === 'unavailable' },
           );
         });

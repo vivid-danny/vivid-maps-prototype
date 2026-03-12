@@ -1,4 +1,4 @@
-import { createVenueSeatMapModel } from './createVenueSeatMapModel';
+import { createManifestSeatMapModel } from './createManifestSeatMapModel';
 import { createTheaterSeatMapModel } from './createTheaterSeatMapModel';
 import type { VenueSeatMapModel } from './createVenueSeatMapModel';
 import type { VenueAssets } from '../maplibre/types';
@@ -22,7 +22,7 @@ export const MAP_REGISTRY: MapDefinition[] = [
   {
     id: 'stadium',
     label: 'Stadium',
-    createModel: createVenueSeatMapModel,
+    createModel: createManifestSeatMapModel,
     assets: {
       manifestUrl: '/manifest.json',
       backgroundUrl: '/background.png',
