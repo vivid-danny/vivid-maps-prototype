@@ -39,7 +39,7 @@ export function SeatMapRoot() {
   const currentScaleForThresholdRef = useRef(mapDef.scaleDefaults.desktopInitialScale);
 
   const venueModel = useMemo(() => mapDef.createModel(), [mapId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const { seatableIds } = useVenueManifest(mapDef.assets.manifestUrl);
+  const { seatableIds, sectionCenters } = useVenueManifest(mapDef.assets.manifestUrl);
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
@@ -390,8 +390,10 @@ export function SeatMapRoot() {
                 theme={config.theme}
                 displayMode={controller.displayMode}
                 seatableIds={seatableIds}
+                sectionCenters={sectionCenters}
                 assets={mapDef.assets}
                 selection={viewState.selection}
+                selectedListing={viewState.selectedListing}
                 hoverState={viewState.hoverState}
                 onSelect={viewState.handleSelect}
                 onHover={viewState.handleHoverFromMap}

@@ -4,6 +4,7 @@ import { createVenueStyle } from '../seatMap/maplibre/createStyle';
 import { useFeatureState } from '../seatMap/maplibre/useFeatureState';
 import { useMapInteractions } from '../seatMap/maplibre/useMapInteractions';
 import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
+import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { buildSectionFillExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW_FILL,
@@ -13,10 +14,11 @@ import {
   LAYER_SECTION_STROKE,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
-import type { SeatColors, DisplayMode, SelectionState, HoverState } from '../seatMap/model/types';
+import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
 import type { SeatMapModel } from '../seatMap/model/types';
 import type { ThemeId } from '../seatMap/config/themes';
 import type { VenueAssets } from '../seatMap/maplibre/types';
+import type { SectionManifestEntry } from '../seatMap/maplibre/useVenueManifest';
 
 interface MapLibreVenueProps {
   seatColors: SeatColors;
@@ -24,8 +26,10 @@ interface MapLibreVenueProps {
   theme: ThemeId;
   displayMode: DisplayMode;
   seatableIds: string[];
+  sectionCenters: Map<string, SectionManifestEntry>;
   assets: VenueAssets;
   selection: SelectionState;
+  selectedListing: Listing | null;
   hoverState: HoverState;
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
@@ -50,8 +54,10 @@ export function MapLibreVenue({
   theme,
   displayMode,
   seatableIds,
+  sectionCenters,
   assets,
   selection,
+  selectedListing,
   hoverState,
   onSelect,
   onHover,
@@ -81,6 +87,21 @@ export function MapLibreVenue({
 
   // Sync React selection/hover state → MapLibre feature state
   useMapSelectionSync({ mapRef, ready, selection, hoverState });
+
+  // Pin overlays — MapLibre Markers wrapping React <Pin> components
+  useMapPins({
+    mapRef,
+    ready,
+    model,
+    sectionCenters,
+    selection,
+    selectedListing,
+    hoverState,
+    displayMode,
+    seatColors,
+    isMobile,
+    onSelect,
+  });
 
   // Notify parent of zoom changes (drives displayMode via useSeatMapController)
   useEffect(() => {
