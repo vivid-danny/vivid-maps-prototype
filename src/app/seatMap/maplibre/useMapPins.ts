@@ -39,6 +39,10 @@ interface MarkerEntry {
   isSelected: boolean;
 }
 
+function markerZIndex(isHovered: boolean, isSelected: boolean): string {
+  return isHovered ? '30' : isSelected ? '20' : '10';
+}
+
 function createMarkerEl(onClick: (e: MouseEvent) => void): { wrapper: HTMLDivElement; inner: HTMLDivElement } {
   const wrapper = document.createElement('div');
   // 0x0 anchor div — Pin's own translate(-50%, -100%) positions the arrow tip at the coordinate
@@ -193,6 +197,7 @@ export function useMapPins({
       if (existing) {
         if (existing.isHovered !== pin.isHovered || existing.isSelected !== pin.isSelected) {
           renderPin(existing.root, pin.listing, pin.isHovered, pin.isSelected, seatColorsRef.current);
+          existing.marker.getElement().style.zIndex = markerZIndex(pin.isHovered, pin.isSelected);
           existing.isHovered = pin.isHovered;
           existing.isSelected = pin.isSelected;
         }
@@ -204,6 +209,7 @@ export function useMapPins({
         const root = createRoot(inner);
         renderPin(root, pin.listing, pin.isHovered, pin.isSelected, seatColorsRef.current);
         const marker = new Marker({ element: wrapper }).setLngLat(pin.lngLat).addTo(map);
+        marker.getElement().style.zIndex = markerZIndex(pin.isHovered, pin.isSelected);
         current.set(pin.listingId, { marker, root, isHovered: pin.isHovered, isSelected: pin.isSelected });
       }
     }
