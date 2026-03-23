@@ -14,6 +14,9 @@ import type { SeatMapModel } from '../model/types';
  *
  * Model row IDs are the raw rowId string (e.g. "3"), combined with sectionId to build
  * the GeoJSON feature ID (e.g. "101:3"). Seat IDs in the model match GeoJSON ids directly.
+ *
+ * Work is chunked via requestIdleCallback (10 sections per chunk) so the main thread
+ * isn't blocked on the ~18K setFeatureState calls at load time.
  */
 export function useFeatureState({
   mapRef,
@@ -27,37 +30,55 @@ export function useFeatureState({
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
+    const sections = model.sections;
+    let i = 0;
+    const BATCH = 10; // ~150–250 setFeatureState calls per chunk
 
-    for (const section of model.sections) {
-      const sectionId = section.sectionId;
-      const sectionData = model.sectionDataById.get(sectionId);
-      const sectionHasAvailable = sectionData
-        ? sectionData.rows.some(row => row.seats.some(s => s.status === 'available'))
-        : false;
-
-      map.setFeatureState(
-        { source: SOURCE_SECTIONS, id: sectionId },
-        { unavailable: !sectionHasAvailable },
-      );
-
-      if (!sectionData) continue;
-
-      sectionData.rows.forEach((row) => {
-        const rowGeoId = `${sectionId}:${row.rowId}`;
-        const rowHasAvailable = row.seats.some(s => s.status === 'available');
+    function processBatch() {
+      if (!mapRef.current) return;
+      const end = Math.min(i + BATCH, sections.length);
+      for (; i < end; i++) {
+        const section = sections[i];
+        const sectionId = section.sectionId;
+        const sectionData = model.sectionDataById.get(sectionId);
+        const sectionHasAvailable = sectionData
+          ? sectionData.rows.some(row => row.seats.some(s => s.status === 'available'))
+          : false;
 
         map.setFeatureState(
-          { source: SOURCE_ROWS, id: rowGeoId },
-          { unavailable: !rowHasAvailable },
+          { source: SOURCE_SECTIONS, id: sectionId },
+          { unavailable: !sectionHasAvailable },
         );
 
-        row.seats.forEach((seat) => {
+        if (!sectionData) continue;
+
+        sectionData.rows.forEach((row) => {
+          const rowGeoId = `${sectionId}:${row.rowId}`;
+          const rowHasAvailable = row.seats.some(s => s.status === 'available');
+
           map.setFeatureState(
-            { source: SOURCE_SEATS, id: seat.seatId },
-            { unavailable: seat.status === 'unavailable' },
+            { source: SOURCE_ROWS, id: rowGeoId },
+            { unavailable: !rowHasAvailable },
           );
+
+          row.seats.forEach((seat) => {
+            map.setFeatureState(
+              { source: SOURCE_SEATS, id: seat.seatId },
+              { unavailable: seat.status === 'unavailable' },
+            );
+          });
         });
-      });
+      }
+
+      if (i < sections.length) {
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(processBatch, { timeout: 500 });
+        } else {
+          setTimeout(processBatch, 0);
+        }
+      }
     }
+
+    processBatch();
   }, [ready, model]); // eslint-disable-line react-hooks/exhaustive-deps
 }

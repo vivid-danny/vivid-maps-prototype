@@ -160,6 +160,15 @@ export function useMapInteractions({
       hoveredSeatId = seatId;
       map.setFeatureState({ source: SOURCE_SEATS, id: seatId }, { hovered: true });
       map.getCanvas().style.cursor = 'pointer';
+
+      // Emit row-level hover to React so pins can react
+      const sectionId = feature.properties?.sectionId as string;
+      const rowId = feature.properties?.rowId as string;
+      if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
+        lastSectionId = sectionId;
+        lastRowId = rowId;
+        onHoverRef.current(buildRowHover(sectionId, rowId));
+      }
     }
 
     function handleMouseLeave() {

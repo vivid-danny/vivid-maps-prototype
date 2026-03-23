@@ -39,6 +39,9 @@ interface MarkerEntry {
   isSelected: boolean;
 }
 
+// Sentinel ID for the on-the-fly hover pin (a row with no pre-existing pin candidate).
+const HOVER_PIN_ID = '__hover__';
+
 function markerZIndex(isHovered: boolean, isSelected: boolean): string {
   return isHovered ? '30' : isSelected ? '20' : '10';
 }
@@ -102,8 +105,9 @@ export function useMapPins({
   const seatColorsRef = useRef(seatColors);
   seatColorsRef.current = seatColors;
 
-  // Compute the full set of pins to render, with their state
-  const pinsToRender = useMemo((): PinRenderData[] => {
+  // basePins: computes the static set of pins (no hover state).
+  // Rebuilds only when model/displayMode/selection changes — NOT on hover transitions.
+  const basePins = useMemo((): PinRenderData[] => {
     if (sectionCenters.size === 0) return [];
 
     const pins: PinRenderData[] = [];
@@ -133,15 +137,8 @@ export function useMapPins({
       }
 
       for (const { listing, lngLat } of candidates) {
-        const isHovered =
-          displayMode === 'sections'
-            ? hoverState.sectionId === sectionId
-            : displayMode === 'rows'
-              ? hoverState.sectionId === sectionId && hoverState.rowId === listing.rowId
-              : hoverState.listingId === listing.listingId;
         const isSelected = selectedListing?.listingId === listing.listingId;
-
-        pins.push({ listingId: listing.listingId, lngLat, sectionId, listing, isHovered, isSelected });
+        pins.push({ listingId: listing.listingId, lngLat, sectionId, listing, isHovered: false, isSelected });
       }
     }
 
@@ -163,14 +160,9 @@ export function useMapPins({
 
     // Mobile: show roughly half the pins to reduce clutter
     return isMobile ? pins.slice(0, Math.ceil(pins.length / 2)) : pins;
-  }, [model, sectionCenters, displayMode, hoverState, selectedListing, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
-  // TODO: Remove hoverState from this memo's dep array to avoid O(n) pin rebuild on every
-  // section-to-section hover transition. Split into:
-  //   - basePins memo (no hoverState) — only rebuilds on model/displayMode/selection changes
-  //   - Separate effect that applies isHovered imperatively via a hoverStateRef, calling
-  //     renderPin() only on the 1-2 pins whose hover flipped
+  }, [model, sectionCenters, displayMode, selectedListing, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync markers to pinsToRender (create/remove/update)
+  // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
   useEffect(() => {
     const current = markersRef.current;
 
@@ -185,10 +177,11 @@ export function useMapPins({
     }
 
     const map = mapRef.current;
-    const nextIds = new Set(pinsToRender.map((p) => p.listingId));
+    const nextIds = new Set(basePins.map((p) => p.listingId));
 
-    // Remove stale markers
+    // Remove stale markers (but preserve the on-the-fly hover pin)
     for (const [id, entry] of current) {
+      if (id === HOVER_PIN_ID) continue;
       if (!nextIds.has(id)) {
         entry.marker.remove();
         entry.root.unmount();
@@ -196,14 +189,13 @@ export function useMapPins({
       }
     }
 
-    // Add new markers or update state on existing ones
-    for (const pin of pinsToRender) {
+    // Add new markers or update isSelected on existing ones
+    for (const pin of basePins) {
       const existing = current.get(pin.listingId);
       if (existing) {
-        if (existing.isHovered !== pin.isHovered || existing.isSelected !== pin.isSelected) {
-          renderPin(existing.root, pin.listing, pin.isHovered, pin.isSelected, seatColorsRef.current);
-          existing.marker.getElement().style.zIndex = markerZIndex(pin.isHovered, pin.isSelected);
-          existing.isHovered = pin.isHovered;
+        if (existing.isSelected !== pin.isSelected) {
+          renderPin(existing.root, pin.listing, existing.isHovered, pin.isSelected, seatColorsRef.current);
+          existing.marker.getElement().style.zIndex = markerZIndex(existing.isHovered, pin.isSelected);
           existing.isSelected = pin.isSelected;
         }
       } else {
@@ -212,13 +204,84 @@ export function useMapPins({
           onSelectRef.current(buildSectionSelection(pin.sectionId));
         });
         const root = createRoot(inner);
-        renderPin(root, pin.listing, pin.isHovered, pin.isSelected, seatColorsRef.current);
+        renderPin(root, pin.listing, false, pin.isSelected, seatColorsRef.current);
         const marker = new Marker({ element: wrapper }).setLngLat(pin.lngLat).addTo(map);
-        marker.getElement().style.zIndex = markerZIndex(pin.isHovered, pin.isSelected);
-        current.set(pin.listingId, { marker, root, isHovered: pin.isHovered, isSelected: pin.isSelected });
+        marker.getElement().style.zIndex = markerZIndex(false, pin.isSelected);
+        current.set(pin.listingId, { marker, root, isHovered: false, isSelected: pin.isSelected });
       }
     }
-  }, [ready, pinsToRender]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, basePins]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Hover effect: applies isHovered imperatively on existing markers (re-renders 1-2 pins
+  // max per transition) and manages the on-the-fly hover pin for rows with no static pin.
+  useEffect(() => {
+    const current = markersRef.current;
+    if (!ready || !mapRef.current) return;
+
+    // Update isHovered on existing static markers
+    for (const [id, entry] of current) {
+      if (id === HOVER_PIN_ID) continue;
+      const pin = basePins.find((p) => p.listingId === id);
+      if (!pin) continue;
+      const isHovered =
+        displayMode === 'sections'
+          ? hoverState.sectionId === pin.sectionId
+          : hoverState.sectionId === pin.sectionId && hoverState.rowId === pin.listing.rowId;
+      if (entry.isHovered !== isHovered) {
+        renderPin(entry.root, pin.listing, isHovered, entry.isSelected, seatColorsRef.current);
+        entry.marker.getElement().style.zIndex = markerZIndex(isHovered, entry.isSelected);
+        entry.isHovered = isHovered;
+      }
+    }
+
+    // On-the-fly hover pin: show cheapest listing for a hovered row that has no static pin
+    if (
+      (displayMode === 'rows' || displayMode === 'seats') &&
+      hoverState.sectionId !== null &&
+      hoverState.rowId !== null
+    ) {
+      const sectionData = sectionCenters.get(hoverState.sectionId);
+      const alreadyHasPin = basePins.some(
+        (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
+      );
+
+      if (!alreadyHasPin && sectionData && mapRef.current) {
+        const rowListings = (model.listingsBySection.get(hoverState.sectionId) ?? []).filter(
+          (l) => l.rowId === hoverState.rowId,
+        );
+        if (rowListings.length > 0) {
+          const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
+          const lngLat = sectionData.rows[hoverState.rowId]?.center ?? sectionData.center;
+          const existing = current.get(HOVER_PIN_ID);
+          if (existing) {
+            existing.marker.setLngLat(lngLat);
+            renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
+            existing.isHovered = true;
+          } else {
+            const sectionId = hoverState.sectionId;
+            const { wrapper, inner } = createMarkerEl((e) => {
+              e.stopPropagation();
+              onSelectRef.current(buildSectionSelection(sectionId));
+            });
+            const root = createRoot(inner);
+            renderPin(root, cheapest, true, false, seatColorsRef.current);
+            const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current);
+            marker.getElement().style.zIndex = markerZIndex(true, false);
+            current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
+          }
+          return; // on-the-fly pin placed — done
+        }
+      }
+    }
+
+    // No matching on-the-fly hover — remove stale hover pin if present
+    const existing = current.get(HOVER_PIN_ID);
+    if (existing) {
+      existing.marker.remove();
+      existing.root.unmount();
+      current.delete(HOVER_PIN_ID);
+    }
+  }, [hoverState, ready, basePins, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Remove all markers on unmount
   useEffect(() => {

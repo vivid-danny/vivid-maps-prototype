@@ -71,6 +71,15 @@ export function SeatMapRoot() {
     mapInstanceRef.current = map;
   }, []);
 
+  // Only propagate zoom to React state when crossing ROW_ZOOM_MIN — avoids
+  // re-rendering SeatMapRoot (and all children) on every scroll/pinch frame.
+  const handleZoomChange = useCallback((zoom: number) => {
+    setCurrentScale(prev => {
+      if ((prev >= ROW_ZOOM_MIN) !== (zoom >= ROW_ZOOM_MIN)) return zoom;
+      return prev; // same zone — bail out, no re-render
+    });
+  }, []);
+
   const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
     const map = mapInstanceRef.current;
     if (!map || !sel.sectionId) return;
@@ -281,7 +290,7 @@ export function SeatMapRoot() {
                 onSelect={viewState.handleSelect}
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
-                onZoomChange={setCurrentScale}
+                onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}
               />
               <button

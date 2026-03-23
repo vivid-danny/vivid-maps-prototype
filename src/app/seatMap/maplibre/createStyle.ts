@@ -125,10 +125,9 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'circle-color': sectionFillColor,
           'circle-radius': [
-            'interpolate', ['linear'], ['zoom'],
-            16, 4,
-            18, 7,
-            20, 10,
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 4,
+            20, 256,
           ],
           'circle-stroke-width': 0,
         },
