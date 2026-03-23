@@ -164,6 +164,11 @@ export function useMapPins({
     // Mobile: show roughly half the pins to reduce clutter
     return isMobile ? pins.slice(0, Math.ceil(pins.length / 2)) : pins;
   }, [model, sectionCenters, displayMode, hoverState, selectedListing, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
+  // TODO: Remove hoverState from this memo's dep array to avoid O(n) pin rebuild on every
+  // section-to-section hover transition. Split into:
+  //   - basePins memo (no hoverState) — only rebuilds on model/displayMode/selection changes
+  //   - Separate effect that applies isHovered imperatively via a hoverStateRef, calling
+  //     renderPin() only on the 1-2 pins whose hover flipped
 
   // Sync markers to pinsToRender (create/remove/update)
   useEffect(() => {

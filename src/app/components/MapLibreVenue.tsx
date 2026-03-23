@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import type { Map as MaplibreMap } from 'maplibre-gl';
 import { useMapLibre } from '../seatMap/maplibre/useMapLibre';
 import { createVenueStyle } from '../seatMap/maplibre/createStyle';
 import { useFeatureState } from '../seatMap/maplibre/useFeatureState';
@@ -35,6 +36,7 @@ interface MapLibreVenueProps {
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
   onZoomChange?: (zoom: number) => void;
+  onMapReady?: (map: MaplibreMap) => void;
 }
 
 type Visibility = 'visible' | 'none';
@@ -63,6 +65,7 @@ export function MapLibreVenue({
   onHover,
   isMobile,
   onZoomChange,
+  onMapReady,
 }: MapLibreVenueProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +111,11 @@ export function MapLibreVenue({
     onZoomChange?.(zoom);
   }, [zoom, onZoomChange]);
 
+  // Expose map instance to parent once ready
+  useEffect(() => {
+    if (ready && mapRef.current) onMapReady?.(mapRef.current);
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Apply seatable section filter from manifest — excludes concourse/compound sections
   useEffect(() => {
     if (!ready || !mapRef.current || seatableIds.length === 0) return;
@@ -125,7 +133,7 @@ export function MapLibreVenue({
     const sections: Visibility = displayMode === 'sections' ? 'visible' : 'none';
     const rows: Visibility = displayMode === 'rows' ? 'visible' : 'none';
     const seats: Visibility = displayMode === 'seats' ? 'visible' : 'none';
-    setLayerVisibility(map, LAYER_SECTION_FILL, sections);
+    map.setPaintProperty(LAYER_SECTION_FILL, 'fill-opacity', displayMode === 'sections' ? 1 : 0);
     setLayerVisibility(map, LAYER_SECTION_STROKE, sections);
     setLayerVisibility(map, LAYER_SECTION_LABEL, sections);
     setLayerVisibility(map, LAYER_ROW_FILL, rows);

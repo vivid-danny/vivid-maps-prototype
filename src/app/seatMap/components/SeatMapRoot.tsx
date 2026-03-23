@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
+import type { Map as MaplibreMap } from 'maplibre-gl';
 import { RotateCcw } from 'lucide-react';
 import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { RealVenue, computeVisibleSections } from '../../components/RealVenue';
@@ -13,6 +14,7 @@ import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
 import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useVenueManifest } from '../maplibre/useVenueManifest';
+import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN, VENUE_BOUNDS } from '../maplibre/constants';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
@@ -34,6 +36,7 @@ export function SeatMapRoot() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const prevSizeRef = useRef<{ width: number; height: number } | null>(null);
   const isAnimatingRef = useRef(false);
+  const mapInstanceRef = useRef<MaplibreMap | null>(null);
   const isGestureActiveRef = useRef(false);
   const pendingScaleRef = useRef<number | null>(null);
   const currentScaleForThresholdRef = useRef(mapDef.scaleDefaults.desktopInitialScale);
@@ -76,6 +79,26 @@ export function SeatMapRoot() {
     setCurrentScale(def.scaleDefaults.desktopInitialScale);
     currentScaleForThresholdRef.current = def.scaleDefaults.desktopInitialScale;
   }, [updateConfig]);
+
+  const handleMapReady = useCallback((map: MaplibreMap) => {
+    mapInstanceRef.current = map;
+  }, []);
+
+  const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
+    const map = mapInstanceRef.current;
+    if (!map || !sel.sectionId) return;
+
+    const entry = sectionCenters.get(sel.sectionId);
+    if (!entry) return;
+
+    if (sel.rowId) {
+      const center = entry.rows[sel.rowId]?.center ?? entry.center;
+      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN + 1 : SEAT_ZOOM_MIN + 0.5);
+      map.easeTo({ center, zoom: targetZoom, duration: 500, essential: true });
+    } else {
+      map.easeTo({ center: entry.center, zoom: zoom ?? ROW_ZOOM_MIN + 0.5, duration: 500, essential: true });
+    }
+  }, [sectionCenters]);
 
   // Viewport rect in venue coordinates — updated during pan/zoom via rAF
   // Only triggers re-render when the set of visible sections changes
@@ -174,8 +197,7 @@ export function SeatMapRoot() {
     controller,
     currentScale,
     setCurrentScale,
-    transformRef,
-    isAnimatingRef,
+    navigateFn,
   });
 
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
@@ -399,20 +421,13 @@ export function SeatMapRoot() {
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
                 onZoomChange={setCurrentScale}
+                onMapReady={handleMapReady}
               />
               <button
                 onClick={() => {
                   viewState.setSelection(EMPTY_SELECTION);
-                  // Switch display mode immediately so animation renders cheap sections, not 18K seats
-                  setCurrentScale(controller.initialScale);
                   currentScaleForThresholdRef.current = controller.initialScale;
-                  // Wait two frames for React to commit the display mode re-render, then animate
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      isAnimatingRef.current = true;
-                      transformRef.current?.centerView(controller.initialScale, 300, 'easeOut');
-                    });
-                  });
+                  mapInstanceRef.current?.fitBounds(VENUE_BOUNDS, { padding: 40, duration: 600, essential: true });
                 }}
                 className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{

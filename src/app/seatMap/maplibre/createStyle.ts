@@ -123,6 +123,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': sectionFillColor,
           'fill-opacity': 1,
+          'fill-outline-color': '#C5C5C5',
         },
       },
 

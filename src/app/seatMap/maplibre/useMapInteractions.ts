@@ -52,6 +52,10 @@ export function useMapInteractions({
     // Track the last hovered seat feature ID to clear it on mouseleave/move
     let hoveredSeatId: string | null = null;
 
+    // Tracks last hover emitted to avoid redundant React state updates on mousemove
+    let lastSectionId: string | null = null;
+    let lastRowId: string | null = null;
+
     // --- Click handlers ---
 
     function handleSectionClick(e: MapLayerMouseEvent) {
@@ -111,7 +115,12 @@ export function useMapInteractions({
       const sectionId = e.features[0].properties?.sectionId as string;
       if (!sectionId) return;
 
+      // Skip if already hovering this section in sections mode
+      if (lastSectionId === sectionId && lastRowId === null) return;
+
       map.getCanvas().style.cursor = 'pointer';
+      lastSectionId = sectionId;
+      lastRowId = null;
       onHoverRef.current(buildSectionHover(sectionId));
     }
 
@@ -125,7 +134,12 @@ export function useMapInteractions({
       const rowId = e.features[0].properties?.rowId as string;
       if (!sectionId || !rowId) return;
 
+      // Skip if already hovering this row
+      if (lastSectionId === sectionId && lastRowId === rowId) return;
+
       map.getCanvas().style.cursor = 'pointer';
+      lastSectionId = sectionId;
+      lastRowId = rowId;
       onHoverRef.current(buildRowHover(sectionId, rowId));
     }
 
@@ -155,6 +169,8 @@ export function useMapInteractions({
         map.setFeatureState({ source: SOURCE_SEATS, id: hoveredSeatId }, { hovered: false });
         hoveredSeatId = null;
       }
+      lastSectionId = null;
+      lastRowId = null;
       map.getCanvas().style.cursor = '';
       onHoverRef.current(EMPTY_HOVER);
     }
