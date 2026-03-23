@@ -5,7 +5,6 @@ export const SOURCE_SEATS = 'seats';
 
 // Layer IDs — sections
 export const LAYER_SECTION_FILL = 'section-fill';
-export const LAYER_SECTION_STROKE = 'section-stroke'; // width 0, kept for filter/visibility toggling
 export const LAYER_SECTION_LABEL = 'section-label';
 
 // Layer IDs — rows

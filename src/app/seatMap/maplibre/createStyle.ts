@@ -6,7 +6,6 @@ import {
   LAYER_SEAT,
   LAYER_SECTION_FILL,
   LAYER_SECTION_LABEL,
-  LAYER_SECTION_STROKE,
   SOURCE_ROWS,
   SOURCE_SEATS,
   SOURCE_SECTIONS,
@@ -80,16 +79,6 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': sectionFillColor,
           'fill-opacity': 1,
-        },
-      },
-      {
-        id: LAYER_SECTION_STROKE,
-        type: 'line',
-        source: SOURCE_SECTIONS,
-        layout: { visibility: 'visible' },
-        paint: {
-          'line-color': seatColors.mapBackground,
-          'line-width': 0,
         },
       },
       {

@@ -15,8 +15,6 @@ import type {
   EventInfo,
   MapConfig,
 } from '../model/types';
-// Re-export VenueSeatMapModel for mapRegistry compatibility (geometry is a stub)
-import type { VenueSeatMapModel } from './createVenueSeatMapModel';
 
 const seatCounts = seatCountsRaw as Record<string, Record<string, number>>;
 
@@ -273,7 +271,7 @@ function extractListings(
   return listings;
 }
 
-export function createManifestSeatMapModel(): VenueSeatMapModel {
+export function createManifestSeatMapModel(): SeatMapModel {
   const sectionIds = Object.keys(seatCounts).sort((a, b) => {
     const na = parseInt(a, 10), nb = parseInt(b, 10);
     if (!isNaN(na) && !isNaN(nb)) return na - nb;
@@ -388,15 +386,6 @@ export function createManifestSeatMapModel(): VenueSeatMapModel {
     seed: SEED,
   };
 
-  // Stub geometry for backward compatibility with VenueSeatMapModel type
-  const geometry = {
-    frameWidth: 0,
-    frameHeight: 0,
-    venueElements: [],
-    sectionBoundaries: new Map(),
-    seatPositions: new Map(),
-  };
-
   return {
     ...mapConfig,
     sectionDataById,
@@ -404,6 +393,5 @@ export function createManifestSeatMapModel(): VenueSeatMapModel {
     listingsBySection,
     pinsBySection,
     eventInfo: VENUE_EVENT_INFO,
-    geometry,
   };
 }

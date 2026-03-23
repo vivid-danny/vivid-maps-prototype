@@ -12,7 +12,6 @@ import {
   LAYER_SEAT,
   LAYER_SECTION_FILL,
   LAYER_SECTION_LABEL,
-  LAYER_SECTION_STROKE,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
 import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
@@ -122,7 +121,6 @@ export function MapLibreVenue({
     const map = mapRef.current;
     const filter = ['in', ['get', 'id'], ['literal', seatableIds]] as const;
     map.setFilter(LAYER_SECTION_FILL, filter);
-    map.setFilter(LAYER_SECTION_STROKE, filter);
     map.setFilter(LAYER_SECTION_LABEL, filter);
   }, [ready, seatableIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -134,7 +132,6 @@ export function MapLibreVenue({
     const rows: Visibility = displayMode === 'rows' ? 'visible' : 'none';
     const seats: Visibility = displayMode === 'seats' ? 'visible' : 'none';
     map.setPaintProperty(LAYER_SECTION_FILL, 'fill-opacity', displayMode === 'sections' ? 1 : 0);
-    setLayerVisibility(map, LAYER_SECTION_STROKE, sections);
     setLayerVisibility(map, LAYER_SECTION_LABEL, sections);
     setLayerVisibility(map, LAYER_ROW_FILL, rows);
     setLayerVisibility(map, LAYER_SEAT, seats);

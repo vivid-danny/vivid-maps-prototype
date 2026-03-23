@@ -1,6 +1,5 @@
 import { createManifestSeatMapModel } from './createManifestSeatMapModel';
-import { createTheaterSeatMapModel } from './createTheaterSeatMapModel';
-import type { VenueSeatMapModel } from './createVenueSeatMapModel';
+import type { SeatMapModel } from '../model/types';
 import type { VenueAssets } from '../maplibre/types';
 
 export interface MapScaleDefaults {
@@ -13,7 +12,7 @@ export interface MapScaleDefaults {
 export interface MapDefinition {
   id: string;
   label: string;
-  createModel: () => VenueSeatMapModel;
+  createModel: () => SeatMapModel;
   scaleDefaults: MapScaleDefaults;
   assets: VenueAssets;
 }
@@ -35,24 +34,6 @@ export const MAP_REGISTRY: MapDefinition[] = [
       desktopZoomThreshold: 0.3,
       mobileInitialScale: 0.03,
       mobileZoomThreshold: 0.15,
-    },
-  },
-  {
-    id: 'theater',
-    label: 'Theater',
-    createModel: createTheaterSeatMapModel,
-    assets: {
-      manifestUrl: '',
-      backgroundUrl: '',
-      sectionsUrl: '',
-      rowsUrl: '',
-      seatsUrl: '',
-    },
-    scaleDefaults: {
-      desktopInitialScale: 0.15,
-      desktopZoomThreshold: 0.35,
-      mobileInitialScale: 0.05,
-      mobileZoomThreshold: 0.2,
     },
   },
 ];
