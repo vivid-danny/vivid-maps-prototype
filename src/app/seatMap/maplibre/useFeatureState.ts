@@ -22,10 +22,12 @@ export function useFeatureState({
   mapRef,
   ready,
   model,
+  seatableIds,
 }: {
   mapRef: React.RefObject<MaplibreMap | null>;
   ready: boolean;
   model: SeatMapModel;
+  seatableIds: string[];
 }) {
   useEffect(() => {
     if (!ready || !mapRef.current) return;
@@ -81,4 +83,17 @@ export function useFeatureState({
 
     processBatch();
   }, [ready, model]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mark seatable sections that have no model data as unavailable.
+  // Runs in a separate effect so the async arrival of seatableIds (from the manifest fetch)
+  // doesn't restart the expensive ~18K-item batch above.
+  useEffect(() => {
+    if (!ready || !mapRef.current || seatableIds.length === 0) return;
+    const map = mapRef.current;
+    for (const id of seatableIds) {
+      if (!model.sectionDataById.has(id)) {
+        map.setFeatureState({ source: SOURCE_SECTIONS, id }, { unavailable: true });
+      }
+    }
+  }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
 }

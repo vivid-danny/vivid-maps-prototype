@@ -1,0 +1,2757 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.37908935546875,
+          1.0820889877063706
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:507::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "507",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2272
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.18682861328125,
+          1.3045137436059093
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:536::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "536",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2262
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.2115478515625,
+          1.1919306203815125
+        ]
+      },
+      "properties": {
+        "svgId": "s:ada-bleachers::l:ADA_BLEACHERS",
+        "id": "ada-bleachers",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "-10.842460709391524",
+        "text": "ADA BLEACHERS",
+        "fontSize": "32",
+        "secId": "left-field-ada",
+        "_layer": "base"
+      },
+      "id": 2278
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.18682861328125,
+          1.0875811671623552
+        ]
+      },
+      "properties": {
+        "svgId": "s:fannie-may-bleacher::l:Fannie_May_Bleacher",
+        "id": "fannie-may-bleacher",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "-10.842460709391524",
+        "text": "FANNIE MAY BLEACHER",
+        "fontSize": "42",
+        "secId": "fannie-may-bleacher",
+        "_layer": "base"
+      },
+      "id": 2276
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.041259765625,
+          1.3182430568620163
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:537::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "537",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2261
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.8984375,
+          1.27705489313162
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:538::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "538",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2260
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.02752685546875,
+          1.1342642839220787
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:511::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "511",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2266
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.92041015625,
+          1.106803716221279
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:512::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "512",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2265
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.79132080078125,
+          1.0436434559084802
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:513::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "513",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2264
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6622314453125,
+          0.9420351909682694
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:514::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "514",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2263
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.57708740234375,
+          1.0134359218013458
+        ]
+      },
+      "properties": {
+        "svgId": "s:ada-bleachers::l:ADA_BLEACHERS",
+        "id": "ada-bleachers",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "48.303654628946106",
+        "text": "ADA BLEACHERS",
+        "fontSize": "29",
+        "secId": "left-field-ada",
+        "_layer": "base"
+      },
+      "id": 2277
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.645751953125,
+          0.09887690404683269
+        ]
+      },
+      "properties": {
+        "svgId": "s:bullpen-box-30::l:BP30::f:md",
+        "id": "bullpen-box-30",
+        "t": "sl",
+        "l": "BP30",
+        "fontSize": "64",
+        "secId": "bullpen-box-30",
+        "_layer": "base"
+      },
+      "id": 2314
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.66497802734375,
+          0.024719237514403858
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-29::l:MM29::f:md",
+        "id": "barrel-room-29",
+        "t": "sl",
+        "l": "MM29",
+        "fontSize": "64",
+        "secId": "barrel-room-29",
+        "_layer": "base"
+      },
+      "id": 2313
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6292724609375,
+          0.1538084090169889
+        ]
+      },
+      "properties": {
+        "svgId": "s:bullpen-box-31::l:BP31",
+        "id": "bullpen-box-31",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "-90",
+        "text": "BP31",
+        "fontSize": "12",
+        "secId": "bullpen-box-31",
+        "_layer": "base"
+      },
+      "id": 2364
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.56610107421875,
+          0.17028783523693392
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-31::l:31::f:md",
+        "id": "outfield-club-31",
+        "t": "sl",
+        "l": "31",
+        "fontSize": "64",
+        "secId": "outfield-club-31",
+        "_layer": "base"
+      },
+      "id": 2319
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.57159423828125,
+          0.07965085325108134
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-30::l:30::f:md",
+        "id": "outfield-club-30",
+        "t": "sl",
+        "l": "30",
+        "fontSize": "64",
+        "secId": "outfield-club-30",
+        "_layer": "base"
+      },
+      "id": 2318
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.53314208984375,
+          0.8239462091017629
+        ]
+      },
+      "properties": {
+        "svgId": "s:ga-bleachers::l:515::f:lg",
+        "id": "ga-bleachers",
+        "t": "sl",
+        "l": "515",
+        "fontSize": "96",
+        "secId": "ga-bleachers",
+        "_layer": "base"
+      },
+      "id": 2259
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.45074462890625,
+          0.7168392082560615
+        ]
+      },
+      "properties": {
+        "svgId": "s:ada-516::l:516",
+        "id": "ada-516",
+        "t": "sl",
+        "l": "516",
+        "fontSize": "64",
+        "secId": "ada-516",
+        "_layer": "base"
+      },
+      "id": 2307
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.3875732421875,
+          0.6481795331595066
+        ]
+      },
+      "properties": {
+        "svgId": "s:ada-517::l:517",
+        "id": "ada-517",
+        "t": "sl",
+        "l": "517",
+        "fontSize": "64",
+        "secId": "ada-517",
+        "_layer": "base"
+      },
+      "id": 2308
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.32440185546875,
+          0.5795189272168244
+        ]
+      },
+      "properties": {
+        "svgId": "s:ada-518::l:518",
+        "id": "ada-518",
+        "t": "sl",
+        "l": "518",
+        "fontSize": "64",
+        "secId": "ada-518",
+        "_layer": "base"
+      },
+      "id": 2309
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.36285400390625,
+          0.4257162976928015
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-134::l:134::f:md",
+        "id": "outfield-field-box-134",
+        "t": "sl",
+        "l": "134",
+        "fontSize": "64",
+        "secId": "outfield-field-box-134",
+        "_layer": "base"
+      },
+      "id": 2374
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.24200439453125,
+          0.35430682391556445
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-233::l:233",
+        "id": "terrace-reserved-outfield-233",
+        "t": "sl",
+        "l": "233",
+        "fontSize": "64",
+        "secId": "terrace-reserved-outfield-233",
+        "_layer": "base"
+      },
+      "id": 2224
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.5413818359375,
+          0.24719161596905792
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-32::l:32::f:md",
+        "id": "outfield-club-32",
+        "t": "sl",
+        "l": "32",
+        "fontSize": "64",
+        "secId": "outfield-club-32",
+        "_layer": "base"
+      },
+      "id": 2252
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.40679931640625,
+          0.34606723172845477
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-133::l:133",
+        "id": "outfield-field-box-133",
+        "t": "sl",
+        "l": "133",
+        "fontSize": "96",
+        "secId": "outfield-field-box-133",
+        "_layer": "base"
+      },
+      "id": 2375
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4150390625,
+          0.2526847277643469
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-132::l:132",
+        "id": "outfield-field-box-132",
+        "t": "sl",
+        "l": "132",
+        "fontSize": "96",
+        "secId": "outfield-field-box-132",
+        "_layer": "base"
+      },
+      "id": 2245
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4150390625,
+          0.1565549809740645
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-131::l:131",
+        "id": "outfield-field-box-131",
+        "t": "sl",
+        "l": "131",
+        "fontSize": "96",
+        "secId": "outfield-field-box-131",
+        "_layer": "base"
+      },
+      "id": 2244
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4150390625,
+          0.06591795420830238
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-130::l:130",
+        "id": "outfield-field-box-130",
+        "t": "sl",
+        "l": "130",
+        "fontSize": "96",
+        "secId": "outfield-field-box-130",
+        "_layer": "base"
+      },
+      "id": 2243
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.140380859375,
+          0.23345882665080353
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-232::l:232",
+        "id": "terrace-reserved-outfield-232",
+        "t": "sl",
+        "l": "232",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-232",
+        "_layer": "base"
+      },
+      "id": 2250
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.12664794921875,
+          0.09613032599287408
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-231::l:231",
+        "id": "terrace-reserved-outfield-231",
+        "t": "sl",
+        "l": "231",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-231",
+        "_layer": "base"
+      },
+      "id": 2342
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.78607177734375,
+          0.021972655711437028
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-outfield-331r::l:331R",
+        "id": "upper-box-outfield-331r",
+        "t": "sl",
+        "l": "331R",
+        "fontSize": "96",
+        "secId": "upper-box-outfield-331r",
+        "_layer": "base"
+      },
+      "id": 2246
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.74188232421875,
+          -0.10711663682018013
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-27::l:MM27::f:md",
+        "id": "barrel-room-27",
+        "t": "sl",
+        "l": "MM27",
+        "fontSize": "64",
+        "secId": "barrel-room-27",
+        "_layer": "base"
+      },
+      "id": 2311
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.73638916015625,
+          -0.20599320856797476
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-26::l:26::f:md",
+        "id": "infield-club-26",
+        "t": "sl",
+        "l": "26",
+        "fontSize": "64",
+        "secId": "infield-club-26",
+        "_layer": "base"
+      },
+      "id": 2213
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.70343017578125,
+          -0.04119872691853743
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-28::l:MM28::f:md",
+        "id": "barrel-room-28",
+        "t": "sl",
+        "l": "MM28",
+        "fontSize": "64",
+        "secId": "barrel-room-28",
+        "_layer": "base"
+      },
+      "id": 2312
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.63751220703125,
+          -0.08239743253575682
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-28::l:28::f:md",
+        "id": "outfield-club-28",
+        "t": "sl",
+        "l": "28",
+        "fontSize": "64",
+        "secId": "outfield-club-28",
+        "_layer": "base"
+      },
+      "id": 2316
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6787109375,
+          -0.14831526404881856
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-27::l:27::f:md",
+        "id": "infield-club-27",
+        "t": "sl",
+        "l": "27",
+        "fontSize": "64",
+        "secId": "infield-club-27",
+        "_layer": "base"
+      },
+      "id": 2315
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.59906005859375,
+          -0.016479491960282644
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-29::l:29::f:md",
+        "id": "outfield-club-29",
+        "t": "sl",
+        "l": "29",
+        "fontSize": "64",
+        "secId": "outfield-club-29",
+        "_layer": "base"
+      },
+      "id": 2317
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.48370361328125,
+          -0.12634267104829178
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-128::l:128",
+        "id": "outfield-field-box-128",
+        "t": "sl",
+        "l": "128",
+        "fontSize": "96",
+        "secId": "outfield-field-box-128",
+        "_layer": "base"
+      },
+      "id": 2339
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.43426513671875,
+          -0.03021240094363975
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-129::l:129",
+        "id": "outfield-field-box-129",
+        "t": "sl",
+        "l": "129",
+        "fontSize": "96",
+        "secId": "outfield-field-box-129",
+        "_layer": "base"
+      },
+      "id": 2340
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.5413818359375,
+          -0.20324664405208637
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-127::l:127",
+        "id": "outfield-field-box-127",
+        "t": "sl",
+        "l": "127",
+        "fontSize": "96",
+        "secId": "outfield-field-box-127",
+        "_layer": "base"
+      },
+      "id": 2338
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.140380859375,
+          -0.027465819260584112
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-230::l:230",
+        "id": "terrace-reserved-outfield-230",
+        "t": "sl",
+        "l": "230",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-230",
+        "_layer": "base"
+      },
+      "id": 2341
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.18707275390625,
+          -0.16754126514172185
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-229::l:229",
+        "id": "terrace-reserved-outfield-229",
+        "t": "sl",
+        "l": "229",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-229",
+        "_layer": "base"
+      },
+      "id": 2327
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.85748291015625,
+          -0.08789059053081871
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-outfield-330r::l:330R",
+        "id": "upper-box-outfield-330r",
+        "t": "sl",
+        "l": "330R",
+        "fontSize": "96",
+        "secId": "upper-box-outfield-330r",
+        "_layer": "base"
+      },
+      "id": 2390
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.920654296875,
+          -0.21148633617335122
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-midfield-329r::l:329R",
+        "id": "upper-box-midfield-329r",
+        "t": "sl",
+        "l": "329R",
+        "fontSize": "96",
+        "secId": "upper-box-midfield-329r",
+        "_layer": "base"
+      },
+      "id": 2350
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.67071533203125,
+          -0.046691889363174255
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-431r::l:431r::f:lg",
+        "id": "upper-reserved-outfield-431r",
+        "t": "sl",
+        "l": "431r",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-431r",
+        "_layer": "base"
+      },
+      "id": 2236
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.722900390625,
+          -0.16479469466153773
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-430r::l:430R::f:lg",
+        "id": "upper-reserved-outfield-430r",
+        "t": "sl",
+        "l": "430R",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-430r",
+        "_layer": "base"
+      },
+      "id": 2366
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.4312744140625,
+          -0.36803946119344744
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa13::l:AA13::f:md",
+        "id": "club-1914-aa13",
+        "t": "sl",
+        "l": "AA13",
+        "fontSize": "64",
+        "secId": "club-1914-aa13",
+        "_layer": "base"
+      },
+      "id": 2223
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.436767578125,
+          -0.49163215060788445
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-14::l:14::f:md",
+        "id": "home-plate-club-14",
+        "t": "sl",
+        "l": "14",
+        "fontSize": "64",
+        "secId": "home-plate-club-14",
+        "_layer": "base"
+      },
+      "id": 2288
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.3763427734375,
+          -0.4394488164139574
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa14::l:AA14::f:md",
+        "id": "club-1914-aa14",
+        "t": "sl",
+        "l": "AA14",
+        "fontSize": "64",
+        "secId": "club-1914-aa14",
+        "_layer": "base"
+      },
+      "id": 2289
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.30767822265625,
+          -0.5081110155722968
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa15::l:AA15::f:md",
+        "id": "club-1914-aa15",
+        "t": "sl",
+        "l": "AA15",
+        "fontSize": "64",
+        "secId": "club-1914-aa15",
+        "_layer": "base"
+      },
+      "id": 2222
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.38458251953125,
+          -0.5548009001919496
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-15::l:15::f:md",
+        "id": "home-plate-club-15",
+        "t": "sl",
+        "l": "15",
+        "fontSize": "64",
+        "secId": "home-plate-club-15",
+        "_layer": "base"
+      },
+      "id": 2392
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.2939453125,
+          -0.5657867030024306
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa16::l:AA16::f:md",
+        "id": "club-1914-aa16",
+        "t": "sl",
+        "l": "AA16",
+        "fontSize": "64",
+        "secId": "club-1914-aa16",
+        "_layer": "base"
+      },
+      "id": 2391
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.32965087890625,
+          -0.6097297021959918
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-16::l:16::f:md",
+        "id": "home-plate-club-16",
+        "t": "sl",
+        "l": "16",
+        "fontSize": "64",
+        "secId": "home-plate-club-16",
+        "_layer": "base"
+      },
+      "id": 2217
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.4312744140625,
+          -0.7195855745039523
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-115::l:115",
+        "id": "home-plate-field-box-115",
+        "t": "sl",
+        "l": "115",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-115",
+        "_layer": "base"
+      },
+      "id": 2285
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.35711669921875,
+          -0.7607808662819338
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-116::l:116",
+        "id": "home-plate-field-box-116",
+        "t": "sl",
+        "l": "116",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-116",
+        "_layer": "base"
+      },
+      "id": 2209
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.2664794921875,
+          -0.7854978539243973
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-117::l:117",
+        "id": "home-plate-field-box-117",
+        "t": "sl",
+        "l": "117",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-117",
+        "_layer": "base"
+      },
+      "id": 2287
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.44500732421875,
+          -1.2852925793638548
+        ]
+      },
+      "properties": {
+        "svgId": "s:catalina-club-316l::l:316L",
+        "id": "catalina-club-316l",
+        "t": "sl",
+        "l": "316L",
+        "fontSize": "96",
+        "secId": "catalina-club-316l",
+        "_layer": "base"
+      },
+      "id": 2370
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.38458251953125,
+          -1.0903272531455883
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-216::l:216",
+        "id": "terrace-reserved-preferred-216",
+        "t": "sl",
+        "l": "216",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-216",
+        "_layer": "base"
+      },
+      "id": 2284
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.27197265625,
+          -1.3209889104538917
+        ]
+      },
+      "properties": {
+        "svgId": "s:catalina-club-317r::l:317R",
+        "id": "catalina-club-317r",
+        "t": "sl",
+        "l": "317R",
+        "fontSize": "96",
+        "secId": "catalina-club-317r",
+        "_layer": "base"
+      },
+      "id": 2371
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.29119873046875,
+          -1.4610232806227401
+        ]
+      },
+      "properties": {
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "6.580631144364942",
+        "text": "PRESS BOX",
+        "fontSize": "129",
+        "secId": "press-box",
+        "_layer": "base"
+      },
+      "id": 2227
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.645751953125,
+          0.09887690404683269
+        ]
+      },
+      "properties": {
+        "svgId": "s:bullpen-box-30::l:BP30::f:md",
+        "id": "bullpen-box-30",
+        "t": "sl",
+        "l": "BP30",
+        "fontSize": "64",
+        "secId": "bullpen-box-30",
+        "_layer": "base"
+      },
+      "id": 2314
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.66497802734375,
+          0.024719237514403858
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-29::l:MM29::f:md",
+        "id": "barrel-room-29",
+        "t": "sl",
+        "l": "MM29",
+        "fontSize": "64",
+        "secId": "barrel-room-29",
+        "_layer": "base"
+      },
+      "id": 2313
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6292724609375,
+          0.1538084090169889
+        ]
+      },
+      "properties": {
+        "svgId": "s:bullpen-box-31::l:BP31",
+        "id": "bullpen-box-31",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "-90",
+        "text": "BP31",
+        "fontSize": "12",
+        "secId": "bullpen-box-31",
+        "_layer": "base"
+      },
+      "id": 2364
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.56610107421875,
+          0.17028783523693392
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-31::l:31::f:md",
+        "id": "outfield-club-31",
+        "t": "sl",
+        "l": "31",
+        "fontSize": "64",
+        "secId": "outfield-club-31",
+        "_layer": "base"
+      },
+      "id": 2319
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.57159423828125,
+          0.07965085325108134
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-30::l:30::f:md",
+        "id": "outfield-club-30",
+        "t": "sl",
+        "l": "30",
+        "fontSize": "64",
+        "secId": "outfield-club-30",
+        "_layer": "base"
+      },
+      "id": 2318
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4150390625,
+          0.1565549809740645
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-131::l:131",
+        "id": "outfield-field-box-131",
+        "t": "sl",
+        "l": "131",
+        "fontSize": "96",
+        "secId": "outfield-field-box-131",
+        "_layer": "base"
+      },
+      "id": 2244
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4150390625,
+          0.06591795420830238
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-130::l:130",
+        "id": "outfield-field-box-130",
+        "t": "sl",
+        "l": "130",
+        "fontSize": "96",
+        "secId": "outfield-field-box-130",
+        "_layer": "base"
+      },
+      "id": 2243
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.12664794921875,
+          0.09613032599287408
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-231::l:231",
+        "id": "terrace-reserved-outfield-231",
+        "t": "sl",
+        "l": "231",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-231",
+        "_layer": "base"
+      },
+      "id": 2342
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.78607177734375,
+          0.021972655711437028
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-outfield-331r::l:331R",
+        "id": "upper-box-outfield-331r",
+        "t": "sl",
+        "l": "331R",
+        "fontSize": "96",
+        "secId": "upper-box-outfield-331r",
+        "_layer": "base"
+      },
+      "id": 2246
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.21978759765625,
+          -0.5740260414817158
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa18::l:AA18::f:md",
+        "id": "club-1914-aa18",
+        "t": "sl",
+        "l": "AA18",
+        "fontSize": "64",
+        "secId": "club-1914-aa18",
+        "_layer": "base"
+      },
+      "id": 2221
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.23077392578125,
+          -0.6481795331595066
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-18::l:18::f:md",
+        "id": "home-plate-club-18",
+        "t": "sl",
+        "l": "18",
+        "fontSize": "64",
+        "secId": "home-plate-club-18",
+        "_layer": "base"
+      },
+      "id": 2251
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.13189697265625,
+          -0.5383221578577064
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa19::l:AA19::f:md",
+        "id": "club-1914-aa19",
+        "t": "sl",
+        "l": "AA19",
+        "fontSize": "64",
+        "secId": "club-1914-aa19",
+        "_layer": "base"
+      },
+      "id": 2331
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.08795166015625,
+          -0.5520544462864905
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa20::l:AA20::f:md",
+        "id": "club-1914-aa20",
+        "t": "sl",
+        "l": "AA20",
+        "fontSize": "64",
+        "secId": "club-1914-aa20",
+        "_layer": "base"
+      },
+      "id": 2330
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.1181640625,
+          -0.6371938961998751
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-19::l:19::f:md",
+        "id": "home-plate-club-19",
+        "t": "sl",
+        "l": "19",
+        "fontSize": "64",
+        "secId": "home-plate-club-19",
+        "_layer": "base"
+      },
+      "id": 2329
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.0467529296875,
+          -0.4888856691230927
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa21::l:AA21::f:md",
+        "id": "club-1914-aa21",
+        "t": "sl",
+        "l": "AA21",
+        "fontSize": "64",
+        "secId": "club-1914-aa21",
+        "_layer": "base"
+      },
+      "id": 2220
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.975341796875,
+          -0.4257162976927873
+        ]
+      },
+      "properties": {
+        "svgId": "s:club-1914-aa22::l:AA22::f:md",
+        "id": "club-1914-aa22",
+        "t": "sl",
+        "l": "AA22",
+        "fontSize": "64",
+        "secId": "club-1914-aa22",
+        "_layer": "base"
+      },
+      "id": 2219
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.9259033203125,
+          -0.4833927027897005
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-22::l:22::f:md",
+        "id": "home-plate-club-22",
+        "t": "sl",
+        "l": "22",
+        "fontSize": "64",
+        "secId": "home-plate-club-22",
+        "_layer": "base"
+      },
+      "id": 2215
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.05224609375,
+          -0.5959975522614229
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-20::l:20::f:md",
+        "id": "home-plate-club-20",
+        "t": "sl",
+        "l": "20",
+        "fontSize": "64",
+        "secId": "home-plate-club-20",
+        "_layer": "base"
+      },
+      "id": 2328
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.997314453125,
+          -0.5438150769842878
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-club-21::l:21::f:md",
+        "id": "home-plate-club-21",
+        "t": "sl",
+        "l": "21",
+        "fontSize": "64",
+        "secId": "home-plate-club-21",
+        "_layer": "base"
+      },
+      "id": 2216
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.91766357421875,
+          -0.6838826866130177
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-121::l:121",
+        "id": "home-plate-field-box-121",
+        "t": "sl",
+        "l": "121",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-121",
+        "_layer": "base"
+      },
+      "id": 2242
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.74188232421875,
+          -0.10711663682018013
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-27::l:MM27::f:md",
+        "id": "barrel-room-27",
+        "t": "sl",
+        "l": "MM27",
+        "fontSize": "64",
+        "secId": "barrel-room-27",
+        "_layer": "base"
+      },
+      "id": 2311
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.810546875,
+          -0.3378276323843181
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-24::l:24::f:md",
+        "id": "infield-club-24",
+        "t": "sl",
+        "l": "24",
+        "fontSize": "64",
+        "secId": "infield-club-24",
+        "_layer": "base"
+      },
+      "id": 2332
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.73638916015625,
+          -0.20599320856797476
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-26::l:26::f:md",
+        "id": "infield-club-26",
+        "t": "sl",
+        "l": "26",
+        "fontSize": "64",
+        "secId": "infield-club-26",
+        "_layer": "base"
+      },
+      "id": 2213
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.77484130859375,
+          -0.2719106004261107
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-25::l:25::f:md",
+        "id": "infield-club-25",
+        "t": "sl",
+        "l": "25",
+        "fontSize": "64",
+        "secId": "infield-club-25",
+        "_layer": "base"
+      },
+      "id": 2214
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.70343017578125,
+          -0.04119872691853743
+        ]
+      },
+      "properties": {
+        "svgId": "s:barrel-room-28::l:MM28::f:md",
+        "id": "barrel-room-28",
+        "t": "sl",
+        "l": "MM28",
+        "fontSize": "64",
+        "secId": "barrel-room-28",
+        "_layer": "base"
+      },
+      "id": 2312
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.63751220703125,
+          -0.08239743253575682
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-28::l:28::f:md",
+        "id": "outfield-club-28",
+        "t": "sl",
+        "l": "28",
+        "fontSize": "64",
+        "secId": "outfield-club-28",
+        "_layer": "base"
+      },
+      "id": 2316
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6787109375,
+          -0.14831526404881856
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-27::l:27::f:md",
+        "id": "infield-club-27",
+        "t": "sl",
+        "l": "27",
+        "fontSize": "64",
+        "secId": "infield-club-27",
+        "_layer": "base"
+      },
+      "id": 2315
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.59906005859375,
+          -0.016479491960282644
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-club-29::l:29::f:md",
+        "id": "outfield-club-29",
+        "t": "sl",
+        "l": "29",
+        "fontSize": "64",
+        "secId": "outfield-club-29",
+        "_layer": "base"
+      },
+      "id": 2317
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.5908203125,
+          -0.2883898955642934
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-field-box-126::l:126",
+        "id": "infield-field-box-126",
+        "t": "sl",
+        "l": "126",
+        "fontSize": "96",
+        "secId": "infield-field-box-126",
+        "_layer": "base"
+      },
+      "id": 2337
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.8599853515625,
+          -0.4092372430149567
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-club-23::l:23::f:md",
+        "id": "infield-club-23",
+        "t": "sl",
+        "l": "23",
+        "fontSize": "64",
+        "secId": "infield-club-23",
+        "_layer": "base"
+      },
+      "id": 2333
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.843505859375,
+          -0.6097297021959918
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-122::l:122",
+        "id": "home-plate-field-box-122",
+        "t": "sl",
+        "l": "122",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-122",
+        "_layer": "base"
+      },
+      "id": 2336
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.76934814453125,
+          -0.5465615346763428
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-field-box-123::l:123",
+        "id": "infield-field-box-123",
+        "t": "sl",
+        "l": "123",
+        "fontSize": "96",
+        "secId": "infield-field-box-123",
+        "_layer": "base"
+      },
+      "id": 2335
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.6402587890625,
+          -0.3817720773285629
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-field-box-125::l:125",
+        "id": "infield-field-box-125",
+        "t": "sl",
+        "l": "125",
+        "fontSize": "96",
+        "secId": "infield-field-box-125",
+        "_layer": "base"
+      },
+      "id": 2254
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.70068359375,
+          -0.4751532449746776
+        ]
+      },
+      "properties": {
+        "svgId": "s:infield-field-box-124::l:124",
+        "id": "infield-field-box-124",
+        "t": "sl",
+        "l": "124",
+        "fontSize": "96",
+        "secId": "infield-field-box-124",
+        "_layer": "base"
+      },
+      "id": 2334
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.17584228515625,
+          -0.7937368175458204
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-118::l:118::f:lg",
+        "id": "home-plate-field-box-118",
+        "t": "sl",
+        "l": "118",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-118",
+        "_layer": "base"
+      },
+      "id": 2249
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.0906982421875,
+          -0.7745125438579947
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-119::l:119",
+        "id": "home-plate-field-box-119",
+        "t": "sl",
+        "l": "119",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-119",
+        "_layer": "base"
+      },
+      "id": 2248
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.195068359375,
+          -0.9228116626856888
+        ]
+      },
+      "properties": {
+        "svgId": "s:suites::l:SUITES::z:sec",
+        "id": "suites",
+        "t": "custom-label",
+        "c": "custom-label",
+        "rotation": "0",
+        "text": "SUITES",
+        "fontSize": "64",
+        "zoomLevel": "section",
+        "secId": "suites",
+        "_layer": "base"
+      },
+      "id": 2226
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.0028076171875,
+          -0.7305710228984879
+        ]
+      },
+      "properties": {
+        "svgId": "s:home-plate-field-box-120::l:120",
+        "id": "home-plate-field-box-120",
+        "t": "sl",
+        "l": "120",
+        "fontSize": "96",
+        "secId": "home-plate-field-box-120",
+        "_layer": "base"
+      },
+      "id": 2241
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.22528076171875,
+          -1.1342642839220645
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-217::l:217",
+        "id": "terrace-reserved-preferred-217",
+        "t": "sl",
+        "l": "217",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-217",
+        "_layer": "base"
+      },
+      "id": 2369
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.07696533203125,
+          -1.3237347610112948
+        ]
+      },
+      "properties": {
+        "svgId": "s:catalina-club-318r::l:318R",
+        "id": "catalina-club-318r",
+        "t": "sl",
+        "l": "318R",
+        "fontSize": "96",
+        "secId": "catalina-club-318r",
+        "_layer": "base"
+      },
+      "id": 2372
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11.0467529296875,
+          -1.1232800877582179
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-218::l:218",
+        "id": "terrace-reserved-preferred-218",
+        "t": "sl",
+        "l": "218",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-218",
+        "_layer": "base"
+      },
+      "id": 2368
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.75836181640625,
+          -0.9640048075894185
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-221::l:221",
+        "id": "terrace-reserved-preferred-221",
+        "t": "sl",
+        "l": "221",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-221",
+        "_layer": "base"
+      },
+      "id": 2208
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.64300537109375,
+          -0.865140463151647
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-222::l:222",
+        "id": "terrace-reserved-preferred-222",
+        "t": "sl",
+        "l": "222",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-222",
+        "_layer": "base"
+      },
+      "id": 2247
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.87921142578125,
+          -1.0546279422758715
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-220::l:220",
+        "id": "terrace-reserved-preferred-220",
+        "t": "sl",
+        "l": "220",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-220",
+        "_layer": "base"
+      },
+      "id": 2283
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.7281494140625,
+          -1.2001685712337036
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-320r::l:320R",
+        "id": "upper-box-infield-320r",
+        "t": "sl",
+        "l": "320R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-320r",
+        "_layer": "base"
+      },
+      "id": 2299
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.8929443359375,
+          -1.274308991845217
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-319r::l:319R",
+        "id": "upper-box-infield-319r",
+        "t": "sl",
+        "l": "319R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-319r",
+        "_layer": "base"
+      },
+      "id": 2297
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.755615234375,
+          -1.3923800203023546
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-419r::l:419r::f:md",
+        "id": "upper-reserved-infield-419r",
+        "t": "sl",
+        "l": "419r",
+        "fontSize": "64",
+        "_layer": "base"
+      },
+      "id": 2235
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.61553955078125,
+          -1.1177879741676122
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-321r::l:321R",
+        "id": "upper-box-infield-321r",
+        "t": "sl",
+        "l": "321R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-321r",
+        "_layer": "base"
+      },
+      "id": 2298
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.65948486328125,
+          -1.3072596122756721
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-420r::l:420R::f:lg",
+        "id": "upper-reserved-infield-420r",
+        "t": "sl",
+        "l": "420R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-420r",
+        "_layer": "base"
+      },
+      "id": 2301
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.48370361328125,
+          -0.12634267104829178
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-128::l:128",
+        "id": "outfield-field-box-128",
+        "t": "sl",
+        "l": "128",
+        "fontSize": "96",
+        "secId": "outfield-field-box-128",
+        "_layer": "base"
+      },
+      "id": 2339
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.43426513671875,
+          -0.03021240094363975
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-129::l:129",
+        "id": "outfield-field-box-129",
+        "t": "sl",
+        "l": "129",
+        "fontSize": "96",
+        "secId": "outfield-field-box-129",
+        "_layer": "base"
+      },
+      "id": 2340
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.5413818359375,
+          -0.20324664405208637
+        ]
+      },
+      "properties": {
+        "svgId": "s:outfield-field-box-127::l:127",
+        "id": "outfield-field-box-127",
+        "t": "sl",
+        "l": "127",
+        "fontSize": "96",
+        "secId": "outfield-field-box-127",
+        "_layer": "base"
+      },
+      "id": 2338
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.2667236328125,
+          -0.2911364424713696
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-228::l:228",
+        "id": "terrace-reserved-outfield-228",
+        "t": "sl",
+        "l": "228",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-228",
+        "_layer": "base"
+      },
+      "id": 2306
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.382080078125,
+          -0.5081110155722968
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-226::l:226",
+        "id": "terrace-reserved-preferred-226",
+        "t": "sl",
+        "l": "226",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-226",
+        "_layer": "base"
+      },
+      "id": 2304
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.4425048828125,
+          -0.6179689753949589
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-225::l:225",
+        "id": "terrace-reserved-preferred-225",
+        "t": "sl",
+        "l": "225",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-225",
+        "_layer": "base"
+      },
+      "id": 2389
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.3216552734375,
+          -0.3982511876714767
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-227::l:227",
+        "id": "terrace-reserved-outfield-227",
+        "t": "sl",
+        "l": "227",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-227",
+        "_layer": "base"
+      },
+      "id": 2305
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.140380859375,
+          -0.027465819260584112
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-230::l:230",
+        "id": "terrace-reserved-outfield-230",
+        "t": "sl",
+        "l": "230",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-230",
+        "_layer": "base"
+      },
+      "id": 2341
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.18707275390625,
+          -0.16754126514172185
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-outfield-229::l:229",
+        "id": "terrace-reserved-outfield-229",
+        "t": "sl",
+        "l": "229",
+        "fontSize": "96",
+        "secId": "terrace-reserved-outfield-229",
+        "_layer": "base"
+      },
+      "id": 2327
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.85748291015625,
+          -0.08789059053081871
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-outfield-330r::l:330R",
+        "id": "upper-box-outfield-330r",
+        "t": "sl",
+        "l": "330R",
+        "fontSize": "96",
+        "secId": "upper-box-outfield-330r",
+        "_layer": "base"
+      },
+      "id": 2390
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.00579833984375,
+          -0.34057416628374426
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-midfield-328r::l:328R",
+        "id": "upper-box-midfield-328r",
+        "t": "sl",
+        "l": "328R",
+        "fontSize": "96",
+        "secId": "upper-box-midfield-328r",
+        "_layer": "base"
+      },
+      "id": 2351
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.920654296875,
+          -0.21148633617335122
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-midfield-329r::l:329R",
+        "id": "upper-box-midfield-329r",
+        "t": "sl",
+        "l": "329R",
+        "fontSize": "96",
+        "secId": "upper-box-midfield-329r",
+        "_layer": "base"
+      },
+      "id": 2350
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.07720947265625,
+          -0.4696602676283561
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-midfield-327r::l:327R",
+        "id": "upper-box-midfield-327r",
+        "t": "sl",
+        "l": "327R",
+        "fontSize": "96",
+        "secId": "upper-box-midfield-327r",
+        "_layer": "base"
+      },
+      "id": 2396
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.15411376953125,
+          -0.601490416387847
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-326r::l:326R",
+        "id": "upper-box-infield-326r",
+        "t": "sl",
+        "l": "326R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-326r",
+        "_layer": "base"
+      },
+      "id": 2345
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.94537353515625,
+          -0.5053645409602865
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-427r::l:427R::f:lg",
+        "id": "upper-reserved-outfield-427r",
+        "t": "sl",
+        "l": "427R",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-427r",
+        "_layer": "base"
+      },
+      "id": 2352
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.8822021484375,
+          -0.3982511876714767
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-428r::l:428R::f:lg",
+        "id": "upper-reserved-outfield-428r",
+        "t": "sl",
+        "l": "428R",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-428r",
+        "_layer": "base"
+      },
+      "id": 2353
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.01129150390625,
+          -0.6207153969631207
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-426r::l:426R::f:lg",
+        "id": "upper-reserved-infield-426r",
+        "t": "sl",
+        "l": "426R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-426r",
+        "_layer": "base"
+      },
+      "id": 2349
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.52490234375,
+          -0.7443027955751376
+        ]
+      },
+      "properties": {
+        "svgId": "s:terrace-reserved-preferred-223::l:223",
+        "id": "terrace-reserved-preferred-223",
+        "t": "sl",
+        "l": "223",
+        "fontSize": "96",
+        "secId": "terrace-reserved-preferred-223",
+        "_layer": "base"
+      },
+      "id": 2303
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.535888671875,
+          -1.0463895811126491
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-322r::l:322R::f:lg",
+        "id": "upper-box-infield-322r",
+        "t": "sl",
+        "l": "322R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-322r",
+        "_layer": "base"
+      },
+      "id": 2367
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.43426513671875,
+          -0.9640048075894185
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-323r::l:323R",
+        "id": "upper-box-infield-323r",
+        "t": "sl",
+        "l": "323R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-323r",
+        "_layer": "base"
+      },
+      "id": 2302
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.2777099609375,
+          -0.7992294508519677
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-box-infield-324r::l:324R",
+        "id": "upper-box-infield-324r",
+        "t": "sl",
+        "l": "324R",
+        "fontSize": "96",
+        "secId": "upper-box-infield-324r",
+        "_layer": "base"
+      },
+      "id": 2346
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.33538818359375,
+          -1.0463895811126491
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-423r::l:423R::f:lg",
+        "id": "upper-reserved-infield-423r",
+        "t": "sl",
+        "l": "423R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-423r",
+        "_layer": "base"
+      },
+      "id": 2344
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.2008056640625,
+          -0.9035880305130775
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-424r::l:424R::f:lg",
+        "id": "upper-reserved-infield-424r",
+        "t": "sl",
+        "l": "424R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-424r",
+        "_layer": "base"
+      },
+      "id": 2347
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.52764892578125,
+          -1.2138984340943182
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-421r::l:421R::f:lg",
+        "id": "upper-reserved-infield-421r",
+        "t": "sl",
+        "l": "421R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-421r",
+        "_layer": "base"
+      },
+      "id": 2300
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.43426513671875,
+          -1.1397563663944368
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-422r::l:422R::f:lg",
+        "id": "upper-reserved-infield-422r",
+        "t": "sl",
+        "l": "422R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-422r",
+        "_layer": "base"
+      },
+      "id": 2343
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.08819580078125,
+          -0.7443027955751376
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-infield-425r::l:425R::f:lg",
+        "id": "upper-reserved-infield-425r",
+        "t": "sl",
+        "l": "425R",
+        "fontSize": "96",
+        "secId": "upper-reserved-infield-425r",
+        "_layer": "base"
+      },
+      "id": 2348
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.67071533203125,
+          -0.046691889363174255
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-431r::l:431r::f:lg",
+        "id": "upper-reserved-outfield-431r",
+        "t": "sl",
+        "l": "431r",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-431r",
+        "_layer": "base"
+      },
+      "id": 2236
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.722900390625,
+          -0.16479469466153773
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-430r::l:430R::f:lg",
+        "id": "upper-reserved-outfield-430r",
+        "t": "sl",
+        "l": "430R",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-430r",
+        "_layer": "base"
+      },
+      "id": 2366
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.810791015625,
+          -0.27740370137212267
+        ]
+      },
+      "properties": {
+        "svgId": "s:upper-reserved-outfield-429r::l:429R::f:lg",
+        "id": "upper-reserved-outfield-429r",
+        "t": "sl",
+        "l": "429R",
+        "fontSize": "96",
+        "secId": "upper-reserved-outfield-429r",
+        "_layer": "base"
+      },
+      "id": 2354
+    }
+  ]
+}

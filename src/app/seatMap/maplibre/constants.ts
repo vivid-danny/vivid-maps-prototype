@@ -5,10 +5,13 @@ export const SOURCE_SEATS = 'seats';
 
 // Layer IDs — sections
 export const LAYER_SECTION_FILL = 'section-fill';
+export const LAYER_SECTION_STROKE = 'section-stroke';
 export const LAYER_SECTION_LABEL = 'section-label';
 
 // Layer IDs — rows
 export const LAYER_ROW_FILL = 'row-fill';
+export const LAYER_ROW_STROKE = 'row-stroke';
+export const LAYER_ROW_MUTED_OVERLAY = 'row-muted-overlay';
 
 // Layer IDs — seats
 export const LAYER_SEAT = 'seat';

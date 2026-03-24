@@ -9,9 +9,12 @@ import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { buildSectionFillExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW_FILL,
+  LAYER_ROW_MUTED_OVERLAY,
+  LAYER_ROW_STROKE,
   LAYER_SEAT,
   LAYER_SECTION_FILL,
   LAYER_SECTION_LABEL,
+  LAYER_SECTION_STROKE,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
 import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
@@ -82,7 +85,7 @@ export function MapLibreVenue({
   });
 
   // Wire inventory feature states (available/unavailable)
-  useFeatureState({ mapRef, ready, model });
+  useFeatureState({ mapRef, ready, model, seatableIds });
 
   // Wire click/hover event handlers on map layers
   useMapInteractions({ mapRef, ready, onSelect, onHover, isMobile });
@@ -115,14 +118,25 @@ export function MapLibreVenue({
     if (ready && mapRef.current) onMapReady?.(mapRef.current);
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply seatable section filter from manifest — excludes concourse/compound sections
+  // Apply seatable section filter from manifest — excludes concourse/compound sections.
+  // Also restrict rows/seats to sections that have model data, so features with no
+  // inventory don't render (or become interactive) when zoomed in.
   useEffect(() => {
     if (!ready || !mapRef.current || seatableIds.length === 0) return;
     const map = mapRef.current;
-    const filter = ['in', ['get', 'id'], ['literal', seatableIds]] as const;
-    map.setFilter(LAYER_SECTION_FILL, filter);
-    map.setFilter(LAYER_SECTION_LABEL, filter);
-  }, [ready, seatableIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const sectionFilter = ['in', ['get', 'id'], ['literal', seatableIds]] as const;
+    map.setFilter(LAYER_SECTION_FILL, sectionFilter);
+    map.setFilter(LAYER_SECTION_STROKE, sectionFilter);
+    map.setFilter(LAYER_SECTION_LABEL, sectionFilter);
+
+    const modelSectionIds = [...model.sectionDataById.keys()];
+    const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', modelSectionIds]] as const;
+    map.setFilter(LAYER_ROW_FILL, rowSeatFilter);
+    map.setFilter(LAYER_ROW_STROKE, rowSeatFilter);
+    map.setFilter(LAYER_ROW_MUTED_OVERLAY, rowSeatFilter);
+    map.setFilter(LAYER_SEAT, rowSeatFilter);
+  }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toggle layer visibility based on displayMode
   useEffect(() => {
@@ -132,10 +146,23 @@ export function MapLibreVenue({
     const rows: Visibility = displayMode === 'rows' ? 'visible' : 'none';
     const seats: Visibility = displayMode === 'seats' ? 'visible' : 'none';
     map.setPaintProperty(LAYER_SECTION_FILL, 'fill-opacity', displayMode === 'sections' ? 1 : 0);
+    setLayerVisibility(map, LAYER_SECTION_STROKE, sections);
     setLayerVisibility(map, LAYER_SECTION_LABEL, sections);
     setLayerVisibility(map, LAYER_ROW_FILL, rows);
+    setLayerVisibility(map, LAYER_ROW_STROKE, rows);
     setLayerVisibility(map, LAYER_SEAT, seats);
+    // Muted overlay visibility also depends on selection — cleared here when leaving rows mode
+    if (displayMode !== 'rows') {
+      setLayerVisibility(map, LAYER_ROW_MUTED_OVERLAY, 'none');
+    }
   }, [ready, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show/hide the row-muted-overlay based on whether a row is selected in rows mode
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const showMuted = displayMode === 'rows' && !!selection.rowId;
+    setLayerVisibility(mapRef.current, LAYER_ROW_MUTED_OVERLAY, showMuted ? 'visible' : 'none');
+  }, [ready, displayMode, selection.rowId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update fill-color expressions when theme or colors change
   useEffect(() => {

@@ -2,11 +2,9 @@ import type { DisplayMode, SeatColors } from '../model/types';
 import type { ThemeId } from './themes';
 
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
-export type LayoutModeOverride = 'auto' | 'desktop' | 'mobile';
 export type ListingCardSize = 'dense' | 'standard' | 'spacious';
 
 export interface SeatMapConfig {
-  layoutModeOverride: LayoutModeOverride;
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
   desktopInitialScale: number;
@@ -22,6 +20,5 @@ export interface SeatMapConfig {
   theme: ThemeId;
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
   listingCardSize: ListingCardSize;
-  mobileMapHeight: number;
 }
 

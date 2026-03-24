@@ -3,9 +3,12 @@ import {
   BACKGROUND_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW_FILL,
+  LAYER_ROW_MUTED_OVERLAY,
+  LAYER_ROW_STROKE,
   LAYER_SEAT,
   LAYER_SECTION_FILL,
   LAYER_SECTION_LABEL,
+  LAYER_SECTION_STROKE,
   SOURCE_ROWS,
   SOURCE_SEATS,
   SOURCE_SECTIONS,
@@ -82,6 +85,24 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
       {
+        id: LAYER_SECTION_STROKE,
+        type: 'line',
+        source: SOURCE_SECTIONS,
+        layout: { visibility: 'visible' },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], '#04092C',
+            seatColors.sectionStroke,
+          ],
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], 2.5,
+            0.5,
+          ],
+        },
+      },
+      {
         id: LAYER_SECTION_LABEL,
         type: 'symbol',
         source: SOURCE_SECTIONS,
@@ -97,9 +118,9 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'text-size': ['interpolate', ['linear'], ['zoom'], 13, 8, 15, 12],
         },
         paint: {
-          'text-color': '#ffffff',
-          'text-halo-color': 'rgba(0,0,0,0.4)',
-          'text-halo-width': 1,
+          'text-color': '#04092C',
+          'text-halo-color': 'hsla(0, 0%, 100%, 0.8)',
+          'text-halo-width': 2,
         },
       },
 
@@ -112,7 +133,31 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': sectionFillColor,
           'fill-opacity': 1,
-          'fill-outline-color': '#C5C5C5',
+        },
+      },
+      {
+        id: LAYER_ROW_STROKE,
+        type: 'line',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#EFEFF6',
+          'line-width': 0.5,
+        },
+      },
+      {
+        // White overlay on non-selected rows — visible only when a row is selected.
+        // Selected row gets transparent; all others get the muted overlay.
+        id: LAYER_ROW_MUTED_OVERLAY,
+        type: 'fill',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(0,0,0,0)',
+            'rgba(255,255,255,0.6)',
+          ],
         },
       },
 

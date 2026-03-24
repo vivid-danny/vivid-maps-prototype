@@ -7,7 +7,7 @@ import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 import { getDealColor, getZoneColor, THEMES } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
-import { MAP_REGISTRY, DEFAULT_MAP_ID } from '../mock/mapRegistry';
+import { MAP_REGISTRY } from '../mock/mapRegistry';
 import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useVenueManifest } from '../maplibre/useVenueManifest';
@@ -21,15 +21,11 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
 export function SeatMapRoot() {
-  const [mapId, setMapId] = useState<string>(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('seat-map-prototype-map-id') : null;
-    return stored ?? INITIAL_URL_PARAMS.mapId ?? DEFAULT_MAP_ID;
-  });
-  const mapDef = MAP_REGISTRY.find((m) => m.id === mapId) ?? MAP_REGISTRY[0]!;
+  const mapDef = MAP_REGISTRY[0]!;
 
   const mapInstanceRef = useRef<MaplibreMap | null>(null);
 
-  const venueModel = useMemo(() => mapDef.createModel(), [mapId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const venueModel = useMemo(() => mapDef.createModel(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const { seatableIds, sectionCenters } = useVenueManifest(mapDef.assets.manifestUrl);
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
@@ -46,26 +42,14 @@ export function SeatMapRoot() {
     updateConfig(mapDef.scaleDefaults);
   }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
 
-  // Persist mapId to localStorage and sync all URL params live
+  // Sync URL params live
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('seat-map-prototype-map-id', mapId);
-    }
     syncToUrl({
-      mapId,
       initialDisplay: config.initialDisplay,
       zoomedDisplay: config.zoomedDisplay,
       theme: config.theme,
     });
-  }, [mapId, config.initialDisplay, config.zoomedDisplay, config.theme]);
-
-  const handleMapChange = useCallback((id: string) => {
-    const def = MAP_REGISTRY.find((m) => m.id === id);
-    if (!def) return;
-    setMapId(id);
-    updateConfig(def.scaleDefaults);
-    setCurrentScale(def.scaleDefaults.desktopInitialScale);
-  }, [updateConfig]);
+  }, [config.initialDisplay, config.zoomedDisplay, config.theme]);
 
   const handleMapReady = useCallback((map: MaplibreMap) => {
     mapInstanceRef.current = map;
@@ -97,8 +81,7 @@ export function SeatMapRoot() {
   }, [sectionCenters]);
 
 
-  const layoutMode = useLayoutMode(config.layoutModeOverride);
-  const isSimulatedMobile = config.layoutModeOverride === 'mobile';
+  const layoutMode = useLayoutMode();
   const isMobile = layoutMode === 'mobile';
 
   const controller = useSeatMapController({
@@ -213,21 +196,15 @@ export function SeatMapRoot() {
         config={config}
         onConfigChange={updateConfig}
         onResetConfig={resetConfig}
-        mapId={mapId}
-        onMapChange={handleMapChange}
       />
 
       <div
-        className={`flex-1 min-w-0 flex ${
-          isSimulatedMobile ? 'items-center justify-center p-5' : ''
-        }`}
+        className="flex-1 min-w-0 flex"
         style={{ backgroundColor: '#f3f4f6' }}
       >
         <div
           className={`flex bg-white ${
-            isSimulatedMobile
-              ? 'w-[390px] flex-col h-[812px] overflow-hidden border border-gray-300 relative'
-              : isMobile
+            isMobile
               ? 'flex-col w-full h-full overflow-hidden relative'
               : 'flex-row w-full h-full overflow-hidden'
           }`}
@@ -273,7 +250,7 @@ export function SeatMapRoot() {
           {/* Map area */}
           <div
             className={`flex items-center justify-center ${!isMobile ? 'flex-1 min-w-0 h-full' : 'shrink-0'}`}
-            style={isMobile ? { height: config.mobileMapHeight } : undefined}
+            style={isMobile ? { height: 200 } : undefined}
           >
             <div className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
               <MapLibreVenue
@@ -301,8 +278,8 @@ export function SeatMapRoot() {
                 className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{
                   padding: '6px 8px',
-                  opacity: viewState.currentScale >= controller.zoomThreshold ? 1 : 0,
-                  pointerEvents: viewState.currentScale >= controller.zoomThreshold ? 'auto' : 'none',
+                  opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
+                  pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
                 }}
               >
                 Reset Map <RotateCcw className="w-4 h-4" />

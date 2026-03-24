@@ -38,5 +38,3 @@ export const MAP_REGISTRY: MapDefinition[] = [
   },
 ];
 
-export const DEFAULT_MAP_ID = 'stadium';
-export const MAP_IDS = MAP_REGISTRY.map((m) => m.id);

@@ -59,7 +59,7 @@ export function getZoneColor(zoneName: string): string {
 // Shared base for zone and deal themes — available/connector are overridden at runtime
 const ZONE_DEAL_COLORS: SeatColors = {
   available: '#8B8FA3',
-  unavailable: '#f5f0f3',
+  unavailable: '#EFEFF6',
   hover: '#7A1D59',
   pressed: '#0d0646',
   selected: '#cc3394',
@@ -67,7 +67,7 @@ const ZONE_DEAL_COLORS: SeatColors = {
   connectorHover: '#d7c1cf',
   connectorPressed: '#c4c3d5',
   connectorSelected: '#e4e1ef',
-  labelDefault: '#1a1a2e',
+  labelDefault: '#04092C',
   labelSelected: '#FFFFFF',
   labelUnavailable: '#A5ADB4',
   pinDefault: '#1a1a2e',
@@ -76,14 +76,14 @@ const ZONE_DEAL_COLORS: SeatColors = {
   pinSelected: '#52143B',
   venueFill: '#FFFFFF',
   venueStroke: '#A0A2B3',
-  sectionStroke: '#ffffff',
+  sectionStroke: '#d3d3dc',
   mapBackground: '#EFEFF6',
 };
 
 export const THEMES: Record<ThemeId, SeatColors> = {
   branded: {
     available: '#CE3197',
-    unavailable: '#f5f0f3',
+    unavailable: '#EFEFF6',
     hover: '#7A1D59',
     pressed: '#0d0646',
     selected: '#312784',
@@ -91,7 +91,7 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     connectorHover: '#d7c1cf',
     connectorPressed: '#c4c3d5',
     connectorSelected: '#e4e1ef',
-    labelDefault: '#5D1A1A',
+    labelDefault: '#04092C',
     labelSelected: '#FFFFFF',
     labelUnavailable: '#B0B0B0',
     pinDefault: '#1a1a2e',
@@ -100,7 +100,7 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     pinSelected: '#141035',
     venueFill: '#FFFFFF',
     venueStroke: '#A0A2B3',
-    sectionStroke: '#ffffff',
+    sectionStroke: '#d3d3dc',
     mapBackground: '#EFEFF6',
   },
   zone: ZONE_DEAL_COLORS,

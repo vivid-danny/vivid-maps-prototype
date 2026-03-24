@@ -2,7 +2,6 @@ import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig } from './types';
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
-  layoutModeOverride: 'auto',
   initialDisplay: 'sections',
   zoomedDisplay: 'seats',
   desktopInitialScale: 0.12,
@@ -17,7 +16,6 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   theme: 'branded',
   themeOverrides: {},
   listingCardSize: 'standard',
-  mobileMapHeight: 200,
   seatColors: {
     available: '#CE3197',
     unavailable: '#f5f0f3',
