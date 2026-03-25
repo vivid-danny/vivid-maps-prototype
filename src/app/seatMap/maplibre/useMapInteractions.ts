@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { Map as MaplibreMap, MapLayerMouseEvent } from 'maplibre-gl';
 import {
-  LAYER_ROW_FILL,
+  LAYER_ROW,
   LAYER_SEAT,
-  LAYER_SECTION_FILL,
+  LAYER_SECTION,
   SOURCE_SEATS,
 } from './constants';
 import type { SelectionState, HoverState } from '../model/types';
@@ -185,29 +185,29 @@ export function useMapInteractions({
     }
 
     // Register handlers
-    map.on('click', LAYER_SECTION_FILL, handleSectionClick);
-    map.on('click', LAYER_ROW_FILL, handleRowClick);
+    map.on('click', LAYER_SECTION, handleSectionClick);
+    map.on('click', LAYER_ROW, handleRowClick);
     map.on('click', LAYER_SEAT, handleSeatClick);
 
-    map.on('mousemove', LAYER_SECTION_FILL, handleSectionHover);
-    map.on('mousemove', LAYER_ROW_FILL, handleRowHover);
+    map.on('mousemove', LAYER_SECTION, handleSectionHover);
+    map.on('mousemove', LAYER_ROW, handleRowHover);
     map.on('mousemove', LAYER_SEAT, handleSeatHover);
 
-    map.on('mouseleave', LAYER_SECTION_FILL, handleMouseLeave);
-    map.on('mouseleave', LAYER_ROW_FILL, handleMouseLeave);
+    map.on('mouseleave', LAYER_SECTION, handleMouseLeave);
+    map.on('mouseleave', LAYER_ROW, handleMouseLeave);
     map.on('mouseleave', LAYER_SEAT, handleMouseLeave);
 
     return () => {
-      map.off('click', LAYER_SECTION_FILL, handleSectionClick);
-      map.off('click', LAYER_ROW_FILL, handleRowClick);
+      map.off('click', LAYER_SECTION, handleSectionClick);
+      map.off('click', LAYER_ROW, handleRowClick);
       map.off('click', LAYER_SEAT, handleSeatClick);
 
-      map.off('mousemove', LAYER_SECTION_FILL, handleSectionHover);
-      map.off('mousemove', LAYER_ROW_FILL, handleRowHover);
+      map.off('mousemove', LAYER_SECTION, handleSectionHover);
+      map.off('mousemove', LAYER_ROW, handleRowHover);
       map.off('mousemove', LAYER_SEAT, handleSeatHover);
 
-      map.off('mouseleave', LAYER_SECTION_FILL, handleMouseLeave);
-      map.off('mouseleave', LAYER_ROW_FILL, handleMouseLeave);
+      map.off('mouseleave', LAYER_SECTION, handleMouseLeave);
+      map.off('mouseleave', LAYER_ROW, handleMouseLeave);
       map.off('mouseleave', LAYER_SEAT, handleMouseLeave);
     };
   }, [ready, mapRef]);

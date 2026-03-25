@@ -93,12 +93,7 @@ export function useSeatMapConfig(initialConfig: SeatMapConfig) {
   };
 
   const resetConfig = () => {
-    setConfig((prev) => ({
-      ...initialConfig,
-      theme: prev.theme,
-      themeOverrides: {},
-      seatColors: THEMES[prev.theme],
-    }));
+    setConfig(initialConfig);
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }

@@ -3,6 +3,7 @@ import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
+import { STYLE_COLORS, THEME_TOKENS } from '../maplibre/constants';
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -80,14 +81,19 @@ function ColorControl({
   label,
   value,
   onChange,
+  prodRef,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  prodRef?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <label className="text-xs text-gray-600 capitalize">{label}</label>
+      <div className="flex flex-col">
+        <label className="text-xs text-gray-600 capitalize">{label}</label>
+        {prodRef && <span className="text-[10px] text-gray-400 font-mono">{prodRef}</span>}
+      </div>
       <div className="flex items-center gap-2">
         <input
           type="color"
@@ -102,6 +108,18 @@ function ColorControl({
           className="w-20 text-xs px-2 py-1 border border-gray-300 rounded font-mono"
         />
       </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, prodSource }: {
+  title: string;
+  prodSource?: string;
+}) {
+  return (
+    <div className="mb-4">
+      <div className="text-xs font-bold text-black">{title}</div>
+      {prodSource && <div className="text-[10px] text-gray-400 font-mono">{prodSource}</div>}
     </div>
   );
 }
@@ -143,7 +161,7 @@ export function PrototypeControls({
           onClick={onResetConfig}
           className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer transition-colors"
         >
-          Reset
+          Reset All
         </button>
       </div>
       <div
@@ -176,7 +194,10 @@ export function PrototypeControls({
           <div className="mb-6 p-3 bg-gray-50 rounded text-xs space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-500">Zoom:</span>
-              <span className="font-mono">{currentScale.toFixed(2)}x</span>
+              <span className="font-mono">
+                {currentScale.toFixed(2)}x
+                <span className="text-gray-400 ml-1">({'\u2248'} prod {(currentScale - 8).toFixed(1)})</span>
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Mode:</span>
@@ -308,37 +329,93 @@ export function PrototypeControls({
             />
           </div>
 
+          {/* DEFAULT_COLORS — production static map constants */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Venue</div>
+            <SectionHeader
+              title="DEFAULT_COLORS"
+              prodSource="Mapbox/constants.ts"
+            />
             <div className="space-y-3">
               <ColorControl
-                label="Fill"
-                value={config.seatColors.venueFill}
-                onChange={(value) => handleColorChange('venueFill', value)}
+                label="Section Label"
+                value={config.seatColors.labelDefault}
+                onChange={(value) => handleColorChange('labelDefault', value)}
+                prodRef="textColor"
               />
               <ColorControl
-                label="Stroke"
-                value={config.seatColors.venueStroke}
-                onChange={(value) => handleColorChange('venueStroke', value)}
+                label="Section Stroke"
+                value={config.seatColors.sectionStroke}
+                onChange={(value) => handleColorChange('sectionStroke', value)}
+                prodRef="sectionStrokeColor"
               />
-              <SliderControl
-                label={`Stroke Width: ${config.venueStrokeWidth}px`}
-                value={config.venueStrokeWidth}
-                onChange={(venueStrokeWidth) => onConfigChange({ venueStrokeWidth })}
-                min={0} max={16} step={1}
-              />
-              <ColorControl
-                label="Map Background"
-                value={config.seatColors.mapBackground}
-                onChange={(value) => handleColorChange('mapBackground', value)}
-              />
+              <div className="space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs text-gray-600">Muted Overlay</label>
+                    <div className="text-[10px] text-gray-400 font-mono">muted</div>
+                  </div>
+                  <span className="text-xs font-mono text-gray-400">{STYLE_COLORS.muted}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs text-gray-600">Selected Overlay</label>
+                    <div className="text-[10px] text-gray-400 font-mono">selected</div>
+                  </div>
+                  <span className="text-xs font-mono text-gray-400">{STYLE_COLORS.selected}</span>
+                </div>
+                <ColorControl
+                  label="Row Stroke"
+                  value={config.rowStrokeColor}
+                  onChange={(value) => onConfigChange({ rowStrokeColor: value })}
+                  prodRef="sectionNoInventoryFill"
+                />
+              </div>
             </div>
           </div>
 
+          {/* Theme Tokens — production design system */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Inventory</div>
+            <SectionHeader
+              title="Theme Tokens"
+              prodSource="useVSTheme"
+            />
             <div className="space-y-3">
-              {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const)
+              <ColorControl
+                label="Background"
+                value={config.seatColors.mapBackground}
+                onChange={(value) => handleColorChange('mapBackground', value)}
+                prodRef="neutral[50]"
+              />
+              <ColorControl
+                label="Venue Fill"
+                value={config.seatColors.venueFill}
+                onChange={(value) => handleColorChange('venueFill', value)}
+                prodRef="onPrimary"
+              />
+              <ColorControl
+                label="Venue Stroke"
+                value={config.seatColors.venueStroke}
+                onChange={(value) => handleColorChange('venueStroke', value)}
+                prodRef="onSurfaceDisabled"
+              />
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs text-gray-600">Section Base</label>
+                  <div className="text-[10px] text-gray-400 font-mono">neutral[100]</div>
+                </div>
+                <span className="text-xs font-mono text-gray-400">{THEME_TOKENS.sectionBase}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dynamic Colors — per-section, runtime */}
+          <div className="mb-8">
+            <SectionHeader
+              title="Dynamic Colors"
+              prodSource="API / runtime"
+            />
+            <div className="space-y-3">
+              {(['available', 'unavailable', 'hover'] as const)
                 .filter((k) => !((config.theme === 'zone' || config.theme === 'deal') && k === 'available'))
                 .map((colorKey) => (
                 <ColorControl
@@ -346,62 +423,20 @@ export function PrototypeControls({
                   label={colorKey}
                   value={config.seatColors[colorKey]}
                   onChange={(value) => handleColorChange(colorKey, value)}
+                  prodRef={colorKey === 'available' ? 'sectionColorExpression' : undefined}
                 />
               ))}
             </div>
           </div>
 
+          {/* Labels */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Section Boundaries</div>
-            <div className="space-y-3">
-              <ColorControl
-                label="Stroke"
-                value={config.seatColors.sectionStroke}
-                onChange={(value) => handleColorChange('sectionStroke', value)}
-              />
-              <SliderControl
-                label={`Stroke Width: ${config.sectionStrokeWidth}px`}
-                value={config.sectionStrokeWidth}
-                onChange={(sectionStrokeWidth) => onConfigChange({ sectionStrokeWidth })}
-                min={0.5} max={16} step={0.5}
-              />
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Connector</div>
-            <div className="space-y-3">
-              <SliderControl
-                label={`Connector Width: ${config.connectorWidth}px`}
-                value={config.connectorWidth}
-                onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-                min={0} max={12} step={1}
-              />
-              {([
-                { key: 'connector' as const, label: 'Default' },
-                { key: 'connectorHover' as const, label: 'Hover' },
-                { key: 'connectorPressed' as const, label: 'Pressed' },
-                { key: 'connectorSelected' as const, label: 'Selected' },
-              ]).filter(({ key }) => !((config.theme === 'zone' || config.theme === 'deal') && key === 'connector'))
-              .map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Pins</div>
+            <SectionHeader title="Labels" />
             <div className="space-y-3">
               {([
-                { key: 'pinDefault' as const, label: 'Default' },
-                { key: 'pinHovered' as const, label: 'Hovered' },
-                { key: 'pinPressed' as const, label: 'Pressed' },
-                { key: 'pinSelected' as const, label: 'Selected' },
+                { key: 'labelDefault' as const, label: 'Available' },
+                { key: 'labelUnavailable' as const, label: 'Unavailable' },
+                { key: 'labelSelected' as const, label: 'Selected' },
               ]).map(({ key, label }) => (
                 <ColorControl
                   key={key}
@@ -413,13 +448,15 @@ export function PrototypeControls({
             </div>
           </div>
 
+          {/* Pins */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Section Labels</div>
+            <SectionHeader title="Pins" prodSource="TooltipStack" />
             <div className="space-y-3">
               {([
-                { key: 'labelDefault' as const, label: 'Available' },
-                { key: 'labelUnavailable' as const, label: 'Unavailable' },
-                { key: 'labelSelected' as const, label: 'Selected' },
+                { key: 'pinDefault' as const, label: 'Default' },
+                { key: 'pinHovered' as const, label: 'Hovered' },
+                { key: 'pinPressed' as const, label: 'Pressed' },
+                { key: 'pinSelected' as const, label: 'Selected' },
               ]).map(({ key, label }) => (
                 <ColorControl
                   key={key}

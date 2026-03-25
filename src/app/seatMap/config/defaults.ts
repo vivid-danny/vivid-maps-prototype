@@ -16,6 +16,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   theme: 'branded',
   themeOverrides: {},
   listingCardSize: 'standard',
+  rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
   seatColors: {
     available: '#CE3197',
     unavailable: '#f5f0f3',

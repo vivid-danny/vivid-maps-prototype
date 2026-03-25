@@ -18,40 +18,27 @@ export function getDealColor(dealScore: number): string {
   return DEAL_SCORE_COLORS.green;
 }
 
-// Zone palette: maps zone group names → hex colors
-// Based on Vivid Seats color key: tiers 1-5 (close → far), each with primary/secondary/tertiary
-export const ZONE_PALETTE: Record<string, string> = {
-  // Tier 1 — inner bowl (hot pink, matches production)
-  'tier-1-primary':   '#E03488',
-  'tier-1-secondary': '#EC5EA3',
-  'tier-1-tertiary':  '#F388BD',
-  // Tier 2 — (unused at this venue, keep yellow as fallback)
-  'tier-2-primary':   '#D9C154',
-  'tier-2-secondary': '#C1DC6B',
-  'tier-2-tertiary':  '#E3D284',
-  // Tier 3 — middle ring (teal, consistent hue)
-  'tier-3-primary':   '#34BFC0',
-  'tier-3-secondary': '#50CECE',
-  'tier-3-tertiary':  '#78DEDE',
-  // Tier 4 — outer ring (steel blue)
-  'tier-4-primary':   '#5B9DD6',
-  'tier-4-secondary': '#7AB5E0',
-  'tier-4-tertiary':  '#9CCAF0',
-  // Tier 5 — (unused at this venue, keep purple as fallback)
-  'tier-5-primary':   '#7082E5',
-  'tier-5-secondary': '#8799FF',
-  'tier-5-tertiary':  '#ABB6F4',
-  // Alt — outfield / edge sections
-  'alt-close': '#B99872',
-  'alt-mid': '#E0B87B',
-  'alt-far': '#F3BA65',
+// Zone palette: one color per tier. Production uses primary/secondary/tertiary
+// for positional nuance (center vs edges) but for the prototype we consolidate
+// to primary only — the shade variations don't aid map readability.
+export const ZONE_TIER_COLORS: Record<string, string> = {
+  'tier-1': '#E03488',  // inner bowl (hot pink)
+  'tier-2': '#D9C154',  // (unused at this venue)
+  'tier-3': '#34BFC0',  // middle ring (teal)
+  'tier-4': '#5B9DD6',  // outer ring (steel blue)
+  'tier-5': '#7082E5',  // (unused at this venue)
+  'alt':    '#B99872',  // outfield / edge sections
 };
 
 // Deterministic fallback hue for unmapped zone names
 const FALLBACK_HUES = ['#E07C4F', '#6BBF6B', '#C9A44C', '#9B6FC0', '#5BC4C4'];
 
 export function getZoneColor(zoneName: string): string {
-  if (ZONE_PALETTE[zoneName]) return ZONE_PALETTE[zoneName];
+  // Strip -primary/-secondary/-tertiary suffix and sub-variants (e.g. alt-close → alt)
+  const tier = zoneName.replace(/-(primary|secondary|tertiary|close|mid|far)$/, '');
+  if (ZONE_TIER_COLORS[tier]) return ZONE_TIER_COLORS[tier];
+  // Direct lookup for legacy names
+  if (ZONE_TIER_COLORS[zoneName]) return ZONE_TIER_COLORS[zoneName];
   const index = Math.abs(hashString(zoneName)) % FALLBACK_HUES.length;
   return FALLBACK_HUES[index];
 }
@@ -77,7 +64,7 @@ const ZONE_DEAL_COLORS: SeatColors = {
   venueFill: '#FFFFFF',
   venueStroke: '#A0A2B3',
   sectionStroke: '#d3d3dc',
-  mapBackground: '#EFEFF6',
+  mapBackground: '#F6F6FB',
 };
 
 export const THEMES: Record<ThemeId, SeatColors> = {
@@ -101,7 +88,7 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     venueFill: '#FFFFFF',
     venueStroke: '#A0A2B3',
     sectionStroke: '#d3d3dc',
-    mapBackground: '#EFEFF6',
+    mapBackground: '#F6F6FB',
   },
   zone: ZONE_DEAL_COLORS,
   deal: ZONE_DEAL_COLORS,

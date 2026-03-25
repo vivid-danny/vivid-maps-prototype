@@ -267,6 +267,7 @@ export function SeatMapRoot() {
                 onSelect={viewState.handleSelect}
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
+                rowStrokeColor={config.rowStrokeColor}
                 onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}
               />

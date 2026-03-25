@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
-import { SOURCE_ROWS, SOURCE_SEATS, SOURCE_SECTIONS } from './constants';
+import { SOURCE_ROWS, SOURCE_SEATS } from './constants';
 import type { SelectionState, HoverState } from '../model/types';
+import { SOURCE_SECTIONS } from './constants';
 
 interface UseMapSelectionSyncOptions {
   mapRef: React.RefObject<MaplibreMap | null>;
@@ -13,9 +14,10 @@ interface UseMapSelectionSyncOptions {
 /**
  * Syncs React selection/hover state → MapLibre feature state.
  *
- * When selection or hover changes, clears the previous feature state
- * and sets the new one. Paint expressions in the style read these
- * feature states to drive fill colors.
+ * Section selection is handled by overlay layers (section-selected-overlay,
+ * section-selected-outline) in MapLibreVenue.tsx, matching the production pattern.
+ * Row/seat selection still uses feature-state (drives row-selected-overlay paint).
+ * Hover uses feature-state for all layers.
  */
 export function useMapSelectionSync({
   mapRef,
@@ -26,18 +28,14 @@ export function useMapSelectionSync({
   const prevSelectionRef = useRef<SelectionState | null>(null);
   const prevHoverRef = useRef<HoverState | null>(null);
 
-  // --- Selection sync ---
+  // --- Selection sync (rows + seats only; sections use overlay layers) ---
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
     const prev = prevSelectionRef.current;
 
-    // Clear previous selection
-    if (prev?.sectionId) {
-      safeSetState(map, SOURCE_SECTIONS, prev.sectionId, { selected: false });
-    }
+    // Clear previous row selection
     if (prev?.rowId && prev?.sectionId) {
-      // Row GeoJSON IDs use rowId from model (e.g. "101:1")
       const rowGeoId = `${prev.sectionId}:${prev.rowId}`;
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: false });
     }
@@ -47,10 +45,7 @@ export function useMapSelectionSync({
       }
     }
 
-    // Set new selection
-    if (selection.sectionId) {
-      safeSetState(map, SOURCE_SECTIONS, selection.sectionId, { selected: true });
-    }
+    // Set new row/seat selection
     if (selection.rowId && selection.sectionId) {
       const rowGeoId = `${selection.sectionId}:${selection.rowId}`;
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: true });

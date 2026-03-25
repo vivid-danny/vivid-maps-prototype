@@ -6,7 +6,11 @@ import type { SeatMapModel } from '../model/types';
 
 /**
  * Base feature-state expression for a single layer.
- * selected > hovered > unavailable > baseColor
+ * hovered > unavailable > baseColor
+ *
+ * Selection is handled by dedicated overlay layers (section-selected-overlay,
+ * row-selected-overlay) matching the production pattern, not by feature-state
+ * on the base fill layer.
  */
 function featureStateExpression(
   seatColors: SeatColors,
@@ -14,7 +18,6 @@ function featureStateExpression(
 ): ExpressionSpecification {
   return [
     'case',
-    ['boolean', ['feature-state', 'selected'], false], seatColors.selected,
     ['boolean', ['feature-state', 'hovered'], false], seatColors.hover,
     ['boolean', ['feature-state', 'unavailable'], false], seatColors.unavailable,
     baseColor,
