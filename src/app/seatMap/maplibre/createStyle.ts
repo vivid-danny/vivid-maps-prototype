@@ -43,10 +43,12 @@ interface StyleOptions {
   seatColors: SeatColors;
   assets: VenueAssets;
   rowStrokeColor: string;
+  mutedOverlay: string;
+  selectedOverlay: string;
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
-  const { seatColors, assets, rowStrokeColor } = options;
+  const { seatColors, assets, rowStrokeColor, mutedOverlay, selectedOverlay } = options;
 
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,
@@ -140,7 +142,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_SECTIONS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': STYLE_COLORS.muted,
+          'fill-color': mutedOverlay,
         },
       },
 
@@ -167,8 +169,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], STYLE_COLORS.selected,
-            STYLE_COLORS.muted,
+            ['boolean', ['feature-state', 'selected'], false], selectedOverlay,
+            mutedOverlay,
           ],
         },
       },

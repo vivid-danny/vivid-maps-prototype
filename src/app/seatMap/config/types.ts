@@ -21,5 +21,7 @@ export interface SeatMapConfig {
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
   listingCardSize: ListingCardSize;
   rowStrokeColor: string;
+  mutedOverlay: string;
+  selectedOverlay: string;
 }
 

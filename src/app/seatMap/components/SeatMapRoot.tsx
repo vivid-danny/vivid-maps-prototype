@@ -268,6 +268,8 @@ export function SeatMapRoot() {
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
                 rowStrokeColor={config.rowStrokeColor}
+                mutedOverlay={config.mutedOverlay}
+                selectedOverlay={config.selectedOverlay}
                 onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}
               />

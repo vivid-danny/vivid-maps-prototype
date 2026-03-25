@@ -20,7 +20,6 @@ import {
   LAYER_SECTION_SELECTED_OUTLINE,
   LAYER_SECTION_SELECTED_OVERLAY,
   SOURCE_SECTION_LABELS,
-  STYLE_COLORS,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
 import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
@@ -44,6 +43,8 @@ interface MapLibreVenueProps {
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
   rowStrokeColor: string;
+  mutedOverlay: string;
+  selectedOverlay: string;
   onZoomChange?: (zoom: number) => void;
   onMapReady?: (map: MaplibreMap) => void;
 }
@@ -74,13 +75,15 @@ export function MapLibreVenue({
   onHover,
   isMobile,
   rowStrokeColor,
+  mutedOverlay,
+  selectedOverlay,
   onZoomChange,
   onMapReady,
 }: MapLibreVenueProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const style = useMemo(
-    () => createVenueStyle({ seatColors, assets, rowStrokeColor }),
+    () => createVenueStyle({ seatColors, assets, rowStrokeColor, mutedOverlay, selectedOverlay }),
     // Recreates when venue assets change (venue switch); paint properties updated imperatively below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [assets],
@@ -215,7 +218,7 @@ export function MapLibreVenue({
       // Show overlay with match expression: selected → dark, others → muted
       map.setPaintProperty(LAYER_SECTION_SELECTED_OVERLAY, 'fill-color',
         ['match', ['get', 'id'], selection.sectionId,
-          STYLE_COLORS.selected, STYLE_COLORS.muted]);
+          selectedOverlay, mutedOverlay]);
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'visible');
     } else {
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'none');
@@ -229,7 +232,7 @@ export function MapLibreVenue({
     } else {
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OUTLINE, 'none');
     }
-  }, [ready, displayMode, selection.sectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, displayMode, selection.sectionId, mutedOverlay, selectedOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Row selection overlay — selected row gets dark tint, siblings get white mute.
   // Production: row-selected-overlay with match expression; prototype uses feature-state.
@@ -270,7 +273,14 @@ export function MapLibreVenue({
 
     // Section labels
     map.setPaintProperty(LAYER_SECTION_LABEL, 'text-color', seatColors.labelDefault);
-  }, [ready, seatColors, rowStrokeColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Row selected overlay colors (feature-state expression must be rebuilt to change color values)
+    map.setPaintProperty(LAYER_ROW_SELECTED_OVERLAY, 'fill-color', [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], selectedOverlay,
+      mutedOverlay,
+    ]);
+  }, [ready, seatColors, rowStrokeColor, mutedOverlay, selectedOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

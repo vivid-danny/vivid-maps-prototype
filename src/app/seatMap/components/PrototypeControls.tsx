@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
-import { STYLE_COLORS, THEME_TOKENS } from '../maplibre/constants';
+import { THEME_TOKENS } from '../maplibre/constants';
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -77,6 +77,33 @@ function SliderControl({
   );
 }
 
+function parseColor(value: string): { hex: string; alpha: number } {
+  const rgba = value.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  if (rgba) {
+    const r = parseInt(rgba[1]);
+    const g = parseInt(rgba[2]);
+    const b = parseInt(rgba[3]);
+    const a = rgba[4] !== undefined ? parseFloat(rgba[4]) : 1;
+    const hex = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+    return { hex, alpha: a };
+  }
+  if (value.startsWith('#') && value.length === 9) {
+    return { hex: value.slice(0, 7), alpha: parseInt(value.slice(7, 9), 16) / 255 };
+  }
+  if (value.startsWith('#')) {
+    return { hex: value.slice(0, 7), alpha: 1 };
+  }
+  return { hex: '#000000', alpha: 1 };
+}
+
+function buildColor(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (alpha >= 1) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${parseFloat(alpha.toFixed(2))})`;
+}
+
 function ColorControl({
   label,
   value,
@@ -88,25 +115,76 @@ function ColorControl({
   onChange: (v: string) => void;
   prodRef?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { hex, alpha } = parseColor(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3" ref={containerRef}>
       <div className="flex flex-col">
         <label className="text-xs text-gray-600 capitalize">{label}</label>
         {prodRef && <span className="text-[10px] text-gray-400 font-mono">{prodRef}</span>}
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-20 text-xs px-2 py-1 border border-gray-300 rounded font-mono"
-        />
+      <div className="relative">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          title={value}
+          className="w-6 h-6 rounded border border-gray-300 cursor-pointer overflow-hidden relative"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+              backgroundSize: '6px 6px',
+              backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0',
+            }}
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: value }} />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded shadow-lg p-3 space-y-3 w-52">
+            <input
+              type="color"
+              value={hex}
+              onChange={(e) => onChange(buildColor(e.target.value, alpha))}
+              className="w-full h-8 cursor-pointer border border-gray-300 rounded"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-mono">α</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={alpha}
+                onChange={(e) => onChange(buildColor(hex, parseFloat(e.target.value)))}
+                className="flex-1"
+              />
+              <span className="text-[10px] font-mono text-gray-500 w-7 text-right">
+                {Math.round(alpha * 100)}%
+              </span>
+            </div>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full text-xs px-2 py-1 border border-gray-300 rounded font-mono"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -348,28 +426,24 @@ export function PrototypeControls({
                 onChange={(value) => handleColorChange('sectionStroke', value)}
                 prodRef="sectionStrokeColor"
               />
-              <div className="space-y-1 pt-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs text-gray-600">Muted Overlay</label>
-                    <div className="text-[10px] text-gray-400 font-mono">muted</div>
-                  </div>
-                  <span className="text-xs font-mono text-gray-400">{STYLE_COLORS.muted}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs text-gray-600">Selected Overlay</label>
-                    <div className="text-[10px] text-gray-400 font-mono">selected</div>
-                  </div>
-                  <span className="text-xs font-mono text-gray-400">{STYLE_COLORS.selected}</span>
-                </div>
-                <ColorControl
-                  label="Row Stroke"
-                  value={config.rowStrokeColor}
-                  onChange={(value) => onConfigChange({ rowStrokeColor: value })}
-                  prodRef="sectionNoInventoryFill"
-                />
-              </div>
+              <ColorControl
+                label="Muted Overlay"
+                value={config.mutedOverlay}
+                onChange={(value) => onConfigChange({ mutedOverlay: value })}
+                prodRef="muted"
+              />
+              <ColorControl
+                label="Selected Overlay"
+                value={config.selectedOverlay}
+                onChange={(value) => onConfigChange({ selectedOverlay: value })}
+                prodRef="selected"
+              />
+              <ColorControl
+                label="Row Stroke"
+                value={config.rowStrokeColor}
+                onChange={(value) => onConfigChange({ rowStrokeColor: value })}
+                prodRef="sectionNoInventoryFill"
+              />
             </div>
           </div>
 

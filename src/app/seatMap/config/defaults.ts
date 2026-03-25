@@ -17,6 +17,8 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   themeOverrides: {},
   listingCardSize: 'standard',
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
+  mutedOverlay: 'rgba(255, 255, 255, 0.5)',   // production: STYLE_COLORS.muted
+  selectedOverlay: 'rgba(4, 9, 44, 0.4)',     // production: STYLE_COLORS.selected
   seatColors: {
     available: '#CE3197',
     unavailable: '#f5f0f3',
