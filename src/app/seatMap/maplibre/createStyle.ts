@@ -171,8 +171,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'circle-color': sectionFillColor,
           'circle-radius': [
             'interpolate', ['exponential', 2], ['zoom'],
-            14, 4,
-            20, 256,
+            14, 2,
+            20, 128,
           ],
           'circle-stroke-width': 0,
         },
