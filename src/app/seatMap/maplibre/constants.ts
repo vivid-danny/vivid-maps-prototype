@@ -63,12 +63,12 @@ export const VENUE_BOUNDS: [[number, number], [number, number]] = [
 
 export const VENUE_CENTER: [number, number] = [0.049443549999999996, -0.0367929];
 
-// Background image corners (from manifest images[0].coordinates): TL, TR, BR, BL
-export const BACKGROUND_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
-  [0, 0],
-  [0.1, 0],
-  [0.1, -0.0727997],
-  [0, -0.0727997],
+// Rink image corners: TL, TR, BR, BL (derived from rink_cropped frame in Figma background_updated)
+export const RINK_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
+  [0.03222217559814453, -0.02913394134170256],
+  [0.06850147247314453, -0.02913394134170256],
+  [0.06850147247314453, -0.044367681381944],
+  [0.03222217559814453, -0.044367681381944],
 ];
 
 // Glyphs for section labels

@@ -264,6 +264,10 @@ export function MapLibreVenue({
     // Background
     map.setPaintProperty('background', 'background-color', seatColors.mapBackground);
 
+    // Venue chrome
+    map.setPaintProperty('venue', 'fill-color', seatColors.venueFill);
+    map.setPaintProperty('venue-stroke', 'line-color', seatColors.venueStroke);
+
     // Section outline
     map.setPaintProperty(LAYER_SECTION_OUTLINE, 'line-color', seatColors.sectionStroke);
     map.setPaintProperty(LAYER_SECTION_SELECTED_OUTLINE, 'line-color', seatColors.sectionStroke);

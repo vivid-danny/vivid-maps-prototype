@@ -16,7 +16,7 @@
  */
 import type { StyleSpecification } from 'maplibre-gl';
 import {
-  BACKGROUND_COORDINATES,
+  RINK_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW,
   LAYER_ROW_LABEL,
@@ -64,11 +64,17 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
     version: 8,
     glyphs: GLYPHS_URL,
     sources: {
-      'venue-background': {
-        type: 'image',
-        url: assets.backgroundUrl,
-        coordinates: BACKGROUND_COORDINATES,
+      'venue-chrome': {
+        type: 'geojson',
+        data: assets.venueChromeUrl,
       },
+      ...(assets.rinkUrl ? {
+        'venue-rink': {
+          type: 'image',
+          url: assets.rinkUrl,
+          coordinates: RINK_COORDINATES,
+        },
+      } : {}),
       [SOURCE_SECTIONS]: {
         type: 'geojson',
         data: assets.sectionsUrl,
@@ -97,16 +103,36 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: { 'background-color': seatColors.mapBackground },
       },
 
-      // 2. Venue chrome — raster image from pipeline (always visible)
-      // Production uses fill + stroke layers for the stadium shape; we use a raster image.
+      // 2. Venue fill — stadium shape polygon (always visible).
+      // Production: theme.colors.onPrimary (white)
       {
-        id: 'venue-background',
-        type: 'raster',
-        source: 'venue-background',
-        paint: { 'raster-opacity': 1 },
+        id: 'venue',
+        type: 'fill',
+        source: 'venue-chrome',
+        paint: { 'fill-color': seatColors.venueFill },
       },
 
-      // 3. Section base — neutral fill under all sections (always visible).
+      // 3. Venue stroke — stadium boundary line (always visible).
+      // Production: theme.colors.onSurfaceDisabled
+      {
+        id: 'venue-stroke',
+        type: 'line',
+        source: 'venue-chrome',
+        paint: {
+          'line-color': seatColors.venueStroke,
+          'line-width': 1,
+        },
+      },
+
+      // 4. Rink image — playing surface PNG (optional, shown when rinkUrl provided).
+      ...(assets.rinkUrl ? [{
+        id: 'venue-rink',
+        type: 'raster' as const,
+        source: 'venue-rink',
+        paint: { 'raster-opacity': 1 },
+      }] : []),
+
+      // 5. Section base — neutral fill under all sections (always visible).
       // Shows through when a section has no inventory color.
       // Production: theme.colors.rawPalette.neutral[100]
       {
@@ -120,7 +146,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 4. Section fill — colored by theme (branded/zone/deal).
+      // 6. Section fill — colored by theme (branded/zone/deal).
       // Visibility toggled by displayMode; filter applied imperatively from manifest.
       {
         id: LAYER_SECTION,
