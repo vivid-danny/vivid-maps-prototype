@@ -1,6 +1,6 @@
-import { createVenueSeatMapModel } from './createVenueSeatMapModel';
-import { createTheaterSeatMapModel } from './createTheaterSeatMapModel';
-import type { VenueSeatMapModel } from './createVenueSeatMapModel';
+import { createManifestSeatMapModel } from './createManifestSeatMapModel';
+import type { SeatMapModel } from '../model/types';
+import type { VenueAssets } from '../maplibre/types';
 
 export interface MapScaleDefaults {
   desktopInitialScale: number;
@@ -12,15 +12,24 @@ export interface MapScaleDefaults {
 export interface MapDefinition {
   id: string;
   label: string;
-  createModel: () => VenueSeatMapModel;
+  createModel: () => SeatMapModel;
   scaleDefaults: MapScaleDefaults;
+  assets: VenueAssets;
 }
 
 export const MAP_REGISTRY: MapDefinition[] = [
   {
     id: 'stadium',
     label: 'Stadium',
-    createModel: createVenueSeatMapModel,
+    createModel: createManifestSeatMapModel,
+    assets: {
+      manifestUrl: '/manifest.json',
+      venueChromeUrl: '/venue-chrome.geojson',
+      rinkUrl: '/rink.png',
+      sectionsUrl: '/sections.geojson',
+      rowsUrl: '/rows.geojson',
+      seatsUrl: '/seats.geojson',
+    },
     scaleDefaults: {
       desktopInitialScale: 0.12,
       desktopZoomThreshold: 0.3,
@@ -28,18 +37,5 @@ export const MAP_REGISTRY: MapDefinition[] = [
       mobileZoomThreshold: 0.15,
     },
   },
-  {
-    id: 'theater',
-    label: 'Theater',
-    createModel: createTheaterSeatMapModel,
-    scaleDefaults: {
-      desktopInitialScale: 0.15,
-      desktopZoomThreshold: 0.35,
-      mobileInitialScale: 0.05,
-      mobileZoomThreshold: 0.2,
-    },
-  },
 ];
 
-export const DEFAULT_MAP_ID = 'stadium';
-export const MAP_IDS = MAP_REGISTRY.map((m) => m.id);

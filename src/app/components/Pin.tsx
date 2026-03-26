@@ -21,9 +21,12 @@ interface PinProps {
   // Used for pins that are always mounted (e.g. section pins that transition to hover state
   // in-place) to avoid the opacity-0 flash that enter animations produce on existing elements.
   useTransition?: boolean;
+  // When true, allows pointer events so clicks land on the pin (used inside MapLibre Markers).
+  // Default false — SVG renderer relies on pointer-events: none so clicks fall through to sections.
+  interactive?: boolean;
 }
 
-export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber, useTransition }: PinProps) {
+export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber, useTransition, interactive }: PinProps) {
   const displayPrice = `$${Math.round(price / 100)}`;
   // Multiplier is computed at render time (only changes on selection/hover, not zoom)
   // --map-scale CSS var is set by MapContainer via DOM mutation during zoom — no React re-render needed
@@ -50,7 +53,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
 
   return (
     <div
-      className="flex flex-col items-center pointer-events-none absolute"
+      className={`flex flex-col items-center ${interactive ? '' : 'pointer-events-none'} absolute`}
       style={{
         left: x,
         top: y,

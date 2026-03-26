@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { MapConfig, DisplayMode, LayoutMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
+import { ROW_ZOOM_MIN } from '../maplibre/constants';
 
 interface UseSeatMapControllerParams {
   model: MapConfig;
@@ -27,8 +28,9 @@ export function useSeatMapController({ model, config, layoutMode, currentScale }
 
   const minScale = layoutMode === 'mobile' ? config.mobileInitialScale : Math.min(1, initialScale);
 
+  // currentScale is now the MapLibre zoom level (passed via onZoomChange).
   const displayMode: DisplayMode =
-    currentScale >= zoomThreshold ? config.zoomedDisplay : config.initialDisplay;
+    currentScale >= ROW_ZOOM_MIN ? config.zoomedDisplay : config.initialDisplay;
 
   // Keep model exposed from the controller so App can stay thin.
   const sections = useMemo(() => model.sections, [model.sections]);

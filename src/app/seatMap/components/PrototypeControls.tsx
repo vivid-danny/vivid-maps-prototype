@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
-import { MAP_REGISTRY } from '../mock/mapRegistry';
+
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -12,8 +12,6 @@ interface PrototypeControlsProps {
   config: SeatMapConfig;
   onConfigChange: (updates: Partial<SeatMapConfig>) => void;
   onResetConfig: () => void;
-  mapId: string;
-  onMapChange: (id: string) => void;
 }
 
 function ToggleGroup<T extends string>({
@@ -79,39 +77,133 @@ function SliderControl({
   );
 }
 
+function parseColor(value: string): { hex: string; alpha: number } {
+  const rgba = value.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  if (rgba) {
+    const r = parseInt(rgba[1]);
+    const g = parseInt(rgba[2]);
+    const b = parseInt(rgba[3]);
+    const a = rgba[4] !== undefined ? parseFloat(rgba[4]) : 1;
+    const hex = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+    return { hex, alpha: a };
+  }
+  if (value.startsWith('#') && value.length === 9) {
+    return { hex: value.slice(0, 7), alpha: parseInt(value.slice(7, 9), 16) / 255 };
+  }
+  if (value.startsWith('#')) {
+    return { hex: value.slice(0, 7), alpha: 1 };
+  }
+  return { hex: '#000000', alpha: 1 };
+}
+
+function buildColor(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (alpha >= 1) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${parseFloat(alpha.toFixed(2))})`;
+}
+
 function ColorControl({
   label,
   value,
   onChange,
+  prodRef,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  prodRef?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { hex, alpha } = parseColor(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="flex items-center justify-between gap-3" ref={containerRef}>
+      <div className="flex flex-col">
+        <label className="text-xs text-gray-600 capitalize">{label}</label>
+        {prodRef && <span className="text-[10px] text-gray-400 font-mono">{prodRef}</span>}
+      </div>
+      <div className="relative">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          title={value}
+          className="w-6 h-6 rounded border border-gray-300 cursor-pointer overflow-hidden relative"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+              backgroundSize: '6px 6px',
+              backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0',
+            }}
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: value }} />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded shadow-lg p-3 space-y-3 w-52">
+            <input
+              type="color"
+              value={hex}
+              onChange={(e) => onChange(buildColor(e.target.value, alpha))}
+              className="w-full h-8 cursor-pointer border border-gray-300 rounded"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-mono">α</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={alpha}
+                onChange={(e) => onChange(buildColor(hex, parseFloat(e.target.value)))}
+                className="flex-1"
+              />
+              <span className="text-[10px] font-mono text-gray-500 w-7 text-right">
+                {Math.round(alpha * 100)}%
+              </span>
+            </div>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full text-xs px-2 py-1 border border-gray-300 rounded font-mono"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, prodSource }: {
+  title: string;
+  prodSource?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <label className="text-xs text-gray-600 capitalize">{label}</label>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-20 text-xs px-2 py-1 border border-gray-300 rounded font-mono"
-        />
-      </div>
+    <div className="mb-4">
+      <div className="text-xs font-bold text-black">{title}</div>
+      {prodSource && <div className="text-[10px] text-gray-400 font-mono">{prodSource}</div>}
     </div>
   );
 }
 
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const LAYOUT_MODE_OVERRIDES = ['auto', 'desktop', 'mobile'] as const;
 const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
 const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
@@ -123,10 +215,8 @@ export function PrototypeControls({
   config,
   onConfigChange,
   onResetConfig,
-  mapId,
-  onMapChange,
 }: PrototypeControlsProps) {
-  const [activeTab, setActiveTab] = useState<'controls' | 'styles' | 'map'>('controls');
+  const [activeTab, setActiveTab] = useState<'controls' | 'styles'>('controls');
 
   const handleColorChange = (key: keyof SeatMapConfig['seatColors'], value: string) => {
     onConfigChange({
@@ -149,7 +239,7 @@ export function PrototypeControls({
           onClick={onResetConfig}
           className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer transition-colors"
         >
-          Reset
+          Reset All
         </button>
       </div>
       <div
@@ -161,7 +251,6 @@ export function PrototypeControls({
         {([
           { id: 'controls', label: 'Interaction' },
           { id: 'styles', label: 'Styles' },
-          { id: 'map', label: 'Map' },
         ] as const).map(({ id, label }) => (
           <button
             key={id}
@@ -183,22 +272,15 @@ export function PrototypeControls({
           <div className="mb-6 p-3 bg-gray-50 rounded text-xs space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-500">Zoom:</span>
-              <span className="font-mono">{currentScale.toFixed(2)}x</span>
+              <span className="font-mono">
+                {currentScale.toFixed(2)}x
+                <span className="text-gray-400 ml-1">({'\u2248'} prod {(currentScale - 8).toFixed(1)})</span>
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Mode:</span>
               <span className="font-medium">{displayMode}</span>
             </div>
-          </div>
-
-          {/* Layout Mode Toggle */}
-          <div className="mb-6">
-            <label className="text-xs text-black font-bold block mb-2">Device</label>
-            <ToggleGroup
-              options={LAYOUT_MODE_OVERRIDES}
-              value={config.layoutModeOverride}
-              onChange={(layoutModeOverride) => onConfigChange({ layoutModeOverride })}
-            />
           </div>
 
           {/* Listing Card Size Toggle */}
@@ -276,12 +358,6 @@ export function PrototypeControls({
                 onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
                 min={0.05} max={0.5} step={0.05}
               />
-              <SliderControl
-                label={`Mobile Map Height: ${config.mobileMapHeight}px`}
-                value={config.mobileMapHeight}
-                onChange={(mobileMapHeight) => onConfigChange({ mobileMapHeight })}
-                min={200} max={560} step={10}
-              />
               </div>
           </div>
 
@@ -318,25 +394,6 @@ export function PrototypeControls({
         </>
       )}
 
-      {activeTab === 'map' && (
-        <div className="space-y-3">
-          <label className="text-xs text-black font-bold block mb-4">Select Map</label>
-          {MAP_REGISTRY.map((def) => (
-            <button
-              key={def.id}
-              onClick={() => onMapChange(def.id)}
-              className={`w-full text-left px-4 py-3 rounded border transition-colors cursor-pointer ${
-                mapId === def.id
-                  ? 'border-gray-800 bg-gray-800 text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="text-sm font-medium">{def.label}</div>
-            </button>
-          ))}
-        </div>
-      )}
-
       {activeTab === 'styles' && (
         <>
           {/* Theme */}
@@ -350,37 +407,88 @@ export function PrototypeControls({
             />
           </div>
 
+          {/* DEFAULT_COLORS — production static map constants */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Venue</div>
+            <SectionHeader
+              title="DEFAULT_COLORS"
+              prodSource="Mapbox/constants.ts"
+            />
             <div className="space-y-3">
               <ColorControl
-                label="Fill"
-                value={config.seatColors.venueFill}
-                onChange={(value) => handleColorChange('venueFill', value)}
+                label="Section Label"
+                value={config.seatColors.labelDefault}
+                onChange={(value) => handleColorChange('labelDefault', value)}
+                prodRef="textColor"
               />
               <ColorControl
-                label="Stroke"
-                value={config.seatColors.venueStroke}
-                onChange={(value) => handleColorChange('venueStroke', value)}
-              />
-              <SliderControl
-                label={`Stroke Width: ${config.venueStrokeWidth}px`}
-                value={config.venueStrokeWidth}
-                onChange={(venueStrokeWidth) => onConfigChange({ venueStrokeWidth })}
-                min={0} max={16} step={1}
+                label="Section Stroke"
+                value={config.sectionStroke}
+                onChange={(value) => onConfigChange({ sectionStroke: value })}
+                prodRef="sectionStrokeColor"
               />
               <ColorControl
-                label="Map Background"
-                value={config.seatColors.mapBackground}
-                onChange={(value) => handleColorChange('mapBackground', value)}
+                label="Muted Overlay"
+                value={config.mutedOverlay}
+                onChange={(value) => onConfigChange({ mutedOverlay: value })}
+                prodRef="muted"
+              />
+              <ColorControl
+                label="Selected Overlay"
+                value={config.selectedOverlay}
+                onChange={(value) => onConfigChange({ selectedOverlay: value })}
+                prodRef="selected"
+              />
+              <ColorControl
+                label="Row Stroke"
+                value={config.rowStrokeColor}
+                onChange={(value) => onConfigChange({ rowStrokeColor: value })}
+                prodRef="sectionNoInventoryFill"
               />
             </div>
           </div>
 
+          {/* Theme Tokens — production design system */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Inventory</div>
+            <SectionHeader
+              title="Theme Tokens"
+              prodSource="useVSTheme"
+            />
             <div className="space-y-3">
-              {(['available', 'unavailable', 'selected', 'hover', 'pressed'] as const)
+              <ColorControl
+                label="Background"
+                value={config.mapBackground}
+                onChange={(value) => onConfigChange({ mapBackground: value })}
+                prodRef="neutral[50]"
+              />
+              <ColorControl
+                label="Venue Fill"
+                value={config.venueFill}
+                onChange={(value) => onConfigChange({ venueFill: value })}
+                prodRef="onPrimary"
+              />
+              <ColorControl
+                label="Venue Stroke"
+                value={config.venueStroke}
+                onChange={(value) => onConfigChange({ venueStroke: value })}
+                prodRef="onSurfaceDisabled"
+              />
+              <ColorControl
+                label="Section Base"
+                value={config.sectionBase}
+                onChange={(value) => onConfigChange({ sectionBase: value })}
+                prodRef="neutral[100]"
+              />
+            </div>
+          </div>
+
+          {/* Dynamic Colors — per-section, runtime */}
+          <div className="mb-8">
+            <SectionHeader
+              title="Dynamic Colors"
+              prodSource="API / runtime"
+            />
+            <div className="space-y-3">
+              {(['available', 'unavailable', 'hover'] as const)
                 .filter((k) => !((config.theme === 'zone' || config.theme === 'deal') && k === 'available'))
                 .map((colorKey) => (
                 <ColorControl
@@ -388,62 +496,20 @@ export function PrototypeControls({
                   label={colorKey}
                   value={config.seatColors[colorKey]}
                   onChange={(value) => handleColorChange(colorKey, value)}
+                  prodRef={colorKey === 'available' ? 'sectionColorExpression' : undefined}
                 />
               ))}
             </div>
           </div>
 
+          {/* Labels */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Section Boundaries</div>
-            <div className="space-y-3">
-              <ColorControl
-                label="Stroke"
-                value={config.seatColors.sectionStroke}
-                onChange={(value) => handleColorChange('sectionStroke', value)}
-              />
-              <SliderControl
-                label={`Stroke Width: ${config.sectionStrokeWidth}px`}
-                value={config.sectionStrokeWidth}
-                onChange={(sectionStrokeWidth) => onConfigChange({ sectionStrokeWidth })}
-                min={0.5} max={16} step={0.5}
-              />
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Connector</div>
-            <div className="space-y-3">
-              <SliderControl
-                label={`Connector Width: ${config.connectorWidth}px`}
-                value={config.connectorWidth}
-                onChange={(connectorWidth) => onConfigChange({ connectorWidth })}
-                min={0} max={12} step={1}
-              />
-              {([
-                { key: 'connector' as const, label: 'Default' },
-                { key: 'connectorHover' as const, label: 'Hover' },
-                { key: 'connectorPressed' as const, label: 'Pressed' },
-                { key: 'connectorSelected' as const, label: 'Selected' },
-              ]).filter(({ key }) => !((config.theme === 'zone' || config.theme === 'deal') && key === 'connector'))
-              .map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Pins</div>
+            <SectionHeader title="Labels" />
             <div className="space-y-3">
               {([
-                { key: 'pinDefault' as const, label: 'Default' },
-                { key: 'pinHovered' as const, label: 'Hovered' },
-                { key: 'pinPressed' as const, label: 'Pressed' },
-                { key: 'pinSelected' as const, label: 'Selected' },
+                { key: 'labelDefault' as const, label: 'Available' },
+                { key: 'labelUnavailable' as const, label: 'Unavailable' },
+                { key: 'labelSelected' as const, label: 'Selected' },
               ]).map(({ key, label }) => (
                 <ColorControl
                   key={key}
@@ -455,13 +521,15 @@ export function PrototypeControls({
             </div>
           </div>
 
+          {/* Pins */}
           <div className="mb-8">
-            <div className="text-xs font-bold text-black mb-4">Section Labels</div>
+            <SectionHeader title="Pins" prodSource="TooltipStack" />
             <div className="space-y-3">
               {([
-                { key: 'labelDefault' as const, label: 'Available' },
-                { key: 'labelUnavailable' as const, label: 'Unavailable' },
-                { key: 'labelSelected' as const, label: 'Selected' },
+                { key: 'pinDefault' as const, label: 'Default' },
+                { key: 'pinHovered' as const, label: 'Hovered' },
+                { key: 'pinPressed' as const, label: 'Pressed' },
+                { key: 'pinSelected' as const, label: 'Selected' },
               ]).map(({ key, label }) => (
                 <ColorControl
                   key={key}

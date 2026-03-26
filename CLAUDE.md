@@ -14,6 +14,22 @@ npm run build    # Production build to dist/
 
 No test runner or linter is configured. This is a prototype — validate changes visually in the browser.
 
+## Adding a New Map
+
+When adding a venue, the pipeline generates a `manifest.json`. **Before committing it**, strip all sensitive fields — only keep `bounds`, `center`, `images` (coordinates only, no `filename`), and `sections`. Remove `tileSource`, `glyphSource`, `imageSource`, `stageStyle`, and any internal artifact paths.
+
+Safe manifest shape:
+```json
+{
+  "bounds": [...],
+  "center": { "lng": ..., "lat": ... },
+  "images": [{ "id": "background", "coordinates": [[...], [...], [...], [...]] }],
+  "sections": { "101": { ... }, ... }
+}
+```
+
+Then add an entry to `src/app/seatMap/mock/mapRegistry.ts` pointing `assets` at the venue's files in `public/`.
+
 ## Tech Stack
 
 - **React 18.3** with TypeScript (no tsconfig — Vite defaults)

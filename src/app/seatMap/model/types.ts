@@ -36,10 +36,6 @@ export interface SeatColors {
   pinHovered: string;
   pinPressed: string;
   pinSelected: string;
-  venueFill: string;
-  venueStroke: string;
-  sectionStroke: string;
-  mapBackground: string;
 }
 
 export interface SeatData {
