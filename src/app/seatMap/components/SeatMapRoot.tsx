@@ -283,7 +283,7 @@ export function SeatMapRoot() {
                   viewState.setSelection(EMPTY_SELECTION);
                   mapInstanceRef.current?.fitBounds(VENUE_BOUNDS, { padding: 40, duration: 600, essential: true });
                 }}
-                className="absolute top-2 left-2 flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                className="absolute top-2 left-2 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{
                   padding: '6px 8px',
                   opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
