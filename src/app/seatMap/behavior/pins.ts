@@ -24,15 +24,24 @@ const MOBILE_DECLUTTER_MULTIPLIER: Record<DisplayMode, number> = {
   seats: 1.5,
 };
 
+// Calibrated for the real venue's synthetic lng/lat space (~0.098 × 0.072).
+// At sections density 0.15, minDistance = 0.0015 / 0.15 = 0.010 → ~15–20 sections shown.
+export const MAPLIBRE_DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
+  sections: 0.0015,
+  rows: 0.0005,
+  seats: 0.0001,
+};
+
 export function declutterPins<T extends ResolvedPin>(
   resolvedPins: T[],
   displayMode: DisplayMode,
   density: number,
   isMobile = false,
+  baseDistance: Record<DisplayMode, number> = DECLUTTER_BASE_DISTANCE,
 ): T[] {
   if (density <= 0 || resolvedPins.length === 0) return [];
 
-  const base = DECLUTTER_BASE_DISTANCE[displayMode] * (isMobile ? MOBILE_DECLUTTER_MULTIPLIER[displayMode] : 1);
+  const base = baseDistance[displayMode] * (isMobile ? MOBILE_DECLUTTER_MULTIPLIER[displayMode] : 1);
   const minDistance = base / density;
 
   // Sort by deal score so seed is the best deal and ties break by deal quality
@@ -170,6 +179,15 @@ export function getHoverPinTarget({
 export function getLowestPricePin(pins: PinData[]): PinData | null {
   if (pins.length === 0) return null;
   return pins.reduce((min, pin) => (pin.listing.price < min.listing.price ? pin : min), pins[0]);
+}
+
+export function getBestDealPin(pins: PinData[]): PinData | null {
+  if (pins.length === 0) return null;
+  return pins.reduce((best, pin) => {
+    const scoreDiff = pin.listing.dealScore - best.listing.dealScore;
+    if (scoreDiff !== 0) return scoreDiff > 0 ? pin : best;
+    return pin.listing.price < best.listing.price ? pin : best;
+  }, pins[0]);
 }
 
 export function getLowestPricePinsByRow(pins: PinData[]): Array<[number, PinData]> {

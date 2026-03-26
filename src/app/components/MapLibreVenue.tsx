@@ -27,6 +27,7 @@ import {
 import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
 import type { SeatMapModel } from '../seatMap/model/types';
 import type { ThemeId } from '../seatMap/config/themes';
+import type { SeatMapConfig } from '../seatMap/config/types';
 import type { VenueAssets } from '../seatMap/maplibre/types';
 import type { SectionManifestEntry } from '../seatMap/maplibre/useVenueManifest';
 
@@ -44,6 +45,7 @@ interface MapLibreVenueProps {
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
+  pinDensity: SeatMapConfig['pinDensity'];
   venueFill: string;
   venueStroke: string;
   sectionStroke: string;
@@ -83,6 +85,7 @@ export function MapLibreVenue({
   onSelect,
   onHover,
   isMobile,
+  pinDensity,
   venueFill,
   venueStroke,
   sectionStroke,
@@ -136,6 +139,7 @@ export function MapLibreVenue({
     displayMode,
     seatColors,
     isMobile,
+    pinDensity,
     onSelect,
   });
 

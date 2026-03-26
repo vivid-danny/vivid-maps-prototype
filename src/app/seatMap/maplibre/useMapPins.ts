@@ -5,7 +5,9 @@ import { Marker } from 'maplibre-gl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Pin } from '../../components/Pin';
 import { buildSectionSelection } from '../behavior/rules';
-import { getLowestPricePin, getLowestPricePinsByRow } from '../behavior/pins';
+import { declutterPins, getBestDealPin, getLowestPricePin, MAPLIBRE_DECLUTTER_BASE_DISTANCE } from '../behavior/pins';
+import type { ResolvedPin } from '../behavior/pins';
+import type { PinDensityConfig } from '../config/types';
 import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing, SeatMapModel } from '../model/types';
 import type { SectionManifestEntry } from './useVenueManifest';
 
@@ -21,6 +23,7 @@ interface UseMapPinsOptions {
   displayMode: DisplayMode;
   seatColors: SeatColors;
   isMobile: boolean;
+  pinDensity: PinDensityConfig;
   onSelect: (selection: SelectionState) => void;
 }
 
@@ -109,6 +112,7 @@ export function useMapPins({
   displayMode,
   seatColors,
   isMobile,
+  pinDensity,
   onSelect,
 }: UseMapPinsOptions): void {
   const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
@@ -145,37 +149,56 @@ export function useMapPins({
     const pins: PinRenderData[] = [];
     const { pinsBySection } = model;
 
-    for (const [sectionId, sectionPins] of pinsBySection) {
-      const sectionData = sectionCenters.get(sectionId);
-      if (!sectionData) continue;
-
-      let candidates: Array<{ listing: Listing; lngLat: [number, number] }> = [];
-
-      if (displayMode === 'sections') {
-        const cheapest = getLowestPricePin(sectionPins);
-        if (!cheapest) continue;
-        candidates = [{ listing: cheapest.listing, lngLat: sectionData.center }];
-      } else if (displayMode === 'rows') {
-        for (const [, pin] of getLowestPricePinsByRow(sectionPins)) {
-          const lngLat = sectionData.rows[pin.listing.rowId]?.center ?? sectionData.center;
-          candidates.push({ listing: pin.listing, lngLat });
-        }
-      } else {
-        // seats mode — show all pins from pinsBySection, positioned at their row center
-        for (const pin of sectionPins) {
-          const lngLat = sectionData.rows[pin.listing.rowId]?.center ?? sectionData.center;
-          candidates.push({ listing: pin.listing, lngLat });
-        }
+    if (displayMode === 'sections') {
+      // Collect one candidate per section, then declutter the full set across the venue.
+      const allCandidates: ResolvedPin[] = [];
+      for (const [sectionId, sectionPins] of pinsBySection) {
+        const sectionData = sectionCenters.get(sectionId);
+        if (!sectionData) continue;
+        const bestDeal = getBestDealPin(sectionPins);
+        if (!bestDeal) continue;
+        allCandidates.push({
+          pin: bestDeal,
+          x: sectionData.center[0],
+          y: sectionData.center[1],
+          sectionId,
+        });
       }
+      const decluttered = declutterPins(allCandidates, 'sections', pinDensity.sections, isMobile, MAPLIBRE_DECLUTTER_BASE_DISTANCE);
+      for (const { pin, x, y, sectionId } of decluttered) {
+        const isSelected = selectedListing?.listingId === pin.listing.listingId;
+        pins.push({ listingId: pin.listing.listingId, lngLat: [x, y], sectionId, listing: pin.listing, isHovered: false, isSelected });
+      }
+    } else {
+      for (const [sectionId, sectionPins] of pinsBySection) {
+        const sectionData = sectionCenters.get(sectionId);
+        if (!sectionData) continue;
 
-      for (const { listing, lngLat } of candidates) {
-        const isSelected = selectedListing?.listingId === listing.listingId;
-        // In seats mode, position the selected pin at the actual seat(s) location
-        const resolvedLngLat =
-          isSelected && displayMode === 'seats'
-            ? (seatCentroid(listing.seatIds, seatCoords) ?? lngLat)
-            : lngLat;
-        pins.push({ listingId: listing.listingId, lngLat: resolvedLngLat, sectionId, listing, isHovered: false, isSelected });
+        let candidates: Array<{ listing: Listing; lngLat: [number, number] }> = [];
+
+        if (displayMode === 'rows') {
+          // One pin per section (best deal) — same pin as sections mode, now at its row center.
+          const bestDeal = getBestDealPin(sectionPins);
+          if (!bestDeal) continue;
+          const lngLat = sectionData.rows[bestDeal.listing.rowId]?.center ?? sectionData.center;
+          candidates = [{ listing: bestDeal.listing, lngLat }];
+        } else {
+          // seats mode — show all pins from pinsBySection, positioned at their row center
+          for (const pin of sectionPins) {
+            const lngLat = sectionData.rows[pin.listing.rowId]?.center ?? sectionData.center;
+            candidates.push({ listing: pin.listing, lngLat });
+          }
+        }
+
+        for (const { listing, lngLat } of candidates) {
+          const isSelected = selectedListing?.listingId === listing.listingId;
+          // In seats mode, position the selected pin at the actual seat(s) location
+          const resolvedLngLat =
+            isSelected && displayMode === 'seats'
+              ? (seatCentroid(listing.seatIds, seatCoords) ?? lngLat)
+              : lngLat;
+          pins.push({ listingId: listing.listingId, lngLat: resolvedLngLat, sectionId, listing, isHovered: false, isSelected });
+        }
       }
     }
 
@@ -201,7 +224,7 @@ export function useMapPins({
 
     // Mobile: show roughly half the pins to reduce clutter
     return isMobile ? pins.slice(0, Math.ceil(pins.length / 2)) : pins;
-  }, [model, sectionCenters, displayMode, selectedListing, isMobile, seatCoords]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [model, sectionCenters, displayMode, selectedListing, isMobile, seatCoords, pinDensity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
   useEffect(() => {

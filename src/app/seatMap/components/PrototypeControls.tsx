@@ -206,7 +206,6 @@ function SectionHeader({ title, prodSource }: {
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
-const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
   showControls,
@@ -361,36 +360,6 @@ export function PrototypeControls({
               </div>
           </div>
 
-          {/* Pin Density */}
-          <div className="mb-6">
-            <div className="text-xs font-bold text-black mb-2">Pin</div>
-            <div className="space-y-3">
-            <SliderControl
-              label={`Sections: ${Math.round(config.pinDensity.sections * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.sections as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.sections as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, sections: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            <SliderControl
-              label={`Rows: ${Math.round(config.pinDensity.rows * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.rows as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.rows as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, rows: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            <SliderControl
-              label={`Seats: ${Math.round(config.pinDensity.seats * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.seats as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.seats as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, seats: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            </div>
-          </div>
         </>
       )}
 
@@ -531,25 +500,6 @@ export function PrototypeControls({
             </div>
           </div>
 
-          {/* Pins */}
-          <div className="mb-8">
-            <SectionHeader title="Pins" prodSource="TooltipStack" />
-            <div className="space-y-3">
-              {([
-                { key: 'pinDefault' as const, label: 'Default' },
-                { key: 'pinHovered' as const, label: 'Hovered' },
-                { key: 'pinPressed' as const, label: 'Pressed' },
-                { key: 'pinSelected' as const, label: 'Selected' },
-              ]).map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
-            </div>
-          </div>
         </>
       )}
     </div>
