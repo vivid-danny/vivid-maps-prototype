@@ -47,6 +47,7 @@ interface StyleOptions {
   mapBackground: string;
   sectionBase: string;
   rowStrokeColor: string;
+  rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
 }
@@ -54,7 +55,7 @@ interface StyleOptions {
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
     seatColors, assets, venueFill, venueStroke, sectionStroke,
-    mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay,
+    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay,
   } = options;
 
   // Base fill expression: hovered > unavailable > base color.
@@ -179,7 +180,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 6. Row fill — colored same as parent section.
+      // 6. Row fill — neutral background color so seat circles stand out.
       // Visibility toggled by displayMode; filter applied imperatively from manifest.
       {
         id: LAYER_ROW,
@@ -187,7 +188,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_ROWS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': sectionFillColor,
+          'fill-color': rowFillColor,
           'fill-opacity': 1,
         },
       },

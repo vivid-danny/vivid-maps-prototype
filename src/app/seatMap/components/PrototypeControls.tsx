@@ -444,6 +444,11 @@ export function PrototypeControls({
                 onChange={(value) => onConfigChange({ rowStrokeColor: value })}
                 prodRef="sectionNoInventoryFill"
               />
+              <ColorControl
+                label="Row Fill"
+                value={config.rowFillColor}
+                onChange={(value) => onConfigChange({ rowFillColor: value })}
+              />
             </div>
           </div>
 

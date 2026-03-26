@@ -48,6 +48,7 @@ interface MapLibreVenueProps {
   mapBackground: string;
   sectionBase: string;
   rowStrokeColor: string;
+  rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
   onZoomChange?: (zoom: number) => void;
@@ -85,6 +86,7 @@ export function MapLibreVenue({
   mapBackground,
   sectionBase,
   rowStrokeColor,
+  rowFillColor,
   mutedOverlay,
   selectedOverlay,
   onZoomChange,
@@ -95,7 +97,7 @@ export function MapLibreVenue({
   const style = useMemo(
     () => createVenueStyle({
       seatColors, assets, venueFill, venueStroke, sectionStroke,
-      mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay,
+      mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay,
     }),
     // Recreates when venue assets change (venue switch); paint properties updated imperatively below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -263,9 +265,9 @@ export function MapLibreVenue({
     // since their GeoJSON features all carry a sectionId property.
     const fillExpr = buildSectionFillExpression(theme, model, seatColors);
     map.setPaintProperty(LAYER_SECTION, 'fill-color', fillExpr);
-    map.setPaintProperty(LAYER_ROW, 'fill-color', fillExpr);
+    map.setPaintProperty(LAYER_ROW, 'fill-color', rowFillColor);
     map.setPaintProperty(LAYER_SEAT, 'circle-color', fillExpr);
-  }, [ready, theme, seatColors, model]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, theme, seatColors, model, rowFillColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wire up remaining style properties so controls panel changes are reflected on the map.
   // Fill-color expressions (above) cover available/hover/unavailable; this effect covers
