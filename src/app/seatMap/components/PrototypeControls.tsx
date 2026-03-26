@@ -439,6 +439,11 @@ export function PrototypeControls({
                 prodRef="selected"
               />
               <ColorControl
+                label="Selected Outline"
+                value={config.selectedOutlineColor}
+                onChange={(value) => onConfigChange({ selectedOutlineColor: value })}
+              />
+              <ColorControl
                 label="Row Stroke"
                 value={config.rowStrokeColor}
                 onChange={(value) => onConfigChange({ rowStrokeColor: value })}

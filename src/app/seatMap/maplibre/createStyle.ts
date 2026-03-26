@@ -21,8 +21,10 @@ import {
   LAYER_ROW,
   LAYER_ROW_LABEL,
   LAYER_ROW_OUTLINE,
+  LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
   LAYER_SECTION_LABEL,
@@ -50,12 +52,13 @@ interface StyleOptions {
   rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
+  selectedOutlineColor: string;
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
     seatColors, assets, venueFill, venueStroke, sectionStroke,
-    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay,
+    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, selectedOutlineColor,
   } = options;
 
   // Base fill expression: hovered > unavailable > base color.
@@ -209,7 +212,23 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 8. Row outline — borders between rows.
+      // 8. Row selected outline — outline around selected row (feature-state driven).
+      {
+        id: LAYER_ROW_SELECTED_OUTLINE,
+        type: 'line',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], selectedOutlineColor,
+            'rgba(0,0,0,0)',
+          ],
+          'line-width': 1.5,
+        },
+      },
+
+      // 9. Row outline — borders between rows.
       // Production: line-color is sectionNoInventoryFill (#E3E3E8)
       {
         id: LAYER_ROW_OUTLINE,
@@ -237,8 +256,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 10. Section selected outline — 2px border around selected section.
-      // Visible only in rows/seats modes. Production uses line-width transition (0→2px).
+      // 10. Section selected outline — 2px border around selected section (all zoom levels).
+      // Production uses line-width transition (0→2px).
       {
         id: LAYER_SECTION_SELECTED_OUTLINE,
         type: 'line',
@@ -246,7 +265,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['==', 'id', ''],
         layout: { visibility: 'none' },
         paint: {
-          'line-color': sectionStroke,
+          'line-color': selectedOutlineColor,
           'line-width': 2,
         },
       },
@@ -260,7 +279,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: {
           visibility: 'none',
           'text-field': ['get', 'rowId'],
-          'text-font': ['Open Sans Bold'],
+          'text-font': ['GTWalsh Bold'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 16],
           'text-allow-overlap': true,
           'text-ignore-placement': true,
@@ -287,7 +306,32 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 13. Section labels — rendered above seats so they're always readable.
+      // 13. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
+      // Uses a sectionId+rowId filter (like section-selected-outline) so it works whether a row
+      // listing or an individual seat is selected — no per-seat feature-state required.
+      {
+        id: LAYER_SEAT_SELECTED_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        filter: ['all', ['==', ['get', 'sectionId'], ''], ['==', ['get', 'rowId'], '']],
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': selectedOverlay,
+          'circle-radius': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 2,
+            20, 128,
+          ],
+          'circle-stroke-color': selectedOutlineColor,
+          'circle-stroke-width': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 0.3,
+            20, 16,
+          ],
+        },
+      },
+
+      // 14. Section labels — rendered above seats so they're always readable.
       // One point per section from SOURCE_SECTION_LABELS (populated from manifest centers).
       // Dimmed (0.3 opacity) at row/seat zoom levels.
       {
@@ -297,14 +341,12 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: {
           visibility: 'visible',
           'text-field': ['get', 'sectionId'],
-          'text-font': ['Open Sans Bold'],
+          'text-font': ['GTWalsh Bold'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 13, 12, 18, 28],
           'text-allow-overlap': true,
         },
         paint: {
           'text-color': seatColors.labelDefault,
-          'text-halo-color': STYLE_COLORS.textHaloColor,
-          'text-halo-width': STYLE_COLORS.textHaloWidth,
         },
       },
     ],

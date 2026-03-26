@@ -7,6 +7,7 @@ export const SOURCE_SECTION_LABELS = 'section-labels';
 // Layer IDs — sections (aligned with production styleJSONv2.ts)
 export const LAYER_SECTION_BASE = 'section-base';
 export const LAYER_SECTION = 'section';
+export const LAYER_SECTION_HOVER_OVERLAY = 'section-hover-overlay';
 export const LAYER_SECTION_SELECTED_OVERLAY = 'section-selected-overlay';
 export const LAYER_SECTION_OUTLINE = 'section-outline';
 export const LAYER_SECTION_SELECTED_OUTLINE = 'section-selected-outline';
@@ -15,11 +16,13 @@ export const LAYER_SECTION_LABEL = 'section-label';
 // Layer IDs — rows
 export const LAYER_ROW = 'row';
 export const LAYER_ROW_SELECTED_OVERLAY = 'row-selected-overlay';
+export const LAYER_ROW_SELECTED_OUTLINE = 'row-selected-outline';
 export const LAYER_ROW_OUTLINE = 'row-outline';
 export const LAYER_ROW_LABEL = 'row-label';
 
 // Layer IDs — seats (prototype-only; production stops at rows)
 export const LAYER_SEAT = 'seat';
+export const LAYER_SEAT_SELECTED_OVERLAY = 'seat-selected-overlay';
 
 // Zoom thresholds calibrated for synthetic lat/lng (~0,0) coordinates.
 // Prototype zoom ≈ production zoom + 8 (production uses 6-12 range).
@@ -61,4 +64,4 @@ export const RINK_COORDINATES: [[number, number], [number, number], [number, num
 ];
 
 // Glyphs for section labels
-export const GLYPHS_URL = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf';
+export const GLYPHS_URL = '/glyphs/{fontstack}/{range}.pbf';
