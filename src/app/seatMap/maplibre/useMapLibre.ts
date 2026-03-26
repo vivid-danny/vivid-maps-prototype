@@ -8,9 +8,10 @@ interface UseMapLibreOptions {
   bounds: LngLatBoundsLike;
   minZoom?: number;
   maxZoom?: number;
+  fitBoundsPadding?: number;
 }
 
-export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom = 22 }: UseMapLibreOptions) {
+export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom = 22, fitBoundsPadding = 40 }: UseMapLibreOptions) {
   const mapRef = useRef<MaplibreMap | null>(null);
   const [zoom, setZoom] = useState<number>(5);
   const [ready, setReady] = useState(false);
@@ -22,7 +23,7 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
       container: containerRef.current,
       style,
       bounds,
-      fitBoundsOptions: { padding: 40 },
+      fitBoundsOptions: { padding: fitBoundsPadding },
       minZoom,
       maxZoom,
       attributionControl: false,

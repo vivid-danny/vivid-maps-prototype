@@ -125,6 +125,7 @@ export function MapLibreVenue({
     containerRef,
     style,
     bounds: VENUE_BOUNDS,
+    fitBoundsPadding: isMobile ? 20 : 40,
   });
 
   // Wire inventory feature states (available/unavailable)
@@ -162,6 +163,14 @@ export function MapLibreVenue({
   useEffect(() => {
     if (ready && mapRef.current) onMapReady?.(mapRef.current);
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mobile: use smaller section label text-size so 69 labels don't crowd the zoomed-out view.
+  // Desktop uses the static values from createStyle.ts unchanged.
+  useEffect(() => {
+    if (!ready || !mapRef.current || !isMobile) return;
+    mapRef.current.setLayoutProperty(LAYER_SECTION_LABEL, 'text-size',
+      ['interpolate', ['linear'], ['zoom'], 13, 5, 18, 16]);
+  }, [ready, isMobile]);
 
   // Apply seatable section filter from manifest — excludes concourse/compound sections.
   // Also restrict rows/seats to sections that have model data, so features with no

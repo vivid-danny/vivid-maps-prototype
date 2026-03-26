@@ -222,8 +222,8 @@ export function useMapPins({
       }
     }
 
-    // Mobile: show roughly half the pins to reduce clutter
-    return isMobile ? pins.slice(0, Math.ceil(pins.length / 2)) : pins;
+    // Mobile: show roughly 2/3 of pins; declutter already uses 3x distance so remaining pins are well-spaced
+    return isMobile ? pins.slice(0, Math.ceil(pins.length * 2 / 3)) : pins;
   }, [model, sectionCenters, displayMode, selectedListing, isMobile, seatCoords, pinDensity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
