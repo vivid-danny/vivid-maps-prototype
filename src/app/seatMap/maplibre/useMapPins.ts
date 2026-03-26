@@ -167,10 +167,11 @@ export function useMapPins({
     const current = markersRef.current;
 
     if (!ready || !mapRef.current) {
-      // Clean up all markers when map is not ready
+      // Clean up all markers when map is not ready.
+      // Defer root.unmount() to avoid "synchronously unmount during render" warning.
       for (const { marker, root } of current.values()) {
         marker.remove();
-        root.unmount();
+        setTimeout(() => root.unmount(), 0);
       }
       current.clear();
       return;
@@ -184,7 +185,7 @@ export function useMapPins({
       if (id === HOVER_PIN_ID) continue;
       if (!nextIds.has(id)) {
         entry.marker.remove();
-        entry.root.unmount();
+        setTimeout(() => entry.root.unmount(), 0);
         current.delete(id);
       }
     }
@@ -274,11 +275,13 @@ export function useMapPins({
       }
     }
 
-    // No matching on-the-fly hover — remove stale hover pin if present
+    // No matching on-the-fly hover — remove stale hover pin if present.
+    // Defer root.unmount() to avoid "synchronously unmount during render" warning.
     const existing = current.get(HOVER_PIN_ID);
     if (existing) {
       existing.marker.remove();
-      existing.root.unmount();
+      const root = existing.root;
+      setTimeout(() => root.unmount(), 0);
       current.delete(HOVER_PIN_ID);
     }
   }, [hoverState, ready, basePins, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps

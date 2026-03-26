@@ -19,6 +19,11 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
   mutedOverlay: 'rgba(255, 255, 255, 0.5)',   // production: STYLE_COLORS.muted
   selectedOverlay: 'rgba(4, 9, 44, 0.4)',     // production: STYLE_COLORS.selected
+  venueFill: '#FFFFFF',         // production: onPrimary
+  venueStroke: '#A0A2B3',       // production: onSurfaceDisabled
+  sectionStroke: '#d3d3dc',     // production: sectionStrokeColor
+  mapBackground: '#F6F6FB',     // production: neutral[50]
+  sectionBase: '#EFEFF6',       // production: neutral[100]
   seatColors: {
     available: '#CE3197',
     unavailable: '#f5f0f3',
@@ -36,10 +41,6 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     pinHovered: '#310C24',
     pinPressed: '#141035',
     pinSelected: '#141035',
-    venueFill: '#FFFFFF',
-    venueStroke: '#A0A2B3',
-    sectionStroke: '#ffffff',
-    mapBackground: '#EFEFF6',
   },
 };
 

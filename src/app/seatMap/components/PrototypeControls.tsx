@@ -3,7 +3,7 @@ import type { DisplayMode } from '../model/types';
 import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
-import { THEME_TOKENS } from '../maplibre/constants';
+
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -422,8 +422,8 @@ export function PrototypeControls({
               />
               <ColorControl
                 label="Section Stroke"
-                value={config.seatColors.sectionStroke}
-                onChange={(value) => handleColorChange('sectionStroke', value)}
+                value={config.sectionStroke}
+                onChange={(value) => onConfigChange({ sectionStroke: value })}
                 prodRef="sectionStrokeColor"
               />
               <ColorControl
@@ -456,29 +456,28 @@ export function PrototypeControls({
             <div className="space-y-3">
               <ColorControl
                 label="Background"
-                value={config.seatColors.mapBackground}
-                onChange={(value) => handleColorChange('mapBackground', value)}
+                value={config.mapBackground}
+                onChange={(value) => onConfigChange({ mapBackground: value })}
                 prodRef="neutral[50]"
               />
               <ColorControl
                 label="Venue Fill"
-                value={config.seatColors.venueFill}
-                onChange={(value) => handleColorChange('venueFill', value)}
+                value={config.venueFill}
+                onChange={(value) => onConfigChange({ venueFill: value })}
                 prodRef="onPrimary"
               />
               <ColorControl
                 label="Venue Stroke"
-                value={config.seatColors.venueStroke}
-                onChange={(value) => handleColorChange('venueStroke', value)}
+                value={config.venueStroke}
+                onChange={(value) => onConfigChange({ venueStroke: value })}
                 prodRef="onSurfaceDisabled"
               />
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-xs text-gray-600">Section Base</label>
-                  <div className="text-[10px] text-gray-400 font-mono">neutral[100]</div>
-                </div>
-                <span className="text-xs font-mono text-gray-400">{THEME_TOKENS.sectionBase}</span>
-              </div>
+              <ColorControl
+                label="Section Base"
+                value={config.sectionBase}
+                onChange={(value) => onConfigChange({ sectionBase: value })}
+                prodRef="neutral[100]"
+              />
             </div>
           </div>
 

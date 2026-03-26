@@ -23,5 +23,10 @@ export interface SeatMapConfig {
   rowStrokeColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
+  venueFill: string;
+  venueStroke: string;
+  sectionStroke: string;
+  mapBackground: string;
+  sectionBase: string;
 }
 

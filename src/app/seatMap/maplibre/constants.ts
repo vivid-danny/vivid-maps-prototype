@@ -44,17 +44,6 @@ export const STYLE_COLORS = {
   transparent: 'rgba(0, 0, 0, 0)',
 } as const;
 
-/**
- * Production theme tokens (mobile: useVSTheme)
- * See Confluence: "Style JSON Breakdown" → Constants → Theme-Based Colors
- */
-export const THEME_TOKENS = {
-  background: '#F6F6FB',       // neutral[50]
-  venueFill: '#FFFFFF',         // onPrimary
-  venueStroke: '#A0A2B3',       // onSurfaceDisabled
-  sectionBase: '#EFEFF6',       // neutral[100]
-} as const;
-
 // Venue coordinate bounds  [[lngMin, latMin], [lngMax, latMax]]
 export const VENUE_BOUNDS: [[number, number], [number, number]] = [
   [0.0003165, -0.072575],

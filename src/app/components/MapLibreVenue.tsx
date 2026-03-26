@@ -42,6 +42,11 @@ interface MapLibreVenueProps {
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
+  venueFill: string;
+  venueStroke: string;
+  sectionStroke: string;
+  mapBackground: string;
+  sectionBase: string;
   rowStrokeColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
@@ -74,6 +79,11 @@ export function MapLibreVenue({
   onSelect,
   onHover,
   isMobile,
+  venueFill,
+  venueStroke,
+  sectionStroke,
+  mapBackground,
+  sectionBase,
   rowStrokeColor,
   mutedOverlay,
   selectedOverlay,
@@ -83,7 +93,10 @@ export function MapLibreVenue({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const style = useMemo(
-    () => createVenueStyle({ seatColors, assets, rowStrokeColor, mutedOverlay, selectedOverlay }),
+    () => createVenueStyle({
+      seatColors, assets, venueFill, venueStroke, sectionStroke,
+      mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay,
+    }),
     // Recreates when venue assets change (venue switch); paint properties updated imperatively below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [assets],
@@ -262,15 +275,18 @@ export function MapLibreVenue({
     const map = mapRef.current;
 
     // Background
-    map.setPaintProperty('background', 'background-color', seatColors.mapBackground);
+    map.setPaintProperty('background', 'background-color', mapBackground);
 
     // Venue chrome
-    map.setPaintProperty('venue', 'fill-color', seatColors.venueFill);
-    map.setPaintProperty('venue-stroke', 'line-color', seatColors.venueStroke);
+    map.setPaintProperty('venue', 'fill-color', venueFill);
+    map.setPaintProperty('venue-stroke', 'line-color', venueStroke);
+
+    // Section base
+    map.setPaintProperty(LAYER_SECTION_BASE, 'fill-color', sectionBase);
 
     // Section outline
-    map.setPaintProperty(LAYER_SECTION_OUTLINE, 'line-color', seatColors.sectionStroke);
-    map.setPaintProperty(LAYER_SECTION_SELECTED_OUTLINE, 'line-color', seatColors.sectionStroke);
+    map.setPaintProperty(LAYER_SECTION_OUTLINE, 'line-color', sectionStroke);
+    map.setPaintProperty(LAYER_SECTION_SELECTED_OUTLINE, 'line-color', sectionStroke);
 
     // Row outline
     map.setPaintProperty(LAYER_ROW_OUTLINE, 'line-color', rowStrokeColor);
@@ -284,7 +300,7 @@ export function MapLibreVenue({
       ['boolean', ['feature-state', 'selected'], false], selectedOverlay,
       mutedOverlay,
     ]);
-  }, [ready, seatColors, rowStrokeColor, mutedOverlay, selectedOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, seatColors, venueFill, venueStroke, sectionStroke, mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

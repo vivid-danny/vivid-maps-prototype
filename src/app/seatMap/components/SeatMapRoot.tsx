@@ -267,6 +267,11 @@ export function SeatMapRoot() {
                 onSelect={viewState.handleSelect}
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
+                venueFill={config.venueFill}
+                venueStroke={config.venueStroke}
+                sectionStroke={config.sectionStroke}
+                mapBackground={config.mapBackground}
+                sectionBase={config.sectionBase}
                 rowStrokeColor={config.rowStrokeColor}
                 mutedOverlay={config.mutedOverlay}
                 selectedOverlay={config.selectedOverlay}

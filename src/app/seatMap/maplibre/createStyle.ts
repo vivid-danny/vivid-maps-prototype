@@ -34,7 +34,6 @@ import {
   SOURCE_SECTION_LABELS,
   SOURCE_SECTIONS,
   STYLE_COLORS,
-  THEME_TOKENS,
 } from './constants';
 import type { SeatColors } from '../../model/types';
 import type { VenueAssets } from './types';
@@ -42,13 +41,21 @@ import type { VenueAssets } from './types';
 interface StyleOptions {
   seatColors: SeatColors;
   assets: VenueAssets;
+  venueFill: string;
+  venueStroke: string;
+  sectionStroke: string;
+  mapBackground: string;
+  sectionBase: string;
   rowStrokeColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
-  const { seatColors, assets, rowStrokeColor, mutedOverlay, selectedOverlay } = options;
+  const {
+    seatColors, assets, venueFill, venueStroke, sectionStroke,
+    mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay,
+  } = options;
 
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,
@@ -100,7 +107,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
       {
         id: 'background',
         type: 'background',
-        paint: { 'background-color': seatColors.mapBackground },
+        paint: { 'background-color': mapBackground },
       },
 
       // 2. Venue fill — stadium shape polygon (always visible).
@@ -109,7 +116,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         id: 'venue',
         type: 'fill',
         source: 'venue-chrome',
-        paint: { 'fill-color': seatColors.venueFill },
+        paint: { 'fill-color': venueFill },
       },
 
       // 3. Venue stroke — stadium boundary line (always visible).
@@ -119,7 +126,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         type: 'line',
         source: 'venue-chrome',
         paint: {
-          'line-color': seatColors.venueStroke,
+          'line-color': venueStroke,
           'line-width': 1,
         },
       },
@@ -141,7 +148,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_SECTIONS,
         layout: { visibility: 'visible' },
         paint: {
-          'fill-color': THEME_TOKENS.sectionBase,
+          'fill-color': sectionBase,
           'fill-opacity': 1,
         },
       },
@@ -223,7 +230,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_SECTIONS,
         layout: { visibility: 'visible' },
         paint: {
-          'line-color': seatColors.sectionStroke,
+          'line-color': sectionStroke,
           'line-width': 0.5,
           'line-opacity': 0.3,
         },
@@ -238,7 +245,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['==', 'id', ''],
         layout: { visibility: 'none' },
         paint: {
-          'line-color': seatColors.sectionStroke,
+          'line-color': sectionStroke,
           'line-width': 2,
         },
       },
