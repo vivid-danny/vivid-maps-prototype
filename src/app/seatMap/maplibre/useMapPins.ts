@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, createElement } from 'react';
+import { useEffect, useRef, useMemo, useState, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { Marker } from 'maplibre-gl';
@@ -14,6 +14,7 @@ interface UseMapPinsOptions {
   ready: boolean;
   model: SeatMapModel;
   sectionCenters: Map<string, SectionManifestEntry>;
+  seatsUrl: string;
   selection: SelectionState;
   selectedListing: Listing | null;
   hoverState: HoverState;
@@ -41,6 +42,18 @@ interface MarkerEntry {
 
 // Sentinel ID for the on-the-fly hover pin (a row with no pre-existing pin candidate).
 const HOVER_PIN_ID = '__hover__';
+
+function seatCentroid(
+  seatIds: string[],
+  coords: Map<string, [number, number]>,
+): [number, number] | null {
+  const pts = seatIds.map((id) => coords.get(id)).filter(Boolean) as [number, number][];
+  if (!pts.length) return null;
+  return [
+    pts.reduce((s, p) => s + p[0], 0) / pts.length,
+    pts.reduce((s, p) => s + p[1], 0) / pts.length,
+  ];
+}
 
 function markerZIndex(isHovered: boolean, isSelected: boolean): string {
   return isHovered ? '30' : isSelected ? '20' : '10';
@@ -89,6 +102,7 @@ export function useMapPins({
   ready,
   model,
   sectionCenters,
+  seatsUrl,
   selection,
   selectedListing,
   hoverState,
@@ -98,6 +112,24 @@ export function useMapPins({
   onSelect,
 }: UseMapPinsOptions): void {
   const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
+
+  const [seatCoords, setSeatCoords] = useState<Map<string, [number, number]>>(new Map());
+
+  useEffect(() => {
+    if (!seatsUrl) return;
+    fetch(seatsUrl)
+      .then((r) => r.json())
+      .then((geojson) => {
+        const coords = new Map<string, [number, number]>();
+        for (const f of geojson.features) {
+          if (f.geometry?.type === 'Point' && f.properties?.id) {
+            coords.set(f.properties.id, f.geometry.coordinates as [number, number]);
+          }
+        }
+        setSeatCoords(coords);
+      })
+      .catch((err) => console.error('Failed to load seat coordinates:', err));
+  }, [seatsUrl]);
 
   // Keep latest callbacks/colors in refs so marker click handlers never go stale
   const onSelectRef = useRef(onSelect);
@@ -138,7 +170,12 @@ export function useMapPins({
 
       for (const { listing, lngLat } of candidates) {
         const isSelected = selectedListing?.listingId === listing.listingId;
-        pins.push({ listingId: listing.listingId, lngLat, sectionId, listing, isHovered: false, isSelected });
+        // In seats mode, position the selected pin at the actual seat(s) location
+        const resolvedLngLat =
+          isSelected && displayMode === 'seats'
+            ? (seatCentroid(listing.seatIds, seatCoords) ?? lngLat)
+            : lngLat;
+        pins.push({ listingId: listing.listingId, lngLat: resolvedLngLat, sectionId, listing, isHovered: false, isSelected });
       }
     }
 
@@ -146,7 +183,11 @@ export function useMapPins({
     if (selectedListing && !pins.some((p) => p.listingId === selectedListing.listingId)) {
       const sectionData = sectionCenters.get(selectedListing.sectionId);
       if (sectionData) {
-        const lngLat = sectionData.rows[selectedListing.rowId]?.center ?? sectionData.center;
+        const rowCenter = sectionData.rows[selectedListing.rowId]?.center ?? sectionData.center;
+        const lngLat =
+          displayMode === 'seats'
+            ? (seatCentroid(selectedListing.seatIds, seatCoords) ?? rowCenter)
+            : rowCenter;
         pins.push({
           listingId: selectedListing.listingId,
           lngLat,
@@ -160,7 +201,7 @@ export function useMapPins({
 
     // Mobile: show roughly half the pins to reduce clutter
     return isMobile ? pins.slice(0, Math.ceil(pins.length / 2)) : pins;
-  }, [model, sectionCenters, displayMode, selectedListing, isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [model, sectionCenters, displayMode, selectedListing, isMobile, seatCoords]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
   useEffect(() => {

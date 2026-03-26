@@ -125,6 +125,7 @@ export function MapLibreVenue({
     ready,
     model,
     sectionCenters,
+    seatsUrl: assets.seatsUrl,
     selection,
     selectedListing,
     hoverState,
