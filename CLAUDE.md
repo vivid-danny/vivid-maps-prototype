@@ -1,6 +1,6 @@
 # Seating Map Prototype
 
-Interactive venue seating map prototype using React + TypeScript. Explores selection logic, zoom-driven display modes, and interaction patterns on a concert venue map rendered entirely in SVG.
+Interactive venue seating map prototype using React + TypeScript. Explores selection logic, zoom-driven display modes, and interaction patterns on a concert venue map rendered with MapLibre GL JS.
 
 See `PROJECT.md` for design decisions, behavioral specs, and roadmap.
 
@@ -33,9 +33,9 @@ Then add an entry to `src/app/seatMap/mock/mapRegistry.ts` pointing `assets` at 
 ## Tech Stack
 
 - **React 18.3** with TypeScript (no tsconfig — Vite defaults)
-- **Vite 6.3** for dev server and bundling
+- **Vite 6.3** for dev server and bundling (`esbuild: { target: 'esnext' }` required for MapLibre workers)
 - **Tailwind CSS v4** via `@tailwindcss/vite` plugin
-- **react-zoom-pan-pinch 3.7** for map zoom/pan
+- **MapLibre GL JS 5.x** for map rendering (GeoJSON layers, raster background, feature state)
 - **lucide-react** for icons
 - ESM modules (`"type": "module"` in package.json)
 
@@ -43,24 +43,15 @@ Then add an entry to `src/app/seatMap/mock/mapRegistry.ts` pointing `assets` at 
 
 ```
 src/
-├── main.tsx                              # App entry point
+├── main.tsx                              # App entry point (imports maplibre-gl CSS)
 ├── styles/                               # CSS: fonts, theme, tailwind
 └── app/
     ├── App.tsx                           # Root - renders SeatMapRoot
     ├── components/                       # Shared UI components
-    │   ├── Venue.tsx                     # Demo venue map canvas
-    │   ├── RealVenue.tsx                 # Real venue renderer: venue chrome, section boundaries, pin overlays (~250 lines)
-    │   ├── RealVenueSeats.tsx            # Seat/row rendering + event delegation for ~18K SVG elements
-    │   ├── realVenueHelpers.ts           # Pure utilities: computeVisibleSections, resolveTargetPosition, buildSelectedPinTarget
-    │   ├── Stage.tsx                     # Stage element
-    │   ├── VenueBoundary.tsx             # Venue boundary SVG
-    │   ├── Section.tsx                   # Orchestrates display mode per section
-    │   ├── SectionView.tsx               # sections mode renderer
-    │   ├── RowsView.tsx                  # rows mode renderer
-    │   ├── SeatsView.tsx                 # seats mode renderer
+    │   ├── MapLibreVenue.tsx             # Main map component: wires all MapLibre hooks
     │   ├── ListingsPanel.tsx             # Scrollable listing cards sidebar
     │   ├── ListingCard.tsx               # Individual listing card
-    │   ├── Pin.tsx                       # Price pin overlay
+    │   ├── Pin.tsx                       # Price pin overlay (MapLibre Marker + React root)
     │   ├── useHoverIntent.ts             # Hover delay hook (100ms)
     │   ├── constants.ts                  # Dimensions, thresholds, helpers
     │   └── ticketDetail/                 # Ticket detail overlay components
@@ -79,28 +70,36 @@ src/
         ├── model/
         │   └── types.ts                  # Core domain types (SeatMapModel, etc.)
         ├── behavior/
-        │   ├── rules.ts                  # Selection/hover/visual state rules (delegates to visualState.ts)
-        │   ├── visualState.ts            # Canonical visual resolution: InteractionState, resolveInteractionState, resolveSectionFill
-        │   ├── domMutation.ts            # Canonical imperative update pattern: MutationManager, findHoverTargets
+        │   ├── rules.ts                  # Selection/hover/visual state rules
+        │   ├── visualState.ts            # InteractionState, resolveInteractionState, resolveSectionFill
         │   ├── pins.ts                   # Pin visibility/overlay rules
         │   └── utils.ts                  # Shared behavior utilities
+        ├── maplibre/                     # MapLibre GL integration
+        │   ├── useMapLibre.ts            # Map init, zoom state tracking, exposes __map in dev
+        │   ├── useMapInteractions.ts     # Click/hover event handlers on map layers
+        │   ├── useMapSelectionSync.ts    # React selection/hover → setFeatureState
+        │   ├── useFeatureState.ts        # Inventory (available/unavailable) → feature state
+        │   ├── useVenueManifest.ts       # Fetches manifest.json, returns seatableIds + sectionCenters
+        │   ├── useMapPins.ts             # Pin overlays: Marker + React root per pin
+        │   ├── createStyle.ts            # MapLibre StyleSpecification (sources + layers)
+        │   ├── paintExpressions.ts       # Fill color expressions (zone/deal themes)
+        │   ├── constants.ts              # Layer IDs, source IDs, zoom thresholds, colors
+        │   └── types.ts                  # VenueAssets interface
         ├── mock/
-        │   ├── generateSectionData.ts    # Config → SectionData
-        │   ├── generateListings.ts       # SectionData → Listing[]
-        │   ├── generatePins.ts           # Listings → PinData
-        │   ├── seededRandom.ts           # Mulberry32 PRNG
-        │   ├── createMockSeatMapModel.ts # Orchestrates demo generation
-        │   ├── createVenueSeatMapModel.ts # venueData.json → VenueSeatMapModel
-        │   └── venueData.json            # Extracted Figma data (69 sections, ~18K seats)
+        │   ├── createManifestSeatMapModel.ts # manifest + venueSeatCounts → SeatMapModel
+        │   ├── mapRegistry.ts            # MapDefinition with VenueAssets per venue
+        │   ├── venueSeatCounts.json      # Section/row seat counts (from seats.geojson)
+        │   ├── theaterVenueData.json     # Theater venue data
+        │   └── seededRandom.ts           # Mulberry32 PRNG
         ├── state/
         │   ├── useSeatMapConfig.ts       # Config state management
         │   ├── useLayoutMode.ts          # Viewport layout mode detection (mobile vs desktop)
         │   ├── useSeatMapController.ts   # Derived values (displayMode, etc.)
-        │   └── useSeatMapPrototypeViewState.ts  # Selection, hover, navigation
+        │   ├── useSeatMapPrototypeViewState.ts  # Selection, hover, navigation
+        │   └── useUrlParams.ts           # URL param sync for shareable config
         └── components/
-            ├── SeatMapRoot.tsx           # Main orchestration (was App.tsx)
-            ├── PrototypeControls.tsx     # Collapsible dev controls
-            └── MapContainer.tsx          # react-zoom-pan-pinch wrapper
+            ├── SeatMapRoot.tsx           # Main orchestration
+            └── PrototypeControls.tsx     # Collapsible dev controls
 ```
 
 ## Code Conventions
@@ -125,35 +124,36 @@ src/
 - Custom `useHoverIntent` hook for delayed hover callbacks
 
 ### Rendering
-- All map visuals are **SVG elements** (rect, circle, line, text) — no Canvas or DOM-based rendering
-- Use **even-number dimensions** (`SEAT_SIZE = 4`, `SEAT_GAP = 2`) to keep coordinates on whole pixels — see PROJECT.md "Dimension System" for rationale
-- All three display modes render SVGs with identical outer dimensions to prevent visual jumping on mode switch
+- Map rendering via **MapLibre GL JS** — GeoJSON polygon/circle layers with paint expressions, raster background image
+- Display modes (sections/rows/seats) controlled by **layer visibility** toggled imperatively via `map.setLayoutProperty`
+- Visual state (selected, hovered, unavailable) driven by **feature state** (`map.setFeatureState`) — paint expressions resolve colors on the GPU
+- Pins rendered as **MapLibre Markers** with React roots — not part of the GL layer stack
 
 ## Gotchas
 
-### ID Format
-IDs are hierarchical strings built by concatenation — no delimiters between section and row:
-- sectionId: `"B"` (single uppercase letter in current demo)
-- rowId: `"B3"` (sectionId + 1-based row number)
-- seatId: `"B3-5"` (rowId + `-` + 1-based seat number)
-- listingId: `"listing-B-1"` (grouped), `"listing-B-zone-3-1"` (zone row), or `"solo-B-B3-5"` (solo seat)
-
-This format assumes single-character section IDs. Numeric IDs (e.g., "101") would need a delimiter.
+### ID Format (GeoJSON)
+IDs match GeoJSON feature `id` properties:
+- sectionId: `"101"` (numeric string)
+- rowId: `"101:1"` (sectionId + `:` + row number)
+- seatId: `"101:1:s1"` (sectionId + `:` + row + `:s` + seat index)
+- All sources use `promoteId: 'id'` so the `id` property becomes the feature ID for feature state operations.
 
 ### Seeded Randomization
-All data generation is deterministic via Mulberry32 PRNG. Each phase creates its own RNG with a derived seed — RNG instances are **not shared** across sections. Changing the map seed regenerates everything. See the generation files for seed derivation patterns.
+All data generation is deterministic via Mulberry32 PRNG. Each phase creates its own RNG with a derived seed — RNG instances are **not shared** across sections. Changing the map seed regenerates everything.
 
-### Real Venue Default
-`venueMode` defaults to `'real'` with `REAL_VENUE_SCALE_DEFAULTS` (desktop: initial 0.08, threshold 0.3). Switching to demo restores demo scale defaults. The venue toggle lives in PrototypeControls > Map tab.
+### Zoom Thresholds
+Uses synthetic lat/lng coordinates near the origin. `ROW_ZOOM_MIN = 14` controls the sections→seats display mode switch (`fitBounds` zoom at load is ~13.9). `SEAT_ZOOM_MIN = 16` is defined but not currently used for layer visibility.
+
+### Concourse Section Filter
+Sections like `997`, `901`, `BANNER LOUNGE Compound` are non-seatable MultiPolygon areas. They're filtered out imperatively via `map.setFilter` once the manifest loads, using the `seatableIds` array from `useVenueManifest`.
 
 ### Pin Placement
 Uses **Chebyshev distance** (not Euclidean): `max(|Δrow|, |Δseat|) >= 2`. This creates a 3×3 exclusion zone around each placed pin. Up to 3 pins per section via greedy selection.
 
 ### Mobile Differences
-- Zoom threshold: 3 (vs 5 on desktop)
-- Initial scale: 0.5 (vs 1.5 on desktop)
 - Renders `ceil(pins.length / 2)` pins (fewer to reduce clutter)
 - Layout: map on top (390×200px), listings panel below
+- Hover disabled entirely
 
-### Demo Map
-8 sections in 2 rows around a stage. Sections 101 and 104 are sold out (`unavailableRatio: 1.0`) — use them to test unavailable state handling. Sections 102 (B) and 1B (E) have `seatZoneRows` configured — rows with 2 listings per zone row (mapped + unmapped), rendered as row-level blocks in seats mode. All other sections use `unavailableRatio: 0.5` with greedy seat grouping (target: ~50% unavailable, ~45% grouped, ~5% solo).
+### Venue Assets
+Each map in `mapRegistry.ts` has `assets: VenueAssets` with `manifestUrl`, `backgroundUrl`, `sectionsUrl`, `rowsUrl`, `seatsUrl`. Changing `assets` recreates the map style. Always strip sensitive fields from manifest before committing (no `tileSource`, `glyphSource`, `imageSource`, `stageStyle`).

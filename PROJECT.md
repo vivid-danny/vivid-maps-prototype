@@ -4,7 +4,7 @@ A prototype for exploring selection logic, interaction patterns, and panel/map s
 
 ## Project Goal
 
-Build an interactive seating map that allows users to browse sections, filter listings, and view ticket details. The prototype uses SVG-rendered shapes (rects, circles) to clearly define logic and interaction patterns before applying visual polish.
+Build an interactive seating map that allows users to browse sections, filter listings, and view ticket details. The prototype uses MapLibre GL JS to render venue maps from GeoJSON data with raster background images, defining selection logic and interaction patterns.
 
 ---
 
@@ -32,21 +32,21 @@ The map renders different levels of detail depending on zoom level:
 
 | Mode | Visual | Selectable Unit |
 |------|--------|-----------------|
-| `sections` | Filled rounded rectangle with label | Section |
-| `rows` | Horizontal bars per row | Row |
-| `seats` | Individual 4×4px seat circles; connector rects link adjacent seats in the same listing (both are interactive) | Listing (grouped seats) |
+| `sections` | GeoJSON polygon fill + stroke + label layer | Section |
+| `rows` | GeoJSON polygon fill per row | Row |
+| `seats` | GeoJSON circle layer (exponential radius scaling) | Listing (grouped seats) |
 
 **Zoom-based switching:**
-- Below threshold → renders `config.initialDisplay` (default: `sections`)
-- At or above threshold → renders `config.zoomedDisplay` (default: `seats`)
+- Below `ROW_ZOOM_MIN` → renders `config.initialDisplay` (default: `sections`)
+- At or above `ROW_ZOOM_MIN` → renders `config.zoomedDisplay` (default: `seats`)
 
-**Thresholds:**
-| Layout | Zoom Threshold | Initial Scale |
-|--------|---------------|---------------|
-| Desktop | 5 | 1.5 |
-| Mobile | 3 | 0.5 |
+**Thresholds (MapLibre zoom levels, synthetic lat/lng coords near origin):**
+| Constant | Value | Notes |
+|----------|-------|-------|
+| `ROW_ZOOM_MIN` | 14 | fitBounds zoom at load is ~13.9 |
+| `SEAT_ZOOM_MIN` | 16 | Defined but not currently used for layer visibility |
 
-All three modes render SVGs with identical outer dimensions — no visual jumping on mode switch.
+Layer visibility is toggled imperatively via `map.setLayoutProperty`. Visual state (selected, hovered, unavailable) is driven by feature state and resolved in paint expressions on the GPU.
 
 ---
 
@@ -363,11 +363,8 @@ the cheapest).
 
 ### Pin Rendering
 
-**Counter-zoom:** Pins scale inversely with the map zoom level so they stay legible at
-all scales:
-```
-inverseScale = (1 / currentScale) × sizeMultiplier
-```
+**Pins** are rendered as MapLibre `Marker` elements with React roots. Each pin's `translate(-50%, -100%)` positions the arrow tip at the coordinate. The Marker element is a 0×0 `div` (anchor).
+
 Size multipliers: selected = 1.875×, hovered = 1.5×, default = 1.25×. Transform origin
 is at the pin tip (bottom-center).
 
@@ -501,25 +498,12 @@ score color — creating a heat map across the section.
 | Aspect | Desktop | Mobile |
 |--------|---------|--------|
 | Layout | 450px sidebar + flex map | Map top (390×200px) + listings below |
-| Initial scale | 1.5 | 0.5 |
-| Zoom threshold | 5 | 3 |
 | Pin count | All pins | `ceil(n/2)` pins |
 | Hover | Enabled, 200ms delay | Disabled |
-| Min scale | 1.0 | 0.5 |
 | Detail panel | Slides over sidebar only | Full-screen overlay |
 
 **Auto-detection breakpoint:** `max-width: 800px` — detected via `matchMedia` and updated
 on viewport change. Can be overridden via the prototype controls (auto / desktop / mobile).
-
-### Map Resize Re-centering (Desktop Only)
-
-On desktop, a `ResizeObserver` watches the map container. On each resize:
-- Position adjusts by `Δwidth / 2` and `Δheight / 2` to keep the map centered
-- Scale is unchanged
-- Adjustment is instant (no animation)
-- The first callback (fired immediately on `observe()`) records the baseline size
-  without adjusting — prevents a spurious shift on mount
-- Not active on mobile (fixed-size container, no resize needed)
 
 ---
 
@@ -562,33 +546,17 @@ On desktop, a `ResizeObserver` watches the map container. On each resize:
 
 ---
 
-## Dimension System
-
-All dimensions use **even numbers** to avoid sub-pixel rendering issues:
-
-```typescript
-SEAT_SIZE = 4    // 4×4px seats (center at 2px — whole pixel)
-SEAT_GAP  = 2    // 2px horizontal gap between seats
-ROW_GAP   = 2    // 2px vertical gap between rows
-PADDING   = 1    // 1px padding to prevent edge clipping
-```
-
-**Why even numbers:** odd dimensions (e.g., 3px seats) force sub-pixel centers (1.5px), causing visual inconsistencies across browsers and zoom levels. Even dimensions keep all coordinates on whole pixels.
-
----
-
 ## Data Generation
 
 All data is **deterministic via Mulberry32 PRNG**. Each section creates its own RNG with a derived seed — instances are not shared. Changing the map seed regenerates everything.
 
 **Generation pipeline:**
 ```
-SeatMapConfig
-  └─ generateSectionData()  →  SectionData (seats, availability)
-  └─ generateListings()     →  Listing[] (grouped seats with prices)
-  └─ generatePins()         →  PinData[] (three-pass Chebyshev-spaced, priority-ordered)
-  └─ createMockSeatMapModel() →  SeatMapModel (assembled model)
+manifest.json + venueSeatCounts.json
+  └─ createManifestSeatMapModel()  →  SeatMapModel (sections, rows, seats, listings, pins)
 ```
+
+Inventory is generated from seat counts per section/row. 70% of seats are marked unavailable; remaining 30% are grouped into listings with zone assignment based on section number ranges.
 
 **Seat zone rows (`seatZoneRows`):** a `SectionConfig` option that marks specific rows as seat zones — rows with unmapped or partially-mapped listings. Each zone row produces 2 listings: one with mapped seats (real seatIds) and one with unmapped seats (synthetic `{rowId}-zone-{n}` seatIds). Zone rows are excluded from both the random unavailability pool and the regular grouping pass. In seats display mode, zone rows render as row-level pill blocks (like RowsView bars) instead of individual seats, and clicking them filters the panel to show the zone row's listings.
 
