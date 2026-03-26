@@ -252,7 +252,7 @@ export function SeatMapRoot() {
             className={`flex items-center justify-center ${!isMobile ? 'flex-1 min-w-0 h-full' : 'shrink-0'}`}
             style={isMobile ? { height: 200 } : undefined}
           >
-            <div className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
+            <div className="relative w-full h-full">
               <MapLibreVenue
                 seatColors={config.seatColors}
                 model={venueModel}
