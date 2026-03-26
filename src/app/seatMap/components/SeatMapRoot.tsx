@@ -277,6 +277,7 @@ export function SeatMapRoot() {
                 rowFillColor={config.rowFillColor}
                 mutedOverlay={config.mutedOverlay}
                 selectedOverlay={config.selectedOverlay}
+                zoneHoverOverlay={config.zoneHoverOverlay}
                 selectedOutlineColor={config.selectedOutlineColor}
                 onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}

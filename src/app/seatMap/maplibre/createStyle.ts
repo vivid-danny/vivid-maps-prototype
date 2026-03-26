@@ -19,14 +19,17 @@ import {
   RINK_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW,
+  LAYER_ROW_HOVER_OVERLAY,
   LAYER_ROW_LABEL,
   LAYER_ROW_OUTLINE,
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
+  LAYER_SECTION_HOVER_OVERLAY,
   LAYER_SECTION_LABEL,
   LAYER_SECTION_OUTLINE,
   LAYER_SECTION_SELECTED_OUTLINE,
@@ -52,13 +55,14 @@ interface StyleOptions {
   rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
+  hoverOverlay: string;
   selectedOutlineColor: string;
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
     seatColors, assets, venueFill, venueStroke, sectionStroke,
-    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, selectedOutlineColor,
+    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, hoverOverlay, selectedOutlineColor,
   } = options;
 
   // Base fill expression: hovered > unavailable > base color.
@@ -170,7 +174,24 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 5. Section selected overlay — dark tint on selected, white mute on others.
+      // 5a. Section hover overlay — composited on top of section base color.
+      // Feature-state driven: only shows overlay color on hovered section, transparent elsewhere.
+      // Always visible; displayMode effect hides it in rows/seats modes.
+      {
+        id: LAYER_SECTION_HOVER_OVERLAY,
+        type: 'fill',
+        source: SOURCE_SECTIONS,
+        layout: { visibility: 'visible' },
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            'rgba(0,0,0,0)',
+          ],
+        },
+      },
+
+      // 5b. Section selected overlay — dark tint on selected, white mute on others.
       // Hidden until a section is selected; managed via setLayoutProperty + setPaintProperty.
       // Production: fill-color uses match expression on feature id.
       {
@@ -196,7 +217,23 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 7. Row selected overlay — selected row gets dark tint, siblings get muted.
+      // 7a. Row hover overlay — composited on top of row fill color.
+      // Feature-state driven; hidden by default, shown in rows + seats modes.
+      {
+        id: LAYER_ROW_HOVER_OVERLAY,
+        type: 'fill',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            'rgba(0,0,0,0)',
+          ],
+        },
+      },
+
+      // 7b. Row selected overlay — selected row gets dark tint, siblings get muted.
       // Production: match expression on id; prototype uses feature-state.
       {
         id: LAYER_ROW_SELECTED_OVERLAY,
@@ -306,7 +343,24 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 13. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
+      // 13a. Seat hover overlay — composited on top of seat circles.
+      // Feature-state driven; hidden by default, shown in seats mode only.
+      {
+        id: LAYER_SEAT_HOVER_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            'rgba(0,0,0,0)',
+          ],
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128],
+        },
+      },
+
+      // 13b. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
       // Uses a sectionId+rowId filter (like section-selected-outline) so it works whether a row
       // listing or an individual seat is selected — no per-seat feature-state required.
       {

@@ -15,10 +15,11 @@ import type { SeatMapModel } from '../model/types';
 function featureStateExpression(
   seatColors: SeatColors,
   baseColor: ExpressionSpecification | string,
+  hoverColor: ExpressionSpecification | string,
 ): ExpressionSpecification {
   return [
     'case',
-    ['boolean', ['feature-state', 'hovered'], false], seatColors.hover,
+    ['boolean', ['feature-state', 'hovered'], false], hoverColor,
     ['boolean', ['feature-state', 'unavailable'], false], seatColors.unavailable,
     baseColor,
   ];
@@ -62,12 +63,15 @@ export function buildSectionFillExpression(
     baseColor = ['match', ...matchArgs] as ExpressionSpecification;
   }
 
-  return featureStateExpression(seatColors, baseColor);
+  // For zone/deal: no fill change on hover — overlay layer handles it; zone color stays visible.
+  // For branded: fill switches to seatColors.hover.
+  const hoverColor = (theme === 'zone' || theme === 'deal') ? baseColor : seatColors.hover;
+  return featureStateExpression(seatColors, baseColor, hoverColor);
 }
 
 /**
  * Standard fill-color for rows and seats (no per-section theming at these levels).
  */
 export function buildDefaultFillExpression(seatColors: SeatColors): ExpressionSpecification {
-  return featureStateExpression(seatColors, seatColors.available);
+  return featureStateExpression(seatColors, seatColors.available, seatColors.hover);
 }

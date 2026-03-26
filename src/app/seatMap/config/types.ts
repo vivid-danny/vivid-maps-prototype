@@ -24,6 +24,7 @@ export interface SeatMapConfig {
   rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
+  zoneHoverOverlay: string;
   selectedOutlineColor: string;
   venueFill: string;
   venueStroke: string;

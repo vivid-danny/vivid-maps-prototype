@@ -9,14 +9,17 @@ import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { buildSectionFillExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW,
+  LAYER_ROW_HOVER_OVERLAY,
   LAYER_ROW_LABEL,
   LAYER_ROW_OUTLINE,
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
+  LAYER_SECTION_HOVER_OVERLAY,
   LAYER_SECTION_LABEL,
   LAYER_SECTION_OUTLINE,
   LAYER_SECTION_SELECTED_OUTLINE,
@@ -55,6 +58,7 @@ interface MapLibreVenueProps {
   rowFillColor: string;
   mutedOverlay: string;
   selectedOverlay: string;
+  zoneHoverOverlay: string;
   selectedOutlineColor: string;
   onZoomChange?: (zoom: number) => void;
   onMapReady?: (map: MaplibreMap) => void;
@@ -95,16 +99,22 @@ export function MapLibreVenue({
   rowFillColor,
   mutedOverlay,
   selectedOverlay,
+  zoneHoverOverlay,
   selectedOutlineColor,
   onZoomChange,
   onMapReady,
 }: MapLibreVenueProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // For zone/deal: overlay compositing handles hover; fill expression stays unchanged.
+  // For branded: fill expression handles hover via seatColors.hover; overlay is transparent.
+  const effectiveHoverOverlay =
+    (theme === 'zone' || theme === 'deal') ? zoneHoverOverlay : 'rgba(0,0,0,0)';
+
   const style = useMemo(
     () => createVenueStyle({
       seatColors, assets, venueFill, venueStroke, sectionStroke,
-      mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, selectedOutlineColor,
+      mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, hoverOverlay: effectiveHoverOverlay, selectedOutlineColor,
     }),
     // Recreates when venue assets change (venue switch); paint properties updated imperatively below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,16 +174,19 @@ export function MapLibreVenue({
     map.setFilter(LAYER_SECTION, sectionFilter);
     map.setFilter(LAYER_SECTION_BASE, sectionFilter);
     map.setFilter(LAYER_SECTION_OUTLINE, sectionFilter);
+    map.setFilter(LAYER_SECTION_HOVER_OVERLAY, sectionFilter);
     map.setFilter(LAYER_SECTION_SELECTED_OVERLAY, sectionFilter);
 
     const modelSectionIds = [...model.sectionDataById.keys()];
     const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', modelSectionIds]] as const;
     map.setFilter(LAYER_ROW, rowSeatFilter);
+    map.setFilter(LAYER_ROW_HOVER_OVERLAY, rowSeatFilter);
     map.setFilter(LAYER_ROW_OUTLINE, rowSeatFilter);
     map.setFilter(LAYER_ROW_SELECTED_OVERLAY, rowSeatFilter);
     map.setFilter(LAYER_ROW_SELECTED_OUTLINE, rowSeatFilter);
     map.setFilter(LAYER_ROW_LABEL, rowSeatFilter);
     map.setFilter(LAYER_SEAT, rowSeatFilter);
+    map.setFilter(LAYER_SEAT_HOVER_OVERLAY, rowSeatFilter);
     // LAYER_SEAT_SELECTED_OVERLAY filter is managed by the seat selection effect below
   }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -208,11 +221,13 @@ export function MapLibreVenue({
     // Section fills: only in sections mode
     map.setPaintProperty(LAYER_SECTION, 'fill-opacity', isSections ? 1 : 0);
 
-    // Section-selected-overlay: only in sections mode (visibility also depends on selection)
+    // Section hover + selected overlays: only in sections mode
+    setLayerVisibility(map, LAYER_SECTION_HOVER_OVERLAY, isSections ? 'visible' : 'none');
     if (!isSections) setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'none');
 
     // Rows: visible in rows + seats
     setLayerVisibility(map, LAYER_ROW, (isRows || isSeats) ? 'visible' : 'none');
+    setLayerVisibility(map, LAYER_ROW_HOVER_OVERLAY, (isRows || isSeats) ? 'visible' : 'none');
     setLayerVisibility(map, LAYER_ROW_OUTLINE, (isRows || isSeats) ? 'visible' : 'none');
 
     // Row-selected-overlay: rows mode only (also depends on selection)
@@ -223,6 +238,7 @@ export function MapLibreVenue({
 
     // Seats: only in seats mode
     setLayerVisibility(map, LAYER_SEAT, isSeats ? 'visible' : 'none');
+    setLayerVisibility(map, LAYER_SEAT_HOVER_OVERLAY, isSeats ? 'visible' : 'none');
     // LAYER_SEAT_SELECTED_OVERLAY visibility managed by seat selection effect
 
     // Section-outline: always visible, opacity varies.
@@ -349,7 +365,13 @@ export function MapLibreVenue({
     // Seat selected overlay (filter controls which seats are visible; simple values here)
     map.setPaintProperty(LAYER_SEAT_SELECTED_OVERLAY, 'circle-color', selectedOverlay);
     map.setPaintProperty(LAYER_SEAT_SELECTED_OVERLAY, 'circle-stroke-color', selectedOutlineColor);
-  }, [ready, seatColors, venueFill, venueStroke, sectionStroke, mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay, selectedOutlineColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Hover overlays (feature-state expression must be rebuilt to pick up color changes)
+    const hoverExpr = ['case', ['boolean', ['feature-state', 'hovered'], false], effectiveHoverOverlay, 'rgba(0,0,0,0)'] as const;
+    map.setPaintProperty(LAYER_SECTION_HOVER_OVERLAY, 'fill-color', hoverExpr);
+    map.setPaintProperty(LAYER_ROW_HOVER_OVERLAY, 'fill-color', hoverExpr);
+    map.setPaintProperty(LAYER_SEAT_HOVER_OVERLAY, 'circle-color', hoverExpr);
+  }, [ready, seatColors, venueFill, venueStroke, sectionStroke, mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay, selectedOutlineColor, zoneHoverOverlay, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

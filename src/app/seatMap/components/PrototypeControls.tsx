@@ -396,10 +396,26 @@ export function PrototypeControls({
                 prodRef="sectionStrokeColor"
               />
               <ColorControl
+                label="Row Fill"
+                value={config.rowFillColor}
+                onChange={(value) => onConfigChange({ rowFillColor: value })}
+              />
+              <ColorControl
+                label="Row Stroke"
+                value={config.rowStrokeColor}
+                onChange={(value) => onConfigChange({ rowStrokeColor: value })}
+                prodRef="sectionNoInventoryFill"
+              />
+              <ColorControl
                 label="Muted Overlay"
                 value={config.mutedOverlay}
                 onChange={(value) => onConfigChange({ mutedOverlay: value })}
                 prodRef="muted"
+              />
+              <ColorControl
+                label="Hover Overlay"
+                value={config.zoneHoverOverlay}
+                onChange={(value) => onConfigChange({ zoneHoverOverlay: value })}
               />
               <ColorControl
                 label="Selected Overlay"
@@ -413,15 +429,9 @@ export function PrototypeControls({
                 onChange={(value) => onConfigChange({ selectedOutlineColor: value })}
               />
               <ColorControl
-                label="Row Stroke"
-                value={config.rowStrokeColor}
-                onChange={(value) => onConfigChange({ rowStrokeColor: value })}
-                prodRef="sectionNoInventoryFill"
-              />
-              <ColorControl
-                label="Row Fill"
-                value={config.rowFillColor}
-                onChange={(value) => onConfigChange({ rowFillColor: value })}
+                label="Unavailable Inventory"
+                value={config.seatColors.unavailable}
+                onChange={(value) => handleColorChange('unavailable', value)}
               />
             </div>
           </div>
@@ -457,46 +467,6 @@ export function PrototypeControls({
                 onChange={(value) => onConfigChange({ sectionBase: value })}
                 prodRef="neutral[100]"
               />
-            </div>
-          </div>
-
-          {/* Dynamic Colors — per-section, runtime */}
-          <div className="mb-8">
-            <SectionHeader
-              title="Dynamic Colors"
-              prodSource="API / runtime"
-            />
-            <div className="space-y-3">
-              {(['available', 'unavailable', 'hover'] as const)
-                .filter((k) => !((config.theme === 'zone' || config.theme === 'deal') && k === 'available'))
-                .map((colorKey) => (
-                <ColorControl
-                  key={colorKey}
-                  label={colorKey}
-                  value={config.seatColors[colorKey]}
-                  onChange={(value) => handleColorChange(colorKey, value)}
-                  prodRef={colorKey === 'available' ? 'sectionColorExpression' : undefined}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Labels */}
-          <div className="mb-8">
-            <SectionHeader title="Labels" />
-            <div className="space-y-3">
-              {([
-                { key: 'labelDefault' as const, label: 'Available' },
-                { key: 'labelUnavailable' as const, label: 'Unavailable' },
-                { key: 'labelSelected' as const, label: 'Selected' },
-              ]).map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
             </div>
           </div>
 

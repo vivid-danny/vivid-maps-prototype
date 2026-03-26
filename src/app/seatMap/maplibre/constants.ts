@@ -15,6 +15,7 @@ export const LAYER_SECTION_LABEL = 'section-label';
 
 // Layer IDs — rows
 export const LAYER_ROW = 'row';
+export const LAYER_ROW_HOVER_OVERLAY = 'row-hover-overlay';
 export const LAYER_ROW_SELECTED_OVERLAY = 'row-selected-overlay';
 export const LAYER_ROW_SELECTED_OUTLINE = 'row-selected-outline';
 export const LAYER_ROW_OUTLINE = 'row-outline';
@@ -22,6 +23,7 @@ export const LAYER_ROW_LABEL = 'row-label';
 
 // Layer IDs — seats (prototype-only; production stops at rows)
 export const LAYER_SEAT = 'seat';
+export const LAYER_SEAT_HOVER_OVERLAY = 'seat-hover-overlay';
 export const LAYER_SEAT_SELECTED_OVERLAY = 'seat-selected-overlay';
 
 // Zoom thresholds calibrated for synthetic lat/lng (~0,0) coordinates.
