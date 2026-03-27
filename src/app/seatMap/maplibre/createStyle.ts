@@ -19,12 +19,17 @@ import {
   RINK_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW,
+  LAYER_ROW_HOVER_OVERLAY,
   LAYER_ROW_LABEL,
   LAYER_ROW_OUTLINE,
+  LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_HOVER_OVERLAY,
+  LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
+  LAYER_SECTION_HOVER_OVERLAY,
   LAYER_SECTION_LABEL,
   LAYER_SECTION_OUTLINE,
   LAYER_SECTION_SELECTED_OUTLINE,
@@ -37,6 +42,7 @@ import {
 } from './constants';
 import type { SeatColors } from '../../model/types';
 import type { VenueAssets } from './types';
+import type { LevelOverlays } from '../config/types';
 
 interface StyleOptions {
   seatColors: SeatColors;
@@ -47,14 +53,14 @@ interface StyleOptions {
   mapBackground: string;
   sectionBase: string;
   rowStrokeColor: string;
-  mutedOverlay: string;
-  selectedOverlay: string;
+  rowFillColor: string;
+  overlays: { section: LevelOverlays; row: LevelOverlays; seat: LevelOverlays };
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
     seatColors, assets, venueFill, venueStroke, sectionStroke,
-    mapBackground, sectionBase, rowStrokeColor, mutedOverlay, selectedOverlay,
+    mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays,
   } = options;
 
   // Base fill expression: hovered > unavailable > base color.
@@ -166,7 +172,24 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 5. Section selected overlay — dark tint on selected, white mute on others.
+      // 5a. Section hover overlay — composited on top of section base color.
+      // Feature-state driven: only shows overlay color on hovered section, transparent elsewhere.
+      // Always visible; displayMode effect hides it in rows/seats modes.
+      {
+        id: LAYER_SECTION_HOVER_OVERLAY,
+        type: 'fill',
+        source: SOURCE_SECTIONS,
+        layout: { visibility: 'visible' },
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], overlays.section.hover,
+            'rgba(0,0,0,0)',
+          ],
+        },
+      },
+
+      // 5b. Section selected overlay — dark tint on selected, white mute on others.
       // Hidden until a section is selected; managed via setLayoutProperty + setPaintProperty.
       // Production: fill-color uses match expression on feature id.
       {
@@ -175,11 +198,11 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_SECTIONS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': mutedOverlay,
+          'fill-color': overlays.section.muted,
         },
       },
 
-      // 6. Row fill — colored same as parent section.
+      // 6. Row fill — neutral background color so seat circles stand out.
       // Visibility toggled by displayMode; filter applied imperatively from manifest.
       {
         id: LAYER_ROW,
@@ -187,12 +210,28 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_ROWS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': sectionFillColor,
+          'fill-color': rowFillColor,
           'fill-opacity': 1,
         },
       },
 
-      // 7. Row selected overlay — selected row gets dark tint, siblings get muted.
+      // 7a. Row hover overlay — composited on top of row fill color.
+      // Feature-state driven; hidden by default, shown in rows + seats modes.
+      {
+        id: LAYER_ROW_HOVER_OVERLAY,
+        type: 'fill',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], overlays.row.hover,
+            'rgba(0,0,0,0)',
+          ],
+        },
+      },
+
+      // 7b. Row selected overlay — selected row gets dark tint, siblings get muted.
       // Production: match expression on id; prototype uses feature-state.
       {
         id: LAYER_ROW_SELECTED_OVERLAY,
@@ -202,21 +241,42 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], selectedOverlay,
-            mutedOverlay,
+            ['boolean', ['feature-state', 'selected'], false], overlays.row.selected,
+            overlays.row.muted,
           ],
         },
       },
 
-      // 8. Row outline — borders between rows.
-      // Production: line-color is sectionNoInventoryFill (#E3E3E8)
+      // 8. Row selected outline — outline around selected row (feature-state driven).
+      {
+        id: LAYER_ROW_SELECTED_OUTLINE,
+        type: 'line',
+        source: SOURCE_ROWS,
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], overlays.row.selectedOutline,
+            'rgba(0,0,0,0)',
+          ],
+          'line-width': 1.5,
+        },
+      },
+
+      // 9. Row outline — borders between rows.
+      // Production: line-color is sectionNoInventoryFill (#E3E3E8).
+      // Hides on selected row so the stroke doesn't darken against the overlay tint.
       {
         id: LAYER_ROW_OUTLINE,
         type: 'line',
         source: SOURCE_ROWS,
         layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': rowStrokeColor,
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(0,0,0,0)',
+            rowStrokeColor,
+          ],
           'line-width': 0.5,
         },
       },
@@ -236,8 +296,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 10. Section selected outline — 2px border around selected section.
-      // Visible only in rows/seats modes. Production uses line-width transition (0→2px).
+      // 10. Section selected outline — 2px border around selected section (all zoom levels).
+      // Production uses line-width transition (0→2px).
       {
         id: LAYER_SECTION_SELECTED_OUTLINE,
         type: 'line',
@@ -245,7 +305,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['==', 'id', ''],
         layout: { visibility: 'none' },
         paint: {
-          'line-color': sectionStroke,
+          'line-color': overlays.section.selectedOutline,
           'line-width': 2,
         },
       },
@@ -259,7 +319,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: {
           visibility: 'none',
           'text-field': ['get', 'rowId'],
-          'text-font': ['Open Sans Bold'],
+          'text-font': ['GTWalsh Bold'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 16],
           'text-allow-overlap': true,
           'text-ignore-placement': true,
@@ -286,7 +346,49 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 13. Section labels — rendered above seats so they're always readable.
+      // 13a. Seat hover overlay — composited on top of seat circles.
+      // Feature-state driven; hidden by default, shown in seats mode only.
+      {
+        id: LAYER_SEAT_HOVER_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
+            'rgba(0,0,0,0)',
+          ],
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128],
+        },
+      },
+
+      // 13b. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
+      // Uses a sectionId+rowId filter (like section-selected-outline) so it works whether a row
+      // listing or an individual seat is selected — no per-seat feature-state required.
+      {
+        id: LAYER_SEAT_SELECTED_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        filter: ['all', ['==', ['get', 'sectionId'], ''], ['==', ['get', 'rowId'], '']],
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': overlays.seat.selected,
+          'circle-radius': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 2,
+            20, 128,
+          ],
+          'circle-stroke-color': overlays.seat.selectedOutline,
+          'circle-stroke-width': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 0.3,
+            20, 16,
+          ],
+        },
+      },
+
+      // 14. Section labels — rendered above seats so they're always readable.
       // One point per section from SOURCE_SECTION_LABELS (populated from manifest centers).
       // Dimmed (0.3 opacity) at row/seat zoom levels.
       {
@@ -296,14 +398,12 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: {
           visibility: 'visible',
           'text-field': ['get', 'sectionId'],
-          'text-font': ['Open Sans Bold'],
+          'text-font': ['GTWalsh Bold'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 13, 12, 18, 28],
           'text-allow-overlap': true,
         },
         paint: {
           'text-color': seatColors.labelDefault,
-          'text-halo-color': STYLE_COLORS.textHaloColor,
-          'text-halo-width': STYLE_COLORS.textHaloWidth,
         },
       },
     ],

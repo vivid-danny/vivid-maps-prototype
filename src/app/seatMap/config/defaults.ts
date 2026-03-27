@@ -1,5 +1,12 @@
 import { ZOOM_THRESHOLD } from '../../components/constants';
-import type { SeatMapConfig } from './types';
+import type { SeatMapConfig, LevelOverlays } from './types';
+
+const SHARED_OVERLAYS: LevelOverlays = {
+  muted: 'rgba(255, 255, 255, 0.5)',       // production: STYLE_COLORS.muted
+  selected: 'rgba(4, 9, 44, 0.4)',         // production: STYLE_COLORS.selected
+  hover: 'rgba(0, 0, 0, 0.12)',
+  selectedOutline: 'rgba(0, 0, 0, 0.8)',
+};
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   initialDisplay: 'sections',
@@ -12,13 +19,17 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   sectionStrokeWidth: 16,
   venueStrokeWidth: 2,
   zoneRowDisplay: 'seats',
-  pinDensity: { sections: 0.30, rows: 0.20, seats: 0.10 },
+  pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
   theme: 'branded',
   themeOverrides: {},
   listingCardSize: 'standard',
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
-  mutedOverlay: 'rgba(255, 255, 255, 0.5)',   // production: STYLE_COLORS.muted
-  selectedOverlay: 'rgba(4, 9, 44, 0.4)',     // production: STYLE_COLORS.selected
+  rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
+  overlays: {
+    section: { ...SHARED_OVERLAYS },
+    row: { ...SHARED_OVERLAYS, selected: 'rgba(4, 9, 44, 0.15)' },
+    seat: { ...SHARED_OVERLAYS },
+  },
   venueFill: '#FFFFFF',         // production: onPrimary
   venueStroke: '#A0A2B3',       // production: onSurfaceDisabled
   sectionStroke: '#d3d3dc',     // production: sectionStrokeColor

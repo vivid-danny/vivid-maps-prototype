@@ -4,6 +4,13 @@ import type { ThemeId } from './themes';
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
 export type ListingCardSize = 'dense' | 'standard' | 'spacious';
 
+export interface LevelOverlays {
+  muted: string;
+  selected: string;
+  hover: string;
+  selectedOutline: string;
+}
+
 export interface SeatMapConfig {
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
@@ -21,8 +28,12 @@ export interface SeatMapConfig {
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
   listingCardSize: ListingCardSize;
   rowStrokeColor: string;
-  mutedOverlay: string;
-  selectedOverlay: string;
+  rowFillColor: string;
+  overlays: {
+    section: LevelOverlays;
+    row: LevelOverlays;
+    seat: LevelOverlays;
+  };
   venueFill: string;
   venueStroke: string;
   sectionStroke: string;

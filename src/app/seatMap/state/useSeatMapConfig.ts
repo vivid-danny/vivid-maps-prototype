@@ -35,6 +35,14 @@ export function useSeatMapConfig(initialConfig: SeatMapConfig) {
       stored.theme = 'branded';
     }
 
+    // Migration: flat overlay fields → nested overlays object
+    if (!stored.overlays || typeof stored.overlays !== 'object') {
+      delete (stored as Record<string, unknown>).mutedOverlay;
+      delete (stored as Record<string, unknown>).selectedOverlay;
+      delete (stored as Record<string, unknown>).zoneHoverOverlay;
+      delete (stored as Record<string, unknown>).selectedOutlineColor;
+    }
+
     // ThemeOverrides migration
     if (!stored.themeOverrides || typeof stored.themeOverrides !== 'object') {
       stored.themeOverrides = stored.seatColors

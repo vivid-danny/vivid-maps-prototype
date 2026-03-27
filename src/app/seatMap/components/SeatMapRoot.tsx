@@ -24,6 +24,7 @@ export function SeatMapRoot() {
   const mapDef = MAP_REGISTRY[0]!;
 
   const mapInstanceRef = useRef<MaplibreMap | null>(null);
+  const isResettingRef = useRef(false);
 
   const venueModel = useMemo(() => mapDef.createModel(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const { seatableIds, sectionCenters } = useVenueManifest(mapDef.assets.manifestUrl);
@@ -57,7 +58,10 @@ export function SeatMapRoot() {
 
   // Only propagate zoom to React state when crossing ROW_ZOOM_MIN — avoids
   // re-rendering SeatMapRoot (and all children) on every scroll/pinch frame.
+  // Suppressed during reset animation to prevent intermediate zoom levels from
+  // briefly flipping displayMode back to rows/seats and flashing extra pins.
   const handleZoomChange = useCallback((zoom: number) => {
+    if (isResettingRef.current) return;
     setCurrentScale(prev => {
       if ((prev >= ROW_ZOOM_MIN) !== (zoom >= ROW_ZOOM_MIN)) return zoom;
       return prev; // same zone — bail out, no re-render
@@ -252,7 +256,7 @@ export function SeatMapRoot() {
             className={`flex items-center justify-center ${!isMobile ? 'flex-1 min-w-0 h-full' : 'shrink-0'}`}
             style={isMobile ? { height: 200 } : undefined}
           >
-            <div className={`relative ${!isMobile ? 'w-full h-full' : ''}`}>
+            <div className="relative w-full h-full">
               <MapLibreVenue
                 seatColors={config.seatColors}
                 model={venueModel}
@@ -267,21 +271,32 @@ export function SeatMapRoot() {
                 onSelect={viewState.handleSelect}
                 onHover={viewState.handleHoverFromMap}
                 isMobile={isMobile}
+                pinDensity={config.pinDensity}
                 venueFill={config.venueFill}
                 venueStroke={config.venueStroke}
                 sectionStroke={config.sectionStroke}
                 mapBackground={config.mapBackground}
                 sectionBase={config.sectionBase}
                 rowStrokeColor={config.rowStrokeColor}
-                mutedOverlay={config.mutedOverlay}
-                selectedOverlay={config.selectedOverlay}
+                rowFillColor={config.rowFillColor}
+                overlays={config.overlays}
                 onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}
               />
               <button
                 onClick={() => {
+                  const map = mapInstanceRef.current;
                   viewState.setSelection(EMPTY_SELECTION);
-                  mapInstanceRef.current?.fitBounds(VENUE_BOUNDS, { padding: 40, duration: 600, essential: true });
+                  // Immediately drop displayMode to sections so pins switch before the animation runs.
+                  setCurrentScale(ROW_ZOOM_MIN - 1);
+                  if (map) {
+                    isResettingRef.current = true;
+                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, duration: 600, essential: true });
+                    map.once('moveend', () => {
+                      isResettingRef.current = false;
+                      setCurrentScale(map.getZoom());
+                    });
+                  }
                 }}
                 className="absolute top-2 left-2 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DisplayMode } from '../model/types';
-import type { SeatMapConfig } from '../config/types';
+import type { SeatMapConfig, LevelOverlays } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
 
@@ -132,8 +132,9 @@ function ColorControl({
 
   return (
     <div className="flex items-center justify-between gap-3" ref={containerRef}>
-      <div className="flex flex-col">
+      <div className="flex flex-col min-w-0">
         <label className="text-xs text-gray-600 capitalize">{label}</label>
+        <span className="text-[10px] text-gray-400 font-mono truncate">{value}</span>
         {prodRef && <span className="text-[10px] text-gray-400 font-mono">{prodRef}</span>}
       </div>
       <div className="relative">
@@ -206,7 +207,6 @@ function SectionHeader({ title, prodSource }: {
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
 const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
-const PIN_DENSITY_STOPS = [0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90] as const;
 
 export function PrototypeControls({
   showControls,
@@ -361,36 +361,6 @@ export function PrototypeControls({
               </div>
           </div>
 
-          {/* Pin Density */}
-          <div className="mb-6">
-            <div className="text-xs font-bold text-black mb-2">Pin</div>
-            <div className="space-y-3">
-            <SliderControl
-              label={`Sections: ${Math.round(config.pinDensity.sections * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.sections as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.sections as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, sections: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            <SliderControl
-              label={`Rows: ${Math.round(config.pinDensity.rows * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.rows as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.rows as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, rows: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            <SliderControl
-              label={`Seats: ${Math.round(config.pinDensity.seats * 100)}%`}
-              value={PIN_DENSITY_STOPS.includes(config.pinDensity.seats as never)
-                ? PIN_DENSITY_STOPS.indexOf(config.pinDensity.seats as never)
-                : PIN_DENSITY_STOPS.length - 1}
-              onChange={(i) => onConfigChange({ pinDensity: { ...config.pinDensity, seats: PIN_DENSITY_STOPS[Math.round(i)] } })}
-              min={0} max={9} step={1}
-            />
-            </div>
-          </div>
         </>
       )}
 
@@ -427,16 +397,9 @@ export function PrototypeControls({
                 prodRef="sectionStrokeColor"
               />
               <ColorControl
-                label="Muted Overlay"
-                value={config.mutedOverlay}
-                onChange={(value) => onConfigChange({ mutedOverlay: value })}
-                prodRef="muted"
-              />
-              <ColorControl
-                label="Selected Overlay"
-                value={config.selectedOverlay}
-                onChange={(value) => onConfigChange({ selectedOverlay: value })}
-                prodRef="selected"
+                label="Row Fill"
+                value={config.rowFillColor}
+                onChange={(value) => onConfigChange({ rowFillColor: value })}
               />
               <ColorControl
                 label="Row Stroke"
@@ -444,6 +407,53 @@ export function PrototypeControls({
                 onChange={(value) => onConfigChange({ rowStrokeColor: value })}
                 prodRef="sectionNoInventoryFill"
               />
+              <ColorControl
+                label="Unavailable Inventory"
+                value={config.seatColors.unavailable}
+                onChange={(value) => handleColorChange('unavailable', value)}
+              />
+            </div>
+          </div>
+
+          {/* Selection Overlays — per-level tuning */}
+          <div className="mb-8">
+            <SectionHeader title="Selection Overlays" />
+            <div className="space-y-3">
+              {(['section', 'row', 'seat'] as const).map((level) => (
+                <div key={level}>
+                  <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{level}</div>
+                  <div className="space-y-2 ml-2">
+                    <ColorControl
+                      label="Muted"
+                      value={config.overlays[level].muted}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], muted: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Selected"
+                      value={config.overlays[level].selected}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selected: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Hover"
+                      value={config.overlays[level].hover}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], hover: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Outline"
+                      value={config.overlays[level].selectedOutline}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selectedOutline: value } },
+                      })}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -481,65 +491,6 @@ export function PrototypeControls({
             </div>
           </div>
 
-          {/* Dynamic Colors — per-section, runtime */}
-          <div className="mb-8">
-            <SectionHeader
-              title="Dynamic Colors"
-              prodSource="API / runtime"
-            />
-            <div className="space-y-3">
-              {(['available', 'unavailable', 'hover'] as const)
-                .filter((k) => !((config.theme === 'zone' || config.theme === 'deal') && k === 'available'))
-                .map((colorKey) => (
-                <ColorControl
-                  key={colorKey}
-                  label={colorKey}
-                  value={config.seatColors[colorKey]}
-                  onChange={(value) => handleColorChange(colorKey, value)}
-                  prodRef={colorKey === 'available' ? 'sectionColorExpression' : undefined}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Labels */}
-          <div className="mb-8">
-            <SectionHeader title="Labels" />
-            <div className="space-y-3">
-              {([
-                { key: 'labelDefault' as const, label: 'Available' },
-                { key: 'labelUnavailable' as const, label: 'Unavailable' },
-                { key: 'labelSelected' as const, label: 'Selected' },
-              ]).map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Pins */}
-          <div className="mb-8">
-            <SectionHeader title="Pins" prodSource="TooltipStack" />
-            <div className="space-y-3">
-              {([
-                { key: 'pinDefault' as const, label: 'Default' },
-                { key: 'pinHovered' as const, label: 'Hovered' },
-                { key: 'pinPressed' as const, label: 'Pressed' },
-                { key: 'pinSelected' as const, label: 'Selected' },
-              ]).map(({ key, label }) => (
-                <ColorControl
-                  key={key}
-                  label={label}
-                  value={config.seatColors[key]}
-                  onChange={(value) => handleColorChange(key, value)}
-                />
-              ))}
-            </div>
-          </div>
         </>
       )}
     </div>
