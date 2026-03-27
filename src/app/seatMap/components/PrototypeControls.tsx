@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DisplayMode } from '../model/types';
-import type { SeatMapConfig } from '../config/types';
+import type { SeatMapConfig, LevelOverlays } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
 
@@ -132,8 +132,9 @@ function ColorControl({
 
   return (
     <div className="flex items-center justify-between gap-3" ref={containerRef}>
-      <div className="flex flex-col">
+      <div className="flex flex-col min-w-0">
         <label className="text-xs text-gray-600 capitalize">{label}</label>
+        <span className="text-[10px] text-gray-400 font-mono truncate">{value}</span>
         {prodRef && <span className="text-[10px] text-gray-400 font-mono">{prodRef}</span>}
       </div>
       <div className="relative">
@@ -407,32 +408,52 @@ export function PrototypeControls({
                 prodRef="sectionNoInventoryFill"
               />
               <ColorControl
-                label="Muted Overlay"
-                value={config.mutedOverlay}
-                onChange={(value) => onConfigChange({ mutedOverlay: value })}
-                prodRef="muted"
-              />
-              <ColorControl
-                label="Hover Overlay"
-                value={config.zoneHoverOverlay}
-                onChange={(value) => onConfigChange({ zoneHoverOverlay: value })}
-              />
-              <ColorControl
-                label="Selected Overlay"
-                value={config.selectedOverlay}
-                onChange={(value) => onConfigChange({ selectedOverlay: value })}
-                prodRef="selected"
-              />
-              <ColorControl
-                label="Selected Outline"
-                value={config.selectedOutlineColor}
-                onChange={(value) => onConfigChange({ selectedOutlineColor: value })}
-              />
-              <ColorControl
                 label="Unavailable Inventory"
                 value={config.seatColors.unavailable}
                 onChange={(value) => handleColorChange('unavailable', value)}
               />
+            </div>
+          </div>
+
+          {/* Selection Overlays — per-level tuning */}
+          <div className="mb-8">
+            <SectionHeader title="Selection Overlays" />
+            <div className="space-y-3">
+              {(['section', 'row', 'seat'] as const).map((level) => (
+                <div key={level}>
+                  <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{level}</div>
+                  <div className="space-y-2 ml-2">
+                    <ColorControl
+                      label="Muted"
+                      value={config.overlays[level].muted}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], muted: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Selected"
+                      value={config.overlays[level].selected}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selected: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Hover"
+                      value={config.overlays[level].hover}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], hover: value } },
+                      })}
+                    />
+                    <ColorControl
+                      label="Outline"
+                      value={config.overlays[level].selectedOutline}
+                      onChange={(value) => onConfigChange({
+                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selectedOutline: value } },
+                      })}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

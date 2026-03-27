@@ -42,6 +42,7 @@ import {
 } from './constants';
 import type { SeatColors } from '../../model/types';
 import type { VenueAssets } from './types';
+import type { LevelOverlays } from '../config/types';
 
 interface StyleOptions {
   seatColors: SeatColors;
@@ -53,16 +54,13 @@ interface StyleOptions {
   sectionBase: string;
   rowStrokeColor: string;
   rowFillColor: string;
-  mutedOverlay: string;
-  selectedOverlay: string;
-  hoverOverlay: string;
-  selectedOutlineColor: string;
+  overlays: { section: LevelOverlays; row: LevelOverlays; seat: LevelOverlays };
 }
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
     seatColors, assets, venueFill, venueStroke, sectionStroke,
-    mapBackground, sectionBase, rowStrokeColor, rowFillColor, mutedOverlay, selectedOverlay, hoverOverlay, selectedOutlineColor,
+    mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays,
   } = options;
 
   // Base fill expression: hovered > unavailable > base color.
@@ -185,7 +183,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': [
             'case',
-            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            ['boolean', ['feature-state', 'hovered'], false], overlays.section.hover,
             'rgba(0,0,0,0)',
           ],
         },
@@ -200,7 +198,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         source: SOURCE_SECTIONS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': mutedOverlay,
+          'fill-color': overlays.section.muted,
         },
       },
 
@@ -227,7 +225,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': [
             'case',
-            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            ['boolean', ['feature-state', 'hovered'], false], overlays.row.hover,
             'rgba(0,0,0,0)',
           ],
         },
@@ -243,8 +241,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'fill-color': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], selectedOverlay,
-            mutedOverlay,
+            ['boolean', ['feature-state', 'selected'], false], overlays.row.selected,
+            overlays.row.muted,
           ],
         },
       },
@@ -258,7 +256,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'line-color': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], selectedOutlineColor,
+            ['boolean', ['feature-state', 'selected'], false], overlays.row.selectedOutline,
             'rgba(0,0,0,0)',
           ],
           'line-width': 1.5,
@@ -266,14 +264,19 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
       },
 
       // 9. Row outline — borders between rows.
-      // Production: line-color is sectionNoInventoryFill (#E3E3E8)
+      // Production: line-color is sectionNoInventoryFill (#E3E3E8).
+      // Hides on selected row so the stroke doesn't darken against the overlay tint.
       {
         id: LAYER_ROW_OUTLINE,
         type: 'line',
         source: SOURCE_ROWS,
         layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': rowStrokeColor,
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(0,0,0,0)',
+            rowStrokeColor,
+          ],
           'line-width': 0.5,
         },
       },
@@ -302,7 +305,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['==', 'id', ''],
         layout: { visibility: 'none' },
         paint: {
-          'line-color': selectedOutlineColor,
+          'line-color': overlays.section.selectedOutline,
           'line-width': 2,
         },
       },
@@ -353,7 +356,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'circle-color': [
             'case',
-            ['boolean', ['feature-state', 'hovered'], false], hoverOverlay,
+            ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
             'rgba(0,0,0,0)',
           ],
           'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128],
@@ -370,13 +373,13 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['all', ['==', ['get', 'sectionId'], ''], ['==', ['get', 'rowId'], '']],
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': selectedOverlay,
+          'circle-color': overlays.seat.selected,
           'circle-radius': [
             'interpolate', ['exponential', 2], ['zoom'],
             14, 2,
             20, 128,
           ],
-          'circle-stroke-color': selectedOutlineColor,
+          'circle-stroke-color': overlays.seat.selectedOutline,
           'circle-stroke-width': [
             'interpolate', ['exponential', 2], ['zoom'],
             14, 0.3,
