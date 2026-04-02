@@ -40,7 +40,7 @@ const VENUE_EVENT_INFO: EventInfo = {
   venueAddress: '333 W Camden St, Baltimore, MD 21201',
 };
 
-// Zone assignment: Camden Yards sections (1-5 lower, 204-244 club, 508-540 upper)
+// Zone assignment: Camden Yards sections mapped to match production zone colors
 function getZoneName(sectionId: string): string {
   const num = parseInt(sectionId, 10);
   if (isNaN(num)) {
@@ -57,9 +57,9 @@ function getZoneName(sectionId: string): string {
   const subTiers = ['primary', 'secondary', 'tertiary'] as const;
   const sub = subTiers[num % 3]!;
 
-  if (num >= 1 && num <= 99) return `tier-1-${sub}`;     // lower bowl
-  if (num >= 200 && num <= 299) return `tier-3-${sub}`;   // club level
-  if (num >= 500 && num <= 599) return `tier-4-${sub}`;   // upper deck
+  if (num >= 1 && num <= 98) return `tier-1-${sub}`;       // lower bowl (pink)
+  if (num >= 200 && num <= 299) return `tier-2-${sub}`;   // club level (green)
+  if (num >= 300 && num <= 400) return `tier-3-${sub}`;   // upper deck (blue)
   return 'alt-far';
 }
 
