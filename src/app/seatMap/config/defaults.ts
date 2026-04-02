@@ -26,7 +26,12 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
   rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
   overlays: {
-    section: { ...SHARED_OVERLAYS },
+    section: {
+      muted: 'rgba(255, 255, 255, 0.65)',
+      selected: 'rgba(4, 9, 44, 0.1)',
+      hover: 'rgba(4, 9, 44, 0.5)',
+      selectedOutline: 'rgba(4, 9, 44, 0.2)',
+    },
     row: { ...SHARED_OVERLAYS, selected: 'rgba(4, 9, 44, 0.15)' },
     seat: { ...SHARED_OVERLAYS },
   },

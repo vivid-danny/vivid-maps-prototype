@@ -270,10 +270,13 @@ export function MapLibreVenue({
     const hasSelection = !!selection.sectionId;
 
     if (hasSelection && displayMode === 'sections') {
-      // Show overlay with match expression: selected → dark, others → muted
-      map.setPaintProperty(LAYER_SECTION_SELECTED_OVERLAY, 'fill-color',
-        ['match', ['get', 'id'], selection.sectionId,
-          effectiveOverlays.section.selected, effectiveOverlays.section.muted]);
+      // Show overlay: selected → dark tint, hovered → transparent (unmute), others → muted
+      map.setPaintProperty(LAYER_SECTION_SELECTED_OVERLAY, 'fill-color', [
+        'case',
+        ['==', ['get', 'id'], selection.sectionId], effectiveOverlays.section.selected,
+        ['boolean', ['feature-state', 'hovered'], false], 'rgba(0,0,0,0)',
+        effectiveOverlays.section.muted,
+      ]);
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'visible');
     } else {
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'none');

@@ -291,8 +291,8 @@ export function SeatMapRoot() {
                   setCurrentScale(ROW_ZOOM_MIN - 1);
                   if (map) {
                     isResettingRef.current = true;
-                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, duration: 600, essential: true });
-                    map.once('moveend', () => {
+                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
+                    map.once('idle', () => {
                       isResettingRef.current = false;
                       setCurrentScale(map.getZoom());
                     });

@@ -23,7 +23,7 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
       container: containerRef.current,
       style,
       bounds,
-      fitBoundsOptions: { padding: fitBoundsPadding },
+      fitBoundsOptions: { padding: fitBoundsPadding, bearing: -57 },
       minZoom,
       maxZoom,
       attributionControl: false,
