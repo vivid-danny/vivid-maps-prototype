@@ -233,8 +233,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 7b. Row selected overlay — selected row gets dark tint, siblings get muted.
-      // Production: match expression on id; prototype uses feature-state.
+      // 7b. Row selected overlay — selected row gets dark tint, parentMuted rows get muted.
+      // Supports both row-level selection and cross-level section-only muting via parentMuted.
       {
         id: LAYER_ROW_SELECTED_OVERLAY,
         type: 'fill',
@@ -244,7 +244,9 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'fill-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], overlays.row.selected,
-            overlays.row.muted,
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'parentMuted'], false], overlays.row.muted,
+            'rgba(4,9,44,0)',
           ],
         },
       },
@@ -293,7 +295,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'visible' },
         paint: {
           'line-color': sectionStroke,
-          'line-width': 0.5,
+          'line-width': 1,
           'line-opacity': 0.3,
         },
       },

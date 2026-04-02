@@ -89,11 +89,21 @@ export function useMapInteractions({
       if (!e.features?.[0]) return;
       const props = e.features[0].properties;
       const state = e.features[0].state;
-      if (state?.unavailable) return;
 
       const sectionId = props?.sectionId as string;
+      if (!sectionId) return;
+
+      // Unavailable row → select the parent section instead (if section has inventory)
+      if (state?.unavailable) {
+        const sectionState = map.getFeatureState({ source: SOURCE_SECTIONS, id: sectionId });
+        if (!sectionState?.unavailable) {
+          onSelectRef.current(buildSectionSelection(sectionId));
+        }
+        return;
+      }
+
       const rowId = props?.rowId as string;
-      if (!sectionId || !rowId) return;
+      if (!rowId) return;
 
       onSelectRef.current(buildRowSelection(sectionId, rowId));
     }

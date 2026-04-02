@@ -43,9 +43,9 @@ export function useFeatureState({
         const section = sections[i];
         const sectionId = section.sectionId;
         const sectionData = model.sectionDataById.get(sectionId);
-        const sectionHasAvailable = sectionData
-          ? sectionData.rows.some(row => row.seats.some(s => s.status === 'available'))
-          : false;
+        // A section is available only if it has listings (not just available seats)
+        const sectionListings = model.listingsBySection.get(sectionId);
+        const sectionHasAvailable = !!sectionListings && sectionListings.length > 0;
 
         map.setFeatureState(
           { source: SOURCE_SECTIONS, id: sectionId },

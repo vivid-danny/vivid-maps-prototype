@@ -135,7 +135,7 @@ export function MapLibreVenue({
   useMapInteractions({ mapRef, ready, onSelect, onHover, isMobile });
 
   // Sync React selection/hover state → MapLibre feature state
-  useMapSelectionSync({ mapRef, ready, selection, hoverState });
+  useMapSelectionSync({ mapRef, ready, selection, hoverState, sectionDataById: model.sectionDataById, displayMode });
 
   // Pin overlays — MapLibre Markers wrapping React <Pin> components
   useMapPins({
@@ -186,8 +186,9 @@ export function MapLibreVenue({
     map.setFilter(LAYER_SECTION_HOVER_OVERLAY, sectionFilter);
     map.setFilter(LAYER_SECTION_SELECTED_OVERLAY, sectionFilter);
 
-    const modelSectionIds = [...model.sectionDataById.keys()];
-    const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', modelSectionIds]] as const;
+    // Only show rows/seats for sections that have listings (inventory)
+    const sectionsWithListings = [...model.listingsBySection.keys()];
+    const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', sectionsWithListings]] as const;
     map.setFilter(LAYER_ROW, rowSeatFilter);
     map.setFilter(LAYER_ROW_HOVER_OVERLAY, rowSeatFilter);
     map.setFilter(LAYER_ROW_OUTLINE, rowSeatFilter);
@@ -240,8 +241,8 @@ export function MapLibreVenue({
     setLayerVisibility(map, LAYER_ROW_HOVER_OVERLAY, (isRows || isSeats) ? 'visible' : 'none');
     setLayerVisibility(map, LAYER_ROW_OUTLINE, (isRows || isSeats) ? 'visible' : 'none');
 
-    // Row-selected-overlay: rows mode only (also depends on selection)
-    if (!isRows) setLayerVisibility(map, LAYER_ROW_SELECTED_OVERLAY, 'none');
+    // Row-selected-overlay: rows + seats (handles both row selection and cross-level parentMuted)
+    setLayerVisibility(map, LAYER_ROW_SELECTED_OVERLAY, (isRows || isSeats) ? 'visible' : 'none');
 
     // Row-selected-outline: rows + seats (paint expression handles transparency when nothing selected)
     setLayerVisibility(map, LAYER_ROW_SELECTED_OUTLINE, (isRows || isSeats) ? 'visible' : 'none');
@@ -263,7 +264,8 @@ export function MapLibreVenue({
   }, [ready, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Section selection overlay — dark tint on selected, white mute on all others.
-  // Production: section-selected-overlay uses match expression on feature id, updated via setPaintProperty.
+  // Only active in sections mode. Cross-level muting in rows/seats mode is handled
+  // by parentMuted feature-state on the row-selected-overlay layer.
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
@@ -274,7 +276,7 @@ export function MapLibreVenue({
       map.setPaintProperty(LAYER_SECTION_SELECTED_OVERLAY, 'fill-color', [
         'case',
         ['==', ['get', 'id'], selection.sectionId], effectiveOverlays.section.selected,
-        ['boolean', ['feature-state', 'hovered'], false], 'rgba(0,0,0,0)',
+        ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
         effectiveOverlays.section.muted,
       ]);
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OVERLAY, 'visible');
@@ -291,15 +293,6 @@ export function MapLibreVenue({
       setLayerVisibility(map, LAYER_SECTION_SELECTED_OUTLINE, 'none');
     }
   }, [ready, displayMode, selection.sectionId, effectiveOverlays]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Row selection overlay — selected row gets dark tint, siblings get white mute.
-  // Shown in both rows and seats modes (in seats mode it darkens the row background behind seat circles).
-  // Production: row-selected-overlay with match expression; prototype uses feature-state.
-  useEffect(() => {
-    if (!ready || !mapRef.current) return;
-    const showMuted = (displayMode === 'rows' || displayMode === 'seats') && !!selection.rowId;
-    setLayerVisibility(mapRef.current, LAYER_ROW_SELECTED_OVERLAY, showMuted ? 'visible' : 'none');
-  }, [ready, displayMode, selection.rowId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seat selection overlay — dark tint + outline ring on directly selected seats only.
   // Only shown when specific seatIds are selected (not for row-level selections).
@@ -367,7 +360,9 @@ export function MapLibreVenue({
     map.setPaintProperty(LAYER_ROW_SELECTED_OVERLAY, 'fill-color', [
       'case',
       ['boolean', ['feature-state', 'selected'], false], effectiveOverlays.row.selected,
-      effectiveOverlays.row.muted,
+      ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+      ['boolean', ['feature-state', 'parentMuted'], false], effectiveOverlays.row.muted,
+      'rgba(4,9,44,0)',
     ]);
 
     // Row selected outline

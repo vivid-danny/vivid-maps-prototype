@@ -96,10 +96,24 @@ function buildSectionInventory(
   rowIds: string[],
   rowSeatCounts: Record<string, number>,
   isSeatSaverSection: boolean,
+  isSoldOut: boolean,
   rng: ReturnType<typeof createSeededRandom>,
 ): RowInventory {
   const unmappedListingIds = new Set<string>();
   let listingCounter = 1;
+
+  // Fully sold-out sections: every seat is unavailable
+  if (isSoldOut) {
+    const rows: RowData[] = rowIds.map((rowId) => {
+      const seatCount = rowSeatCounts[rowId] ?? 0;
+      const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
+        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        status: 'unavailable' as const,
+      }));
+      return { rowId, seats };
+    });
+    return { sectionData: { sectionId, rows }, unmappedListingIds };
+  }
 
   const rows: RowData[] = rowIds.map((rowId, rowIndex) => {
     const seatCount = rowSeatCounts[rowId] ?? 0;
@@ -134,7 +148,7 @@ function buildSectionInventory(
     // Solo row (1% probability): each available seat is its own listing
     if (rng.random() < 0.01) {
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
-        const isUnavailable = rng.random() < 0.7;
+        const isUnavailable = rng.random() < 0.93;
         const seatId = `${sectionId}:${rowId}:s${si + 1}`;
         if (isUnavailable) return { seatId, status: 'unavailable' as const };
         const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
@@ -157,11 +171,11 @@ function buildSectionInventory(
       return { rowId, seats, isZoneRow: true };
     }
 
-    // Normal row: ~70% unavailable, group available seats into listings
+    // Normal row: ~93% unavailable, group available seats into listings
     const available: number[] = [];
     const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
       const seatId = `${sectionId}:${rowId}:s${si + 1}`;
-      if (rng.random() < 0.7) return { seatId, status: 'unavailable' as const };
+      if (rng.random() < 0.93) return { seatId, status: 'unavailable' as const };
       available.push(si);
       return { seatId, status: 'available' as const };
     });
@@ -278,13 +292,32 @@ export function createManifestSeatMapModel(): SeatMapModel {
 
   const seatSaverSections = pickSeatSaverSections(sectionIds, 3);
 
+  // Sections with zero inventory — deterministically pick a few to be completely sold out
+  const soldOutSections = new Set<string>();
+  {
+    const pool = [...sectionIds];
+    let seed = hashString(`${SEED}-soldout`);
+    const count = 10; // number of fully sold-out sections
+    while (soldOutSections.size < count && pool.length > 0) {
+      seed = hashString(`${seed}`);
+      const idx = Math.abs(seed) % pool.length;
+      soldOutSections.add(pool[idx]!);
+      pool.splice(idx, 1);
+    }
+  }
+
   const sections: SectionConfig[] = [];
   const sectionDataById = new Map<string, SectionData>();
   const allListings: Listing[] = [];
   const pinsBySection = new Map<string, PinData[]>();
 
   for (const sectionId of sectionIds) {
-    const rowSeatCounts = seatCounts[sectionId]!;
+    const rawRowSeatCounts = seatCounts[sectionId]!;
+    // Lowercase row IDs to match GeoJSON feature IDs (pipeline outputs lowercase)
+    const rowSeatCounts: Record<string, number> = {};
+    for (const [k, v] of Object.entries(rawRowSeatCounts)) {
+      rowSeatCounts[k.toLowerCase()] = v;
+    }
     // Sort row IDs numerically
     const rowIds = Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
     if (rowIds.length === 0) continue;
@@ -311,6 +344,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
       rowIds,
       rowSeatCounts,
       seatSaverSections.has(sectionId),
+      soldOutSections.has(sectionId),
       rng,
     );
     sectionDataById.set(sectionId, sectionData);

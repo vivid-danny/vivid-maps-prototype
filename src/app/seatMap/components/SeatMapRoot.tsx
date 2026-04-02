@@ -77,10 +77,12 @@ export function SeatMapRoot() {
 
     if (sel.rowId) {
       const center = entry.rows[sel.rowId]?.center ?? entry.center;
-      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN + 1 : SEAT_ZOOM_MIN + 0.5);
+      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN : SEAT_ZOOM_MIN);
       map.easeTo({ center, zoom: targetZoom, duration: 500, essential: true });
     } else {
-      map.easeTo({ center: entry.center, zoom: zoom ?? ROW_ZOOM_MIN + 0.5, duration: 500, essential: true });
+      const baseZoom = ROW_ZOOM_MIN + 2;
+      const targetZoom = zoom ?? Math.max(baseZoom, map.getZoom());
+      map.easeTo({ center: entry.center, zoom: targetZoom, duration: 500, essential: true });
     }
   }, [sectionCenters]);
 
