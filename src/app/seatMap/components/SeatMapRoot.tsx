@@ -69,6 +69,10 @@ export function SeatMapRoot() {
   }, []);
 
   const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
+    // If initial and zoomed display are the same, there's no deeper detail to zoom into —
+    // skip auto-zoom and let the user pan/zoom manually.
+    if (config.initialDisplay === config.zoomedDisplay) return;
+
     const map = mapInstanceRef.current;
     if (!map || !sel.sectionId) return;
 
@@ -84,7 +88,7 @@ export function SeatMapRoot() {
       const targetZoom = zoom ?? Math.max(baseZoom, map.getZoom());
       map.easeTo({ center: entry.center, zoom: targetZoom, duration: 500, essential: true });
     }
-  }, [sectionCenters]);
+  }, [sectionCenters, config.initialDisplay, config.zoomedDisplay]);
 
 
   const layoutMode = useLayoutMode();

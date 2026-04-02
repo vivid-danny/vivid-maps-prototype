@@ -113,13 +113,14 @@ The base zone fill does **not** change on hover. Only the `section-hover-overlay
 
 ### Unavailable (no inventory)
 
-Any section, row, or seat that has no listing data (inventory) is marked as unavailable. Unavailable features:
+Any section, row, or seat that has no listing data (inventory) is marked as unavailable. A section is considered unavailable if it has **zero listings** (not just zero available seats). Unavailable features:
 
 - Rendered with `#EFEFF6` fill (matches section-base), visually appearing as empty/inactive
 - **Cannot be interacted with** — they do not trigger hover, selection, or any other state changes
 - Cursor does not change to `pointer` on mouseover
-- Click events are ignored (checked via `feature-state.unavailable` guard)
+- Click events are ignored (checked via `feature-state.unavailable` guard) at all display modes
 - Filtered out of interactive layers using the `seatableIds` array from the venue manifest
+- **No child detail rendered**: sections with no inventory do not render row outlines, row fills, seat circles, or row labels when zoomed in — only the section outline and section label remain visible
 
 This applies at all zoom levels: unavailable sections in sections mode, unavailable rows in rows mode, and unavailable seats in seats mode.
 
@@ -295,7 +296,7 @@ This "hover-reveal" unmutes the entire section's rows when hovering any row in a
 
 Same visual rules as sections — rows without any available seats are rendered with `#EFEFF6` and do not trigger hover state changes.
 
-**Click behavior differs from sections:** clicking an unavailable row **selects the parent section** rather than being ignored. This triggers cross-level muting — all rows outside the selected section are muted, allowing the user to see which section they've focused on. The same rule will apply to unavailable seats (selecting the parent row).
+**Click behavior differs from sections:** clicking an unavailable row **selects the parent section** rather than being ignored — but only if the parent section itself has inventory. If the parent section is also unavailable, the click is ignored. This triggers cross-level muting — all rows outside the selected section are muted, allowing the user to see which section they've focused on. The same rule will apply to unavailable seats (selecting the parent row).
 
 ## Implementation Details
 
@@ -398,3 +399,24 @@ The same pattern applies at the seat level. When a row is selected in seats mode
 - Set `parentMuted: true` on all seat features not in the selected row
 - The `seat-selected-overlay` paint expression gets the same 4-state priority chain
 - Hover-reveal: hovering a muted row temporarily unmutes its seats
+
+---
+
+# Zoom Behavior
+
+Selection triggers camera navigation to bring the selected feature into view. The zoom target depends on the selection level.
+
+## Zoom Targets
+
+| Selection Type          | Zoom Target                                              |
+|-------------------------|----------------------------------------------------------|
+| Section (from overview) | `ROW_ZOOM_MIN + 2` (16) — zooms into the section        |
+| Section (already zoomed)| `max(ROW_ZOOM_MIN + 2, currentZoom)` — pans without zooming out |
+| Row                     | `SEAT_ZOOM_MIN` (16) — centers on the row                |
+| Listing (from panel)    | `SEAT_ZOOM_MIN` (16) — centers on the row                |
+
+When selecting a section while already zoomed past the base zoom, the camera **pans to the section center without zooming out**. This prevents jarring zoom-out when clicking between sections in rows mode.
+
+## Auto-Zoom Disabled
+
+When the initial display and zoomed-in display are configured to the same value (e.g., both set to "sections"), **all auto-zoom on selection is disabled**. Since there is no deeper level of detail to zoom into, the user controls pan and zoom manually. Selection still works — overlays, muting, and the listings panel all respond — but the camera does not move.
