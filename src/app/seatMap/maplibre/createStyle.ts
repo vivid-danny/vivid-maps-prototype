@@ -16,7 +16,7 @@
  */
 import type { StyleSpecification } from 'maplibre-gl';
 import {
-  RINK_COORDINATES,
+  BACKGROUND_IMAGE_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW,
   LAYER_ROW_HOVER_OVERLAY,
@@ -77,15 +77,17 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
     version: 8,
     glyphs: GLYPHS_URL,
     sources: {
-      'venue-chrome': {
-        type: 'geojson',
-        data: assets.venueChromeUrl,
-      },
-      ...(assets.rinkUrl ? {
-        'venue-rink': {
+      ...(assets.venueChromeUrl ? {
+        'venue-chrome': {
+          type: 'geojson',
+          data: assets.venueChromeUrl,
+        },
+      } : {}),
+      ...(assets.backgroundImageUrl ? {
+        'venue-background': {
           type: 'image',
-          url: assets.rinkUrl,
-          coordinates: RINK_COORDINATES,
+          url: assets.backgroundImageUrl,
+          coordinates: BACKGROUND_IMAGE_COORDINATES,
         },
       } : {}),
       [SOURCE_SECTIONS]: {
@@ -116,32 +118,32 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: { 'background-color': mapBackground },
       },
 
-      // 2. Venue fill — stadium shape polygon (always visible).
+      // 2. Venue fill — stadium shape polygon (optional, needs venue-chrome source).
       // Production: theme.colors.onPrimary (white)
-      {
+      ...(assets.venueChromeUrl ? [{
         id: 'venue',
-        type: 'fill',
+        type: 'fill' as const,
         source: 'venue-chrome',
         paint: { 'fill-color': venueFill },
-      },
+      }] : []),
 
-      // 3. Venue stroke — stadium boundary line (always visible).
+      // 3. Venue stroke — stadium boundary line (optional, needs venue-chrome source).
       // Production: theme.colors.onSurfaceDisabled
-      {
+      ...(assets.venueChromeUrl ? [{
         id: 'venue-stroke',
-        type: 'line',
+        type: 'line' as const,
         source: 'venue-chrome',
         paint: {
           'line-color': venueStroke,
           'line-width': 1,
         },
-      },
+      }] : []),
 
-      // 4. Rink image — playing surface PNG (optional, shown when rinkUrl provided).
-      ...(assets.rinkUrl ? [{
-        id: 'venue-rink',
+      // 4. Background image — venue/playing surface PNG (optional).
+      ...(assets.backgroundImageUrl ? [{
+        id: 'venue-background',
         type: 'raster' as const,
-        source: 'venue-rink',
+        source: 'venue-background',
         paint: { 'raster-opacity': 1 },
       }] : []),
 

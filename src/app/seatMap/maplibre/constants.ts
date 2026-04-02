@@ -51,18 +51,18 @@ export const STYLE_COLORS = {
 
 // Venue coordinate bounds  [[lngMin, latMin], [lngMax, latMax]]
 export const VENUE_BOUNDS: [[number, number], [number, number]] = [
-  [0.0003165, -0.072575],
-  [0.0985706, -0.0010108],
+  [0.0010938, -0.0745349],
+  [0.0986248, -0.0012535],
 ];
 
-export const VENUE_CENTER: [number, number] = [0.049443549999999996, -0.0367929];
+export const VENUE_CENTER: [number, number] = [0.0498593, -0.0378942];
 
-// Rink image corners: TL, TR, BR, BL (derived from rink_cropped frame in Figma background_updated)
-export const RINK_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
-  [0.03222217559814453, -0.02913394134170256],
-  [0.06850147247314453, -0.02913394134170256],
-  [0.06850147247314453, -0.044367681381944],
-  [0.03222217559814453, -0.044367681381944],
+// Background image corners: TL, TR, BR, BL (from manifest images[0].coordinates)
+export const BACKGROUND_IMAGE_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
+  [0, 0],
+  [0.1, 0],
+  [0.1, -0.075509],
+  [0, -0.075509],
 ];
 
 // Glyphs for section labels

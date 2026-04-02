@@ -34,17 +34,16 @@ const DELIVERY_OPTIONS: DeliveryInfo[] = [
 ];
 
 const VENUE_EVENT_INFO: EventInfo = {
-  eventName: 'Chicago Cubs vs. St. Louis Cardinals',
-  eventDate: 'Fri, Jul 4, 2025 at 1:20pm',
-  venueName: 'Wrigley Field',
-  venueAddress: '1060 W Addison St, Chicago, IL 60613',
+  eventName: 'Baltimore Orioles vs. New York Yankees',
+  eventDate: 'Sat, Jul 5, 2025 at 4:05pm',
+  venueName: 'Oriole Park at Camden Yards',
+  venueAddress: '333 W Camden St, Baltimore, MD 21201',
 };
 
-// Zone assignment: all sections are numeric (101-122, 201-234, 301-334)
+// Zone assignment: Camden Yards sections (1-5 lower, 204-244 club, 508-540 upper)
 function getZoneName(sectionId: string): string {
   const num = parseInt(sectionId, 10);
   if (isNaN(num)) {
-    // Keyword heuristic for non-numeric (future venues)
     const lower = sectionId.toLowerCase();
     if (/vip|suite|premium|club/.test(lower)) return 'tier-1-primary';
     if (/field|floor|pit/.test(lower)) return 'tier-2-primary';
@@ -55,23 +54,22 @@ function getZoneName(sectionId: string): string {
     return `tier-${tier}-primary`;
   }
 
-  // Sub-tier within each level: primary/secondary/tertiary derived from section number
   const subTiers = ['primary', 'secondary', 'tertiary'] as const;
   const sub = subTiers[num % 3]!;
 
-  if (num >= 101 && num <= 122) return `tier-1-${sub}`;  // inner bowl → hot pink
-  if (num >= 201 && num <= 234) return `tier-3-${sub}`;  // mid-ring  → teal (uniform)
-  if (num >= 301 && num <= 334) return `tier-4-${sub}`;  // outer ring → blue (uniform)
+  if (num >= 1 && num <= 99) return `tier-1-${sub}`;     // lower bowl
+  if (num >= 200 && num <= 299) return `tier-3-${sub}`;   // club level
+  if (num >= 500 && num <= 599) return `tier-4-${sub}`;   // upper deck
   return 'alt-far';
 }
 
 function getPriceRange(sectionId: string): [number, number] {
   const num = parseInt(sectionId, 10);
   if (!isNaN(num)) {
-    if (num >= 101 && num <= 122) return [8000, 25000]; // $80–$250
-    if (num >= 201 && num <= 234) return [4000, 15000]; // $40–$150
+    if (num >= 1 && num <= 99) return [8000, 25000];     // lower bowl: $80–$250
+    if (num >= 200 && num <= 299) return [4000, 15000];   // club level: $40–$150
   }
-  return [2000, 8000]; // 300-level and other: $20–$80
+  return [2000, 8000]; // upper deck and other: $20–$80
 }
 
 // Deterministically select N section IDs from an array using a seeded hash
@@ -380,8 +378,8 @@ export function createManifestSeatMapModel(): SeatMapModel {
   }
 
   const mapConfig: MapConfig = {
-    id: 'wrigley-field',
-    name: 'Wrigley Field',
+    id: 'camden-yards',
+    name: 'Oriole Park at Camden Yards',
     sections,
     seed: SEED,
   };
