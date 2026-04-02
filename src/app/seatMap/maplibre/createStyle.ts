@@ -127,7 +127,15 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: { 'fill-color': venueFill },
       }] : []),
 
-      // 3. Venue stroke — stadium boundary line (optional, needs venue-chrome source).
+      // 3. Background image — venue/playing surface PNG (optional, fallback for venues without vector field).
+      ...(assets.backgroundImageUrl ? [{
+        id: 'venue-background',
+        type: 'raster' as const,
+        source: 'venue-background',
+        paint: { 'raster-opacity': 1 },
+      }] : []),
+
+      // 4. Venue stroke — stadium boundary line (above background/field).
       // Production: theme.colors.onSurfaceDisabled
       ...(assets.venueChromeUrl ? [{
         id: 'venue-stroke',
@@ -137,14 +145,6 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'line-color': venueStroke,
           'line-width': 1,
         },
-      }] : []),
-
-      // 4. Background image — venue/playing surface PNG (optional).
-      ...(assets.backgroundImageUrl ? [{
-        id: 'venue-background',
-        type: 'raster' as const,
-        source: 'venue-background',
-        paint: { 'raster-opacity': 1 },
       }] : []),
 
       // 5. Section base — neutral fill under all sections (always visible).

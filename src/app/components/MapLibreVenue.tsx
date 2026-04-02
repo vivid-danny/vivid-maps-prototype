@@ -204,8 +204,9 @@ export function MapLibreVenue({
   useEffect(() => {
     if (!ready || !mapRef.current || sectionCenters.size === 0) return;
     const map = mapRef.current;
+    const hiddenLabels = ['1000', '998', '996'];
     const features = Array.from(sectionCenters.entries())
-      .filter(([sectionId]) => { const n = Number(sectionId); return n >= 101 && n <= 334; })
+      .filter(([sectionId]) => seatableIds.includes(sectionId) && !hiddenLabels.includes(sectionId))
       .map(([sectionId, entry]) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: entry.center },
@@ -215,7 +216,7 @@ export function MapLibreVenue({
       type: 'FeatureCollection',
       features,
     });
-  }, [ready, sectionCenters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, sectionCenters, seatableIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toggle layer visibility based on displayMode.
   // Production uses opacity crossfade; prototype uses hard visibility toggles.

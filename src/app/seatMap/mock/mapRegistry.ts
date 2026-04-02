@@ -24,6 +24,7 @@ export const MAP_REGISTRY: MapDefinition[] = [
     createModel: createManifestSeatMapModel,
     assets: {
       manifestUrl: '/manifest.json',
+      venueChromeUrl: '/venue-chrome.geojson',
       backgroundImageUrl: '/background.png',
       sectionsUrl: '/sections.geojson',
       rowsUrl: '/rows.geojson',
