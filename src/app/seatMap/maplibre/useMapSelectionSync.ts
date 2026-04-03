@@ -1,59 +1,54 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
-import { SOURCE_ROWS, SOURCE_SEATS, SOURCE_SEAT_CONNECTORS, SOURCE_SECTIONS, SEAT_MUTED_LAYERS } from './constants';
-import type { SelectionState, HoverState, SectionData, DisplayMode } from '../model/types';
+import {
+  SOURCE_ROWS, SOURCE_SEATS, SOURCE_SEAT_CONNECTORS, SOURCE_SECTIONS,
+  SEAT_MUTED_LAYERS, LAYER_ROW_SELECTED_OVERLAY,
+} from './constants';
+import type { SelectionState, HoverState, DisplayMode } from '../model/types';
+import type { LevelOverlays } from '../config/types';
 
 interface UseMapSelectionSyncOptions {
   mapRef: React.RefObject<MaplibreMap | null>;
   ready: boolean;
   selection: SelectionState;
   hoverState: HoverState;
-  sectionDataById: Map<string, SectionData>;
   displayMode: DisplayMode;
+  overlays: { row: LevelOverlays };
 }
 
 /**
- * Syncs React selection/hover state → MapLibre feature state.
+ * Syncs React selection/hover state → MapLibre feature state + paint expressions.
  *
- * Section selection is handled by overlay layers (section-selected-overlay,
- * section-selected-outline) in MapLibreVenue.tsx, matching the production pattern.
- * Row/seat selection still uses feature-state (drives row-selected-overlay paint).
+ * Cross-level muting is paint-expression-driven: the row-selected-overlay fill-color
+ * expression checks sectionId/rowId properties directly, so updating muting is a
+ * single setPaintProperty call instead of thousands of setFeatureState calls.
  *
- * Cross-level muting via `parentMuted` feature-state:
- * - Section-only selection: mutes all rows outside the selected section.
- * - Row selection: mutes all rows except the selected row.
- * - Hover-reveal: hovering a muted section temporarily unmutes its rows
- *   so the darken overlay shows against the original color.
- *
- * Hover visual updates are exposed via `syncHoverRef` so useMapInteractions can
- * call them synchronously from event handlers (same frame as the mouse event),
- * avoiding the lag of a React state → effect cycle.
+ * Hover visual updates are exposed via `syncHoverFromMap` so useMapInteractions can
+ * call them synchronously from event handlers (same frame as the mouse event).
  */
 export function useMapSelectionSync({
   mapRef,
   ready,
   selection,
   hoverState,
-  sectionDataById,
   displayMode,
+  overlays,
 }: UseMapSelectionSyncOptions) {
   const prevSelectionRef = useRef<SelectionState | null>(null);
-  const parentMutedRowsRef = useRef<Set<string>>(new Set());
-  const hoverRevealedRowsRef = useRef<Set<string>>(new Set());
 
-  // Keep refs to current values so syncHover can read them without stale closures
+  // Refs for syncHover to read current values without stale closures
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
-  const sectionDataByIdRef = useRef(sectionDataById);
-  sectionDataByIdRef.current = sectionDataById;
   const displayModeRef = useRef(displayMode);
   displayModeRef.current = displayMode;
+  const overlaysRef = useRef(overlays);
+  overlaysRef.current = overlays;
 
   // Track previous hover for clearing feature states
   const prevHoverSectionId = useRef<string | null>(null);
   const prevHoverRowGeoId = useRef<string | null>(null);
 
-  // --- Selection sync (rows + seats only; sections use overlay layers) ---
+  // --- Selection sync (rows + seats + connectors) ---
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
@@ -90,56 +85,93 @@ export function useMapSelectionSync({
     prevSelectionRef.current = selection;
   }, [ready, selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // --- Cross-level parentMuted sync ---
-  useEffect(() => {
-    if (!ready || !mapRef.current) return;
-    const map = mapRef.current;
+  // --- Row overlay expression (replaces per-row parentMuted feature state) ---
 
-    // Clear all previous parentMuted states
-    for (const rowId of parentMutedRowsRef.current) {
-      safeSetState(map, SOURCE_ROWS, rowId, { parentMuted: false });
-    }
-    parentMutedRowsRef.current.clear();
-    hoverRevealedRowsRef.current.clear();
+  function buildRowOverlayExpression(
+    sel: SelectionState,
+    dm: DisplayMode,
+    rowOverlays: LevelOverlays,
+    hoveredSectionId: string | null,
+  ): any[] {
+    const rowSelected = (dm === 'seats' && rowOverlays.selectedInSeats)
+      ? rowOverlays.selectedInSeats
+      : rowOverlays.selected;
+    const transparent = 'rgba(4,9,44,0)';
+    const isChildMode = dm === 'rows' || dm === 'seats';
 
-    const isChildMode = displayMode === 'rows' || displayMode === 'seats';
-    const hasSection = !!selection.sectionId;
-    const hasRow = !!selection.rowId;
+    const expr: any[] = ['case'];
+    expr.push(['boolean', ['feature-state', 'selected'], false], rowSelected);
+    expr.push(['boolean', ['feature-state', 'hovered'], false], transparent);
 
-    if (hasSection && isChildMode) {
-      const selectedRowGeoId = hasRow ? `${selection.sectionId}:${selection.rowId}` : null;
+    if (sel.sectionId && isChildMode) {
+      const hoverReveal = hoveredSectionId && hoveredSectionId !== sel.sectionId;
 
-      for (const [sectionId, sectionData] of sectionDataById) {
-        for (const row of sectionData.rows) {
-          const rowGeoId = `${sectionId}:${row.rowId}`;
-
-          // Mute if: different section, OR same section but different row (when row is selected)
-          const shouldMute = sectionId !== selection.sectionId
-            || (selectedRowGeoId !== null && rowGeoId !== selectedRowGeoId);
-
-          if (shouldMute) {
-            safeSetState(map, SOURCE_ROWS, rowGeoId, { parentMuted: true });
-            parentMutedRowsRef.current.add(rowGeoId);
-          }
-        }
+      if (sel.rowId) {
+        // Row selected: mute everything except selected row (and hovered section if hover-revealing)
+        const mutedCondition = hoverReveal
+          ? ['all',
+              ['!=', ['get', 'sectionId'], hoveredSectionId],
+              ['any',
+                ['!=', ['get', 'sectionId'], sel.sectionId],
+                ['!=', ['get', 'rowId'], sel.rowId],
+              ],
+            ]
+          : ['any',
+              ['!=', ['get', 'sectionId'], sel.sectionId],
+              ['!=', ['get', 'rowId'], sel.rowId],
+            ];
+        expr.push(mutedCondition, rowOverlays.muted);
+      } else {
+        // Section selected: mute all rows outside selected section (and hovered section if hover-revealing)
+        const mutedCondition = hoverReveal
+          ? ['all',
+              ['!=', ['get', 'sectionId'], sel.sectionId],
+              ['!=', ['get', 'sectionId'], hoveredSectionId],
+            ]
+          : ['!=', ['get', 'sectionId'], sel.sectionId];
+        expr.push(mutedCondition, rowOverlays.muted);
       }
     }
-  }, [ready, selection.sectionId, selection.rowId, displayMode, sectionDataById]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /**
-   * Synchronous hover visual update — called directly from useMapInteractions
-   * event handlers so all hover visuals (section/row feature state, row parentMuted
-   * reveal, seat/connector muted filter) update in the same frame as the mouse event.
-   */
+    expr.push(transparent);
+    return expr;
+  }
+
+  // Track whether hover-reveal is active to avoid redundant setPaintProperty calls.
+  // When hovering the selected section or no section, the expression is the same (no reveal clause).
+  const hoverRevealActiveRef = useRef(false);
+
+  function applyRowOverlay(map: MaplibreMap, hoveredSectionId: string | null) {
+    const sel = selectionRef.current;
+    const needsReveal = !!hoveredSectionId && hoveredSectionId !== sel.sectionId;
+
+    // Skip the expensive setPaintProperty call if hover-reveal state hasn't changed
+    if (!needsReveal && !hoverRevealActiveRef.current) return;
+
+    hoverRevealActiveRef.current = needsReveal;
+    const expr = buildRowOverlayExpression(
+      sel, displayModeRef.current, overlaysRef.current.row, hoveredSectionId,
+    );
+    map.setPaintProperty(LAYER_ROW_SELECTED_OVERLAY, 'fill-color', expr);
+  }
+
+  // Rebuild when selection/displayMode/overlays change — always apply (bypass hover-reveal cache)
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    hoverRevealActiveRef.current = false; // force rebuild
+    applyRowOverlay(mapRef.current, prevHoverSectionId.current);
+  }, [ready, selection.sectionId, selection.rowId, displayMode, overlays]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Synchronous hover visual update ---
+
   const syncHover = useCallback((nextHover: HoverState) => {
     const map = mapRef.current;
     if (!map) return;
 
     const sel = selectionRef.current;
-    const sectionData = sectionDataByIdRef.current;
     const dm = displayModeRef.current;
 
-    // --- Clear previous hover feature states ---
+    // Clear previous hover feature states
     if (prevHoverSectionId.current) {
       safeSetState(map, SOURCE_SECTIONS, prevHoverSectionId.current, { hovered: false });
     }
@@ -147,7 +179,7 @@ export function useMapSelectionSync({
       safeSetState(map, SOURCE_ROWS, prevHoverRowGeoId.current, { hovered: false });
     }
 
-    // --- Set new hover feature states ---
+    // Set new hover feature states
     if (nextHover.sectionId) {
       safeSetState(map, SOURCE_SECTIONS, nextHover.sectionId, { hovered: true });
     }
@@ -157,43 +189,25 @@ export function useMapSelectionSync({
       safeSetState(map, SOURCE_ROWS, nextRowGeoId, { hovered: true });
     }
 
+    // Rebuild row overlay expression if hovered section changed (hover-reveal)
+    if (prevHoverSectionId.current !== nextHover.sectionId) {
+      applyRowOverlay(map, nextHover.sectionId);
+    }
+
     prevHoverSectionId.current = nextHover.sectionId;
     prevHoverRowGeoId.current = nextRowGeoId;
 
-    // --- Diff-based row parentMuted hover-reveal ---
-    const nextRevealed = new Set<string>();
-    if (nextHover.sectionId && nextHover.sectionId !== sel.sectionId && parentMutedRowsRef.current.size > 0) {
-      const sd = sectionData.get(nextHover.sectionId);
-      if (sd) {
-        for (const row of sd.rows) {
-          const rowGeoId = `${nextHover.sectionId}:${row.rowId}`;
-          if (parentMutedRowsRef.current.has(rowGeoId)) {
-            nextRevealed.add(rowGeoId);
-          }
-        }
-      }
-    }
-
-    // Restore rows leaving the revealed set
-    for (const rowId of hoverRevealedRowsRef.current) {
-      if (!nextRevealed.has(rowId) && parentMutedRowsRef.current.has(rowId)) {
-        safeSetState(map, SOURCE_ROWS, rowId, { parentMuted: true });
-      }
-    }
-    // Unmute rows entering the revealed set
-    for (const rowId of nextRevealed) {
-      if (!hoverRevealedRowsRef.current.has(rowId)) {
-        safeSetState(map, SOURCE_ROWS, rowId, { parentMuted: false });
-      }
-    }
-    hoverRevealedRowsRef.current = nextRevealed;
-
-    // --- Seat/connector muted overlay filter (hover-reveal for seats display mode) ---
+    // Seat/connector muted overlay filter (hover-reveal for seats mode).
+    // Only update when hover-reveal state actually changes to avoid redundant setFilter calls.
     if (dm === 'seats' && sel.sectionId) {
+      const wasRevealingSeats = prevHoverSectionId.current
+        && prevHoverSectionId.current !== sel.sectionId
+        && prevHoverRowGeoId.current;
       const isHoveringMutedRow = nextHover.sectionId
         && nextHover.sectionId !== sel.sectionId
         && nextHover.rowId;
 
+      // Only update filter if the hover-reveal row changed
       if (isHoveringMutedRow) {
         const mutedFilter: any = [
           'all',
@@ -204,28 +218,24 @@ export function useMapSelectionSync({
           ]],
         ];
         for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
-      } else {
+      } else if (wasRevealingSeats) {
+        // Transitioning from hover-reveal to no reveal — reset to simple filter
         const mutedFilter: any = ['!=', ['get', 'sectionId'], sel.sectionId];
         for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
       }
+      // else: no hover-reveal before or now — skip setFilter entirely
     }
   }, [mapRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync hover when hoverState changes from React (e.g. panel hover, deselection clear).
-  // Map-driven hovers call syncHover directly and skip this path.
+  // Fallback: sync hover from React state changes (panel hover, deselection clear)
   const lastSyncedHoverRef = useRef<HoverState | null>(null);
   useEffect(() => {
     if (!ready) return;
-    // Skip if this hover was already applied synchronously by useMapInteractions
     if (lastSyncedHoverRef.current === hoverState) return;
     syncHover(hoverState);
     lastSyncedHoverRef.current = hoverState;
   }, [ready, hoverState, syncHover]);
 
-  /**
-   * Wrapper that marks the hover as already synced (to prevent the effect from
-   * double-applying it) and runs the synchronous visual update.
-   */
   const syncHoverFromMap = useCallback((hover: HoverState) => {
     lastSyncedHoverRef.current = hover;
     syncHover(hover);
@@ -234,7 +244,6 @@ export function useMapSelectionSync({
   return { syncHoverFromMap };
 }
 
-/** Safely call setFeatureState — silently ignores features that don't exist in the source. */
 function safeSetState(
   map: MaplibreMap,
   source: string,
@@ -244,6 +253,6 @@ function safeSetState(
   try {
     map.setFeatureState({ source, id }, state);
   } catch {
-    // Feature may not exist in source (e.g. section ID in model but not in GeoJSON)
+    // Feature may not exist in source
   }
 }

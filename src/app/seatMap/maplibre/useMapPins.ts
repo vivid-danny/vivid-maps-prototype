@@ -277,6 +277,13 @@ export function useMapPins({
     }
   }, [ready, basePins]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Index basePins by listingId for O(1) lookup in the hover effect.
+  const basePinsById = useMemo(() => {
+    const m = new Map<string, PinRenderData>();
+    for (const pin of basePins) m.set(pin.listingId, pin);
+    return m;
+  }, [basePins]);
+
   // Hover effect: applies isHovered imperatively on existing markers (re-renders 1-2 pins
   // max per transition) and manages the on-the-fly hover pin for rows with no static pin.
   useEffect(() => {
@@ -286,7 +293,7 @@ export function useMapPins({
     // Update isHovered on existing static markers
     for (const [id, entry] of current) {
       if (id === HOVER_PIN_ID) continue;
-      const pin = basePins.find((p) => p.listingId === id);
+      const pin = basePinsById.get(id);
       if (!pin) continue;
       const isHovered =
         displayMode === 'sections'
@@ -380,7 +387,7 @@ export function useMapPins({
       setTimeout(() => root.unmount(), 0);
       current.delete(HOVER_PIN_ID);
     }
-  }, [hoverState, ready, basePins, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Remove all markers on unmount
   useEffect(() => {

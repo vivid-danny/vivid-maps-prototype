@@ -167,6 +167,16 @@ export function useMapInteractions({
       // Skip if already hovering this section in sections mode
       if (lastSectionId === sectionId && lastRowId === null) return;
 
+      cancelPendingLeave();
+      // Clear stale seat-level hover states (e.g. mouse moved from seat to section)
+      if (hoveredSeatIds.length > 0) {
+        for (const id of hoveredSeatIds) {
+          map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
+        }
+        setConnectorState(hoveredConnectorId, { hovered: false });
+        hoveredSeatIds = [];
+        hoveredConnectorId = null;
+      }
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = null;
@@ -188,6 +198,16 @@ export function useMapInteractions({
       // Skip if already hovering this row
       if (lastSectionId === sectionId && lastRowId === rowId) return;
 
+      cancelPendingLeave();
+      // Clear stale seat-level hover states (e.g. mouse moved from seat to row)
+      if (hoveredSeatIds.length > 0) {
+        for (const id of hoveredSeatIds) {
+          map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
+        }
+        setConnectorState(hoveredConnectorId, { hovered: false });
+        hoveredSeatIds = [];
+        hoveredConnectorId = null;
+      }
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = rowId;

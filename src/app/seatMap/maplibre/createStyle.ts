@@ -104,15 +104,22 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         data: assets.sectionsUrl,
         promoteId: 'id',
       },
+      // Rows and seats start empty — loaded on demand when displayMode leaves 'sections'.
+      // This avoids parsing 8.5MB of GeoJSON at init while the user is still at section zoom.
       [SOURCE_ROWS]: {
         type: 'geojson',
-        data: assets.rowsUrl,
+        data: { type: 'FeatureCollection' as const, features: [] },
         promoteId: 'id',
+        buffer: 48,      // reduced from default 128; moderate overlap for polygon edges
+        tolerance: 0.5,  // slight simplification for row polygons
       },
       [SOURCE_SEATS]: {
         type: 'geojson',
-        data: assets.seatsUrl,
+        data: { type: 'FeatureCollection' as const, features: [] },
         promoteId: 'id',
+        buffer: 32,      // points need minimal boundary overlap
+        tolerance: 0,    // no simplification for Point geometry
+        maxzoom: 20,     // generate proper tiles at deep zooms instead of overscaling from z14
       },
       [SOURCE_SEAT_CONNECTORS]: {
         type: 'geojson',
@@ -247,21 +254,15 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 7b. Row selected overlay — selected row gets dark tint, parentMuted rows get muted.
-      // Supports both row-level selection and cross-level section-only muting via parentMuted.
+      // 7b. Row selected overlay — selected, hovered, and cross-level muting.
+      // Paint expression is managed at runtime by useMapSelectionSync via setPaintProperty.
       {
         id: LAYER_ROW_SELECTED_OVERLAY,
         type: 'fill',
         source: SOURCE_ROWS,
         layout: { visibility: 'none' },
         paint: {
-          'fill-color': [
-            'case',
-            ['boolean', ['feature-state', 'selected'], false], overlays.row.selected,
-            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
-            ['boolean', ['feature-state', 'parentMuted'], false], overlays.row.muted,
-            'rgba(4,9,44,0)',
-          ],
+          'fill-color': 'rgba(4,9,44,0)',
         },
       },
 
