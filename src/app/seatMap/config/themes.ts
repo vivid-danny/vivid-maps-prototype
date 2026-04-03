@@ -18,16 +18,12 @@ export function getDealColor(dealScore: number): string {
   return DEAL_SCORE_COLORS.green;
 }
 
-// Zone palette: one color per tier. Production uses primary/secondary/tertiary
-// for positional nuance (center vs edges) but for the prototype we consolidate
-// to primary only — the shade variations don't aid map readability.
+// Zone palette: one color per tier matching Camden Yards zone map.
 export const ZONE_TIER_COLORS: Record<string, string> = {
-  'tier-1': '#E03488',  // inner bowl (hot pink)
-  'tier-2': '#D9C154',  // (unused at this venue)
-  'tier-3': '#34BFC0',  // middle ring (teal)
-  'tier-4': '#5B9DD6',  // outer ring (steel blue)
-  'tier-5': '#7082E5',  // (unused at this venue)
-  'alt':    '#B99872',  // outfield / edge sections
+  'tier-1': '#D45196',  // lower bowl 1-98 (pink)
+  'tier-2': '#30C096',  // club level 200-299 (green)
+  'tier-3': '#4C85D0',  // upper deck 300-400 (blue)
+  'alt':    '#B99872',  // fallback
 };
 
 // Deterministic fallback hue for unmapped zone names

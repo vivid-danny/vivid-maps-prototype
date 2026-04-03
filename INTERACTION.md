@@ -1,0 +1,637 @@
+# Map Visual States — Zone Theme
+
+Specification for section and row-level visual states in the zone color theme. All overlays are composited on top of the base fill color using dedicated MapLibre fill/line layers.
+
+A key architectural pattern is **cross-level muting**: when a selection exists at one level, features at child levels outside that selection are also muted. This is implemented via a `parentMuted` feature-state rather than relying on parent overlay layers (which render below child layers in the z-stack).
+
+---
+
+# Sections
+
+## Layer Stack (bottom to top)
+
+| Order | Layer ID                    | Type | Driven by        | Visibility               |
+|-------|-----------------------------|------|------------------|--------------------------|
+| 1     | `section-base`              | fill | static           | Always visible           |
+| 2     | `section`                   | fill | feature-state    | Sections mode only (opacity 0 in rows/seats) |
+| 3     | `section-hover-overlay`     | fill | feature-state    | Sections mode only       |
+| 4     | `section-selected-overlay`  | fill | paint expression  | Sections mode, when selection active |
+| 5     | `section-outline`           | line | static           | Always visible           |
+| 6     | `section-selected-outline`  | line | filter           | When section selected    |
+| 7     | `section-label`             | symbol | static         | Always visible           |
+
+## Base Layers
+
+### section-base
+
+Neutral fill under all sections. Shows through when a section has no zone color or no inventory.
+
+| Property   | Value     |
+|------------|-----------|
+| Fill color | `#EFEFF6` |
+| Opacity    | `1`       |
+
+### section (zone fill)
+
+Per-section zone color derived from the zone assignment. Does **not** change on hover in zone theme — only the overlay layer handles hover darkening.
+
+| Zone     | Color     |
+|----------|-----------|
+| Tier 1   | `#D45196` |
+| Tier 2   | `#30C096` |
+| Tier 3   | `#4C85D0` |
+| Alt      | `#B99872` |
+
+Unavailable sections use `#EFEFF6` (matches section-base).
+
+### section-outline
+
+Border between all sections. Always visible; opacity varies by display mode.
+
+| Property | Value                                                  |
+|----------|--------------------------------------------------------|
+| Color    | `#d3d3dc`                                              |
+| Width    | `1px`                                                  |
+| Opacity  | `0.3` in sections mode, `1.0` in rows/seats mode      |
+
+### section-label
+
+Section ID text rendered above all other layers.
+
+| Property | Value                                                  |
+|----------|--------------------------------------------------------|
+| Color    | `#04092C`                                              |
+| Font     | GTWalsh Bold                                           |
+| Size     | Interpolated: `12px` at zoom 13, `28px` at zoom 18    |
+| Opacity  | `1.0` in sections mode, `0.3` in rows/seats mode      |
+
+## Overlay Values
+
+| Name             | Color                        | Purpose                              |
+|------------------|------------------------------|--------------------------------------|
+| Hover            | `rgba(4, 9, 44, 0.5)`       | Darken tint on hovered section       |
+| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected sections  |
+| Selected         | `rgba(4, 9, 44, 0.1)`       | Dark tint on the selected section    |
+| Selected Outline | `rgba(4, 9, 44, 0.75)`      | 2px border around selected section   |
+
+## Interaction States
+
+### Default (no hover, no selection)
+
+All sections display their zone color at full opacity. No overlays active. Section outlines visible at `0.3` opacity.
+
+### Hover (no selection)
+
+| Section          | Visual                                                        |
+|------------------|---------------------------------------------------------------|
+| Hovered          | Zone color + hover overlay (`rgba(4, 9, 44, 0.5)`)           |
+| All others       | Zone color, unchanged                                         |
+
+The base zone fill does **not** change on hover. Only the `section-hover-overlay` layer composites a darken tint. Cursor changes to `pointer`.
+
+### Selected (no hover)
+
+| Section          | Visual                                                        |
+|------------------|---------------------------------------------------------------|
+| Selected         | Zone color + selected overlay (`rgba(4, 9, 44, 0.1)`) + selected outline (2px, `rgba(4, 9, 44, 0.75)`) |
+| All others       | Zone color + muted overlay (`rgba(255, 255, 255, 0.65)`)     |
+
+### Selected + Hovering a non-selected section
+
+| Section          | Visual                                                        |
+|------------------|---------------------------------------------------------------|
+| Selected         | Unchanged (selected tint + outline)                           |
+| Hovered          | Muted overlay **removed** (transparent) + hover darken applied (`rgba(4, 9, 44, 0.5)`). Appears as original zone color darkened. |
+| All others       | Remain muted (`rgba(255, 255, 255, 0.65)`)                   |
+
+### Selected + Hovering the selected section
+
+| Section          | Visual                                                        |
+|------------------|---------------------------------------------------------------|
+| Selected         | Selected tint + hover darken both composite on zone color     |
+| All others       | Remain muted                                                  |
+
+### Unavailable (no inventory)
+
+Any section, row, or seat that has no listing data (inventory) is marked as unavailable. A section is considered unavailable if it has **zero listings** (not just zero available seats). Unavailable features:
+
+- Rendered with `#EFEFF6` fill (matches section-base), visually appearing as empty/inactive
+- **Cannot be interacted with** — they do not trigger hover, selection, or any other state changes
+- Cursor does not change to `pointer` on mouseover
+- Click events are ignored (checked via `feature-state.unavailable` guard) at all display modes
+- Filtered out of interactive layers using the `seatableIds` array from the venue manifest
+- **No child detail rendered**: sections with no inventory do not render row outlines, row fills, seat circles, or row labels when zoomed in — only the section outline and section label remain visible
+
+This applies at all zoom levels: unavailable sections in sections mode, unavailable rows in rows mode, and unavailable seats in seats mode.
+
+## Implementation Details
+
+### section-hover-overlay
+
+Feature-state driven fill layer. Visibility toggled by display mode (visible in sections mode, hidden in rows/seats).
+
+```js
+'fill-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4, 9, 44, 0.5)',
+  'rgba(4, 9, 44, 0)'  // transparent when not hovered
+]
+```
+
+### section-selected-overlay
+
+Active only in sections mode. Hidden by default. When a section is selected, visibility is set to `visible` and the paint expression is updated via `setPaintProperty`:
+
+```js
+'fill-color': [
+  'case',
+  ['==', ['get', 'id'], <selectedSectionId>], 'rgba(4, 9, 44, 0.1)',    // selected tint
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4, 9, 44, 0)',  // unmute on hover
+  'rgba(255, 255, 255, 0.65)'                                             // muted
+]
+```
+
+The `hovered` feature-state check removes the white wash on hover so the darken overlay composites against the original zone color.
+
+In rows/seats mode, section-level muting is NOT handled by this layer (it renders below row layers). Instead, cross-level muting is handled by `parentMuted` feature-state on the `row-selected-overlay` — see the Cross-Level Muting section below.
+
+### section-selected-outline
+
+Filter-driven visibility. When a section is selected, the filter is updated to match that section's ID. Visible across all zoom levels.
+
+```js
+filter: ['==', ['get', 'id'], <selectedSectionId>]
+line-color: 'rgba(4, 9, 44, 0.75)'
+line-width: 2
+```
+
+### Unavailable feature-state
+
+Unavailable status is set via feature-state on the base fill layer. Interaction handlers check this state and bail out early.
+
+```js
+// section fill expression
+'fill-color': [
+  'case',
+  ['boolean', ['feature-state', 'unavailable'], false], '#EFEFF6',
+  <zone color>
+]
+```
+
+```js
+// interaction handler guard (applied to click and hover handlers)
+if (state?.unavailable) return;
+```
+
+---
+
+# Rows
+
+Rows become visible when the user zooms into a section (rows + seats display modes). Each row inherits its parent section's zone color in rows mode, or switches to a white fill in seats mode.
+
+## Layer Stack (bottom to top)
+
+| Order | Layer ID                  | Type | Driven by       | Visibility              |
+|-------|---------------------------|------|-----------------|-------------------------|
+| 1     | `row`                     | fill | paint expression | Rows + seats modes     |
+| 2     | `row-hover-overlay`       | fill | feature-state    | Rows + seats modes     |
+| 3     | `row-selected-overlay`    | fill | feature-state    | Rows + seats modes (always visible, paint controls effect) |
+| 4     | `row-selected-outline`    | line | feature-state    | Rows + seats modes     |
+| 5     | `row-outline`             | line | feature-state    | Rows + seats modes     |
+| 6     | `row-label`               | symbol | static         | Rows + seats modes     |
+
+## Base Layers
+
+### row (fill)
+
+Row fill color changes by display mode:
+
+| Display Mode | Fill Color                                             |
+|--------------|--------------------------------------------------------|
+| Rows         | Inherits parent section's zone color                   |
+| Seats        | `#FFFFFF` (white, so seat circles stand out)           |
+
+Unavailable rows use `#EFEFF6` (same as section-base).
+
+### row-outline
+
+Thin border between rows within a section. Hidden on a selected row so the stroke doesn't darken against the overlay tint.
+
+| Property | Value                                                        |
+|----------|--------------------------------------------------------------|
+| Color    | `#E3E3E8` (transparent on selected row)                      |
+| Width    | `0.5px`                                                      |
+| Cap/Join | Round                                                        |
+
+### row-label
+
+Row ID text, visible in rows and seats modes.
+
+| Property | Value                                                  |
+|----------|--------------------------------------------------------|
+| Color    | `#04092C`                                              |
+| Font     | GTWalsh Bold                                           |
+| Size     | Interpolated: `4px` at zoom 14, `16px` at zoom 18     |
+
+## Overlay Values
+
+| Name             | Color                        | Purpose                            |
+|------------------|------------------------------|------------------------------------|
+| Hover            | `rgba(4, 9, 44, 0.5)`       | Darken tint on hovered row         |
+| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected rows    |
+| Selected         | `rgba(4, 9, 44, 0.1)`       | Dark tint on the selected row      |
+| Selected Outline | `rgba(4, 9, 44, 0.2)`       | 1.5px border around selected row   |
+
+### Seats-Mode Overrides
+
+When `displayMode === 'seats'`, the hover and selected overlay values are replaced with softer versions so the row tint doesn't obscure seat circles:
+
+| Name             | Color                         |
+|------------------|-------------------------------|
+| Hover (seats)    | `rgba(4, 9, 44, 0.025)`      |
+| Selected (seats) | `rgba(4, 9, 44, 0.05)`       |
+
+Muted and Selected Outline are unchanged between modes.
+
+## Interaction States
+
+### Default (no hover, no selection)
+
+All rows display their fill color (zone color in rows mode, white in seats mode). No overlays active. Row outlines visible between rows.
+
+### Hover (no selection)
+
+| Row              | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Hovered          | Fill color + hover overlay (`rgba(4, 9, 44, 0.5)`)         |
+| All others       | Fill color, unchanged                                       |
+
+The base row fill does **not** change on hover. Only the `row-hover-overlay` layer composites a darken tint. Cursor changes to `pointer`.
+
+### Selected (no hover)
+
+| Row              | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Selected         | Fill color + selected overlay (`rgba(4, 9, 44, 0.1)`) + selected outline (1.5px, `rgba(4, 9, 44, 0.2)`). Row outline hidden. |
+| Same section     | Fill color + muted overlay (`rgba(255, 255, 255, 0.65)`)   |
+| Other sections   | Fill color + muted overlay (`rgba(255, 255, 255, 0.65)`)   |
+
+All non-selected rows across the entire venue are muted, not just siblings in the same section.
+
+### Selected + Hovering a non-selected row (same section)
+
+| Row              | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Selected         | Unchanged (selected tint + outline)                         |
+| Hovered          | Muted overlay **removed** (transparent) + hover darken applied (`rgba(4, 9, 44, 0.5)`). Appears as original fill color darkened. |
+| All others       | Remain muted (`rgba(255, 255, 255, 0.65)`)                 |
+
+### Selected + Hovering a row in a different section
+
+| Row              | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Selected         | Unchanged (selected tint + outline)                         |
+| Hovered section  | All rows in the hovered section **unmute** temporarily. The hovered row gets the darken overlay. |
+| All others       | Remain muted                                                |
+
+This "hover-reveal" unmutes the entire section's rows when hovering any row in a non-selected section, so the user can see the zone colors and gauge available inventory.
+
+### Selected + Hovering the selected row
+
+| Row              | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Selected         | Selected tint + hover darken both composite on fill color   |
+| All others       | Remain muted                                                |
+
+### Unavailable (no inventory)
+
+Same visual rules as sections — rows without any available seats are rendered with `#EFEFF6` and do not trigger hover state changes.
+
+**Click behavior differs from sections:** clicking an unavailable row **selects the parent section** rather than being ignored — but only if the parent section itself has inventory. If the parent section is also unavailable, the click is ignored. This triggers cross-level muting — all rows outside the selected section are muted, allowing the user to see which section they've focused on. The same rule will apply to unavailable seats (selecting the parent row).
+
+## Implementation Details
+
+### row-hover-overlay
+
+Feature-state driven fill layer. Hidden by default; visible in rows + seats modes.
+
+```js
+'fill-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4, 9, 44, 0.5)',
+  'rgba(4, 9, 44, 0)'  // transparent when not hovered
+]
+```
+
+### row-selected-overlay
+
+Always visible in rows + seats modes. Uses a 4-state priority chain via feature-state:
+
+```js
+'fill-color': [
+  'case',
+  ['boolean', ['feature-state', 'selected'], false], 'rgba(4, 9, 44, 0.1)',     // selected tint
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4, 9, 44, 0)',         // unmute on hover
+  ['boolean', ['feature-state', 'parentMuted'], false], 'rgba(255, 255, 255, 0.65)', // muted
+  'rgba(4, 9, 44, 0)'                                                            // no effect
+]
+```
+
+The transparent fallback (`rgba(4, 9, 44, 0)`) means the layer has no visual effect when no feature-state is set, making it safe to leave always-visible.
+
+### row-selected-outline
+
+Feature-state driven. Only renders on the selected row; transparent elsewhere.
+
+```js
+'line-color': [
+  'case',
+  ['boolean', ['feature-state', 'selected'], false], 'rgba(4, 9, 44, 0.2)',
+  'rgba(4, 9, 44, 0)'
+]
+line-width: 1.5
+line-cap: round
+line-join: round
+```
+
+### row-outline
+
+Visible on all rows except the selected row (hidden to avoid darkening against the overlay tint).
+
+```js
+'line-color': [
+  'case',
+  ['boolean', ['feature-state', 'selected'], false], 'rgba(4, 9, 44, 0)',
+  '#E3E3E8'
+]
+line-width: 0.5
+line-cap: round
+line-join: round
+```
+
+---
+
+# Seats
+
+Seat circles become visible when zoomed past `ROW_ZOOM_MIN`. Each seat belongs to a listing; a listing may span multiple adjacent seats in the same row.
+
+## Layer Stack (bottom to top)
+
+| Order | Layer ID                        | Type   | Driven by              | Visibility                          |
+|-------|---------------------------------|--------|------------------------|-------------------------------------|
+| 1     | `seat-connector`                | line   | feature-state          | Seats mode only                     |
+| 2     | `seat-connector-muted-overlay`  | line   | filter                 | Seats mode, when selection active   |
+| 3     | `seat`                          | circle | paint expression       | Seats mode only                     |
+| 4     | `seat-hover-overlay`            | circle | feature-state          | Seats mode only                     |
+| 5     | `seat-muted-overlay`            | circle | filter + feature-state | Seats mode, when selection active   |
+| 6     | `seat-selected-overlay`         | circle | filter                 | Seats mode, when seatIds selected   |
+
+Connectors render **below** seat circles so the line passes behind them, not through.
+
+## Base Layers
+
+### seat (circle)
+
+Per-seat zone color derived from the section's zone assignment. Same paint expression as the section fill (uses `['get', 'sectionId']` match).
+
+| Display Mode | Fill Color                        |
+|--------------|-----------------------------------|
+| Seats        | Section's zone/deal color         |
+
+Unavailable seats use `#EFEFF6` (matches section-base).
+
+### seat-connector (line)
+
+LineString features connecting consecutive seats within each listing. One feature per listing, built at runtime from seat coordinates once the seats source loads.
+
+| Property  | Value                                                                 |
+|-----------|-----------------------------------------------------------------------|
+| Color     | Section's zone/deal color (zone/deal themes), `seatColors.connector` (branded) |
+| Width     | Zoom-interpolated: `1px` at zoom 14 → `88px` at zoom 20 (exponential) |
+| Cap/Join  | Round                                                                 |
+
+The connector source uses `promoteId: 'listingId'` so feature-state operations key on listing ID.
+
+In zone/deal themes, the connector color stays at the section color across all states — the overlay layers on the seat circles handle the visual treatment, and the connector just maintains the correct hue.
+
+In branded theme, the connector has distinct state colors:
+
+| State     | Color                       |
+|-----------|-----------------------------|
+| Default   | `seatColors.connector`      |
+| Hovered   | `seatColors.connectorHover` |
+| Selected  | `seatColors.connectorSelected` |
+| Unavailable | transparent (hidden)      |
+
+## Hover
+
+Hovering any seat in a listing puts **all seats in that listing** and the listing's **connector** into the hovered state simultaneously. The lookup is done via a `seatId → Listing` map so the full `listing.seatIds` array is known at hover time.
+
+Hovering the connector line directly produces the same effect — the `listingId` from the connector feature properties is used to look up the listing, and all its seats + the connector receive the hovered feature-state.
+
+| Element                  | Visual                                                     |
+|--------------------------|-------------------------------------------------------------|
+| All seats in listing     | Hover overlay applied to every seat circle                  |
+| Listing connector        | Hovered feature-state set (color change in branded theme)   |
+| All other seats          | Unchanged                                                   |
+
+Cursor changes to `pointer` on both seat and connector hover.
+
+### Deferred mouseleave (flicker prevention)
+
+When the mouse moves between a seat circle and its connector line (or vice versa), MapLibre fires `mouseleave` on the departing layer before `mousemove` on the arriving layer. Without mitigation, this causes a one-frame flicker where all hover state is cleared and then immediately re-established.
+
+The fix: `mouseleave` on the seat and connector layers is **deferred to the next animation frame** via `requestAnimationFrame`. If a `mousemove` fires on either layer within the same frame, it calls `cancelAnimationFrame` to cancel the pending clear. The hover state stays continuous as the mouse traverses seat → connector → seat within a listing.
+
+This only applies to the seat and connector layers. Section and row `mouseleave` handlers fire immediately as before.
+
+### Unavailable seats
+
+Hovering an unavailable seat circle triggers **no state change** anywhere. Crucially, it also does not clear the hover state of the row beneath — the deferred `mouseleave` handler for the seat layer is a no-op when no available seat was being tracked (`hoveredSeatIds` is empty). The row's own `mousemove`/`mouseleave` maintains its own hover state independently.
+
+## Selection
+
+Clicking any seat in a listing selects the **full listing** — all `seatIds` from that listing are written into `selection.seatIds`. The `listingId` and `rowId` are resolved in `handleSelect` by matching the clicked seat ID against `model.listings`. The seat selected overlay (`seat-selected-overlay`) is filter-driven: its filter is set to `['in', ['get', 'id'], ['literal', seatIds]]`, so all seats in the listing receive the overlay automatically.
+
+Clicking a connector line also selects the listing — the `listingId` is read from the connector feature properties, and the corresponding listing's seats are selected.
+
+## Muting
+
+When a seat is selected, all seats and connectors outside the selected seat's section are muted. Unlike row-level muting (which uses `parentMuted` feature-state), seat and connector muting is **filter-driven** — the overlay filter is set to `['!=', ['get', 'sectionId'], selection.sectionId]`, covering all features in non-selected sections in a single operation.
+
+Both `seat-muted-overlay` (circle) and `seat-connector-muted-overlay` (line) use the same filter and are toggled together via the `SEAT_MUTED_LAYERS` constant.
+
+### Hover-reveal
+
+When hovering a seat in a muted (non-selected) section, the muting is removed for:
+
+1. **The entire hovered row** — the filter on both seat and connector muted overlays is updated to also exclude the hovered row: `['!', ['all', ['==', sectionId, hoveredSection], ['==', rowId, hoveredRow]]]`
+2. **Individually hovered seats** — the `seat-muted-overlay` paint expression checks `['feature-state', 'hovered']` and paints transparent instead of the muted color, handling multi-seat listing hover across rows
+
+The row polygon underneath is also unmuted by the existing `parentMuted` hover-reveal in `useMapSelectionSync`, so rows, seats, and connectors all reveal together.
+
+## Overlay Values
+
+| Name             | Color                        | Purpose                              |
+|------------------|------------------------------|--------------------------------------|
+| Hover            | `rgba(4, 9, 44, 0.5)`       | Darken tint on hovered seats         |
+| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected seats + connectors |
+| Selected         | `rgba(4, 9, 44, 0.25)`      | Dark tint on selected seats          |
+| Selected Outline | `rgba(4, 9, 44, 0.75)`      | Outline ring around selected seats   |
+
+## Implementation Details
+
+### seat-connector source
+
+Dynamic GeoJSON source populated at runtime by `useListingConnectors`. Waits for the seats source to finish loading, then queries all seat features to build a coordinate map. One LineString per listing with 2+ seats. Uses `promoteId: 'listingId'` so feature-state operations target the correct feature.
+
+```js
+// Source definition
+{
+  type: 'geojson',
+  data: { type: 'FeatureCollection', features: [] },  // empty until populated
+  promoteId: 'listingId',
+}
+
+// Feature properties
+{
+  listingId: string,
+  sectionId: string,
+  rowId: string,
+}
+```
+
+### seat-connector-muted-overlay
+
+Line layer mirroring the connector geometry. Filter-driven — same filter as `seat-muted-overlay`. Applies the muted white wash color at the same width as the base connector.
+
+```js
+'line-color': overlays.seat.muted
+'line-width': CONNECTOR_WIDTH_EXPR  // same as seat-connector
+```
+
+### seat-hover-overlay
+
+Feature-state driven circle layer. Shows overlay color on hovered seats, transparent elsewhere.
+
+```js
+'circle-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
+  'rgba(0,0,0,0)',
+]
+'circle-radius': SEAT_RADIUS_EXPR  // matches seat layer
+```
+
+### seat-muted-overlay
+
+Filter-driven circle layer (not feature-state). Filter updated imperatively when selection changes. Paint expression adds hover-reveal transparency:
+
+```js
+'circle-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',  // hover-reveal
+  overlays.seat.muted,
+]
+```
+
+### seat-selected-overlay
+
+Filter-driven circle layer. Filter set to match selected seat IDs. Includes both a fill tint and a stroke ring:
+
+```js
+filter: ['in', ['get', 'id'], ['literal', seatIds]]
+'circle-color': overlays.seat.selected
+'circle-stroke-color': overlays.seat.selectedOutline
+'circle-stroke-width': ['interpolate', ['exponential', 2], ['zoom'], 14, 0.3, 20, 16]
+```
+
+### Shared zoom-interpolated sizes
+
+Seat circles and connector lines scale at the same exponential rate so they stay proportional:
+
+```js
+SEAT_RADIUS_EXPR:    ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128]
+CONNECTOR_WIDTH_EXPR: ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88]
+```
+
+---
+
+# Cross-Level Muting
+
+When a selection exists at one zoom level, child features at deeper levels outside that selection must also appear muted. This cannot be handled by parent overlay layers because MapLibre renders child layers (rows) above parent overlays (section-selected-overlay) in the z-stack.
+
+## Mechanism: `parentMuted` feature-state
+
+Instead of relying on parent overlays, the system sets a `parentMuted` feature-state directly on child features. The child's own overlay layer (which renders at the correct z-level) reads this state and applies the muted color.
+
+### When `parentMuted` is set on rows
+
+| Selection State                  | Muted Rows                                       |
+|----------------------------------|--------------------------------------------------|
+| Section selected (no row)        | All rows outside the selected section             |
+| Row selected                     | All rows except the selected row (entire venue)   |
+| No selection                     | None                                              |
+
+### Hover-reveal
+
+When hovering a non-selected section that has muted rows, `parentMuted` is temporarily cleared on all rows in that section. This lets the user preview the section's zone colors before clicking. On hover-leave, `parentMuted` is restored.
+
+For same-section row hover (hovering a sibling row within the selected section), the paint expression handles unmuting directly — `hovered` has higher priority than `parentMuted` in the expression, so no feature-state manipulation is needed.
+
+### Priority chain
+
+The `row-selected-overlay` paint expression evaluates feature-states in this order:
+
+1. `selected` → selected tint (highest priority)
+2. `hovered` → transparent (unmute)
+3. `parentMuted` → muted white wash
+4. fallback → transparent (no effect)
+
+This ensures that a row can be simultaneously `parentMuted` and `hovered`, and the hover wins.
+
+### Seat-level muting (seats + connectors)
+
+Seat and connector muting uses a **different mechanism** than rows. Instead of per-feature `parentMuted` state, dedicated muted overlay layers (`seat-muted-overlay` circle, `seat-connector-muted-overlay` line) use a **filter** to cover all features outside the selected section. This avoids iterating every seat/connector feature to set state.
+
+- **Filter**: `['!=', ['get', 'sectionId'], selection.sectionId]` — one filter covers the entire venue
+- **Hover-reveal**: the filter is dynamically updated to also exclude the hovered row, and the seat paint expression makes individually hovered seats transparent
+- **Visibility**: hidden when no selection is active or when not in seats mode
+- **Grouped**: both layers are toggled together via the `SEAT_MUTED_LAYERS` constant
+
+See the [Seats → Muting](#muting) section for full details.
+
+---
+
+# Zoom Behavior
+
+Selection triggers camera navigation to bring the selected feature into view. The zoom target depends on the selection level.
+
+## Zoom Targets
+
+| Selection Type          | Zoom Target                                              |
+|-------------------------|----------------------------------------------------------|
+| Section (from overview) | `ROW_ZOOM_MIN + 2` (16) — zooms into the section        |
+| Section (already zoomed)| `max(ROW_ZOOM_MIN + 2, currentZoom)` — pans without zooming out |
+| Row                     | `SEAT_ZOOM_MIN` (16) — centers on the row                |
+| Listing (from panel)    | `SEAT_ZOOM_MIN` (16) — centers on the row                |
+
+When selecting a section while already zoomed past the base zoom, the camera **pans to the section center without zooming out**. This prevents jarring zoom-out when clicking between sections in rows mode.
+
+## Auto-Zoom Disabled
+
+When the initial display and zoomed-in display are configured to the same value (e.g., both set to "sections"), **all auto-zoom on selection is disabled**. Since there is no deeper level of detail to zoom into, the user controls pan and zoom manually. Selection still works — overlays, muting, and the listings panel all respond — but the camera does not move.
+
+---
+
+# Deselection
+
+## Tap Outside
+
+Clicking or tapping any part of the map that does not hit a section, row, or seat polygon clears the active selection. This includes the venue background, the playing field, and gaps between sections when zoomed in. The camera does **not** move.
+
+## Implementation Details
+
+A generic `map.on('click')` handler (no layer filter) fires on every map click. It calls `map.queryRenderedFeatures(e.point, { layers: [section, row, seat, seat-connector] })` — if any features are hit, the layer-specific handler already owns that click and the background handler bails out. If no features are hit, `EMPTY_SELECTION` and `EMPTY_HOVER` are dispatched.
+
+This applies at all display modes and on both desktop and mobile.

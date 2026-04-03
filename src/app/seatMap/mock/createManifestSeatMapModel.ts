@@ -34,17 +34,16 @@ const DELIVERY_OPTIONS: DeliveryInfo[] = [
 ];
 
 const VENUE_EVENT_INFO: EventInfo = {
-  eventName: 'Chicago Cubs vs. St. Louis Cardinals',
-  eventDate: 'Fri, Jul 4, 2025 at 1:20pm',
-  venueName: 'Wrigley Field',
-  venueAddress: '1060 W Addison St, Chicago, IL 60613',
+  eventName: 'Baltimore Orioles vs. New York Yankees',
+  eventDate: 'Sat, Jul 5, 2025 at 4:05pm',
+  venueName: 'Oriole Park at Camden Yards',
+  venueAddress: '333 W Camden St, Baltimore, MD 21201',
 };
 
-// Zone assignment: all sections are numeric (101-122, 201-234, 301-334)
+// Zone assignment: Camden Yards sections mapped to match production zone colors
 function getZoneName(sectionId: string): string {
   const num = parseInt(sectionId, 10);
   if (isNaN(num)) {
-    // Keyword heuristic for non-numeric (future venues)
     const lower = sectionId.toLowerCase();
     if (/vip|suite|premium|club/.test(lower)) return 'tier-1-primary';
     if (/field|floor|pit/.test(lower)) return 'tier-2-primary';
@@ -55,23 +54,22 @@ function getZoneName(sectionId: string): string {
     return `tier-${tier}-primary`;
   }
 
-  // Sub-tier within each level: primary/secondary/tertiary derived from section number
   const subTiers = ['primary', 'secondary', 'tertiary'] as const;
   const sub = subTiers[num % 3]!;
 
-  if (num >= 101 && num <= 122) return `tier-1-${sub}`;  // inner bowl → hot pink
-  if (num >= 201 && num <= 234) return `tier-3-${sub}`;  // mid-ring  → teal (uniform)
-  if (num >= 301 && num <= 334) return `tier-4-${sub}`;  // outer ring → blue (uniform)
+  if (num >= 1 && num <= 98) return `tier-1-${sub}`;       // lower bowl (pink)
+  if (num >= 200 && num <= 299) return `tier-2-${sub}`;   // club level (green)
+  if (num >= 300 && num <= 400) return `tier-3-${sub}`;   // upper deck (blue)
   return 'alt-far';
 }
 
 function getPriceRange(sectionId: string): [number, number] {
   const num = parseInt(sectionId, 10);
   if (!isNaN(num)) {
-    if (num >= 101 && num <= 122) return [8000, 25000]; // $80–$250
-    if (num >= 201 && num <= 234) return [4000, 15000]; // $40–$150
+    if (num >= 1 && num <= 99) return [8000, 25000];     // lower bowl: $80–$250
+    if (num >= 200 && num <= 299) return [4000, 15000];   // club level: $40–$150
   }
-  return [2000, 8000]; // 300-level and other: $20–$80
+  return [2000, 8000]; // upper deck and other: $20–$80
 }
 
 // Deterministically select N section IDs from an array using a seeded hash
@@ -98,10 +96,24 @@ function buildSectionInventory(
   rowIds: string[],
   rowSeatCounts: Record<string, number>,
   isSeatSaverSection: boolean,
+  isSoldOut: boolean,
   rng: ReturnType<typeof createSeededRandom>,
 ): RowInventory {
   const unmappedListingIds = new Set<string>();
   let listingCounter = 1;
+
+  // Fully sold-out sections: every seat is unavailable
+  if (isSoldOut) {
+    const rows: RowData[] = rowIds.map((rowId) => {
+      const seatCount = rowSeatCounts[rowId] ?? 0;
+      const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
+        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        status: 'unavailable' as const,
+      }));
+      return { rowId, seats };
+    });
+    return { sectionData: { sectionId, rows }, unmappedListingIds };
+  }
 
   const rows: RowData[] = rowIds.map((rowId, rowIndex) => {
     const seatCount = rowSeatCounts[rowId] ?? 0;
@@ -136,7 +148,7 @@ function buildSectionInventory(
     // Solo row (1% probability): each available seat is its own listing
     if (rng.random() < 0.01) {
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
-        const isUnavailable = rng.random() < 0.7;
+        const isUnavailable = rng.random() < 0.93;
         const seatId = `${sectionId}:${rowId}:s${si + 1}`;
         if (isUnavailable) return { seatId, status: 'unavailable' as const };
         const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
@@ -159,11 +171,11 @@ function buildSectionInventory(
       return { rowId, seats, isZoneRow: true };
     }
 
-    // Normal row: ~70% unavailable, group available seats into listings
+    // Normal row: ~93% unavailable, group available seats into listings
     const available: number[] = [];
     const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
       const seatId = `${sectionId}:${rowId}:s${si + 1}`;
-      if (rng.random() < 0.7) return { seatId, status: 'unavailable' as const };
+      if (rng.random() < 0.93) return { seatId, status: 'unavailable' as const };
       available.push(si);
       return { seatId, status: 'available' as const };
     });
@@ -280,13 +292,29 @@ export function createManifestSeatMapModel(): SeatMapModel {
 
   const seatSaverSections = pickSeatSaverSections(sectionIds, 3);
 
+  // Sections with zero inventory — deterministically pick a few to be completely sold out
+  const soldOutSections = new Set<string>();
+  {
+    const pool = [...sectionIds];
+    let seed = hashString(`${SEED}-soldout`);
+    const count = 10; // number of fully sold-out sections
+    while (soldOutSections.size < count && pool.length > 0) {
+      seed = hashString(`${seed}`);
+      const idx = Math.abs(seed) % pool.length;
+      soldOutSections.add(pool[idx]!);
+      pool.splice(idx, 1);
+    }
+  }
+
   const sections: SectionConfig[] = [];
   const sectionDataById = new Map<string, SectionData>();
   const allListings: Listing[] = [];
   const pinsBySection = new Map<string, PinData[]>();
 
   for (const sectionId of sectionIds) {
-    const rowSeatCounts = seatCounts[sectionId]!;
+    const rawRowSeatCounts = seatCounts[sectionId]!;
+    // Preserve original row ID casing to match GeoJSON feature IDs
+    const rowSeatCounts = rawRowSeatCounts;
     // Sort row IDs numerically
     const rowIds = Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
     if (rowIds.length === 0) continue;
@@ -313,6 +341,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
       rowIds,
       rowSeatCounts,
       seatSaverSections.has(sectionId),
+      soldOutSections.has(sectionId),
       rng,
     );
     sectionDataById.set(sectionId, sectionData);
@@ -380,8 +409,8 @@ export function createManifestSeatMapModel(): SeatMapModel {
   }
 
   const mapConfig: MapConfig = {
-    id: 'wrigley-field',
-    name: 'Wrigley Field',
+    id: 'camden-yards',
+    name: 'Oriole Park at Camden Yards',
     sections,
     seed: SEED,
   };

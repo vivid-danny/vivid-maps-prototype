@@ -2,10 +2,10 @@ import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig, LevelOverlays } from './types';
 
 const SHARED_OVERLAYS: LevelOverlays = {
-  muted: 'rgba(255, 255, 255, 0.5)',       // production: STYLE_COLORS.muted
-  selected: 'rgba(4, 9, 44, 0.4)',         // production: STYLE_COLORS.selected
-  hover: 'rgba(0, 0, 0, 0.12)',
-  selectedOutline: 'rgba(0, 0, 0, 0.8)',
+  muted: 'rgba(255, 255, 255, 0.65)',
+  selected: 'rgba(4, 9, 44, 0.50)',
+  hover: 'rgba(4, 9, 44, 0.25)',
+  selectedOutline: 'rgba(4, 9, 44, 0)',
 };
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
@@ -26,8 +26,20 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
   rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
   overlays: {
-    section: { ...SHARED_OVERLAYS },
-    row: { ...SHARED_OVERLAYS, selected: 'rgba(4, 9, 44, 0.15)' },
+    section: {
+      muted: 'rgba(255, 255, 255, 0.65)',
+      selected: 'rgba(4, 9, 44, 0.1)',
+      hover: 'rgba(4, 9, 44, 0.5)',
+      selectedOutline: 'rgba(4, 9, 44, 0.75)',
+    },
+    row: {
+      muted: 'rgba(255, 255, 255, 0.65)',
+      selected: 'rgba(4, 9, 44, 0.1)',
+      hover: 'rgba(4, 9, 44, 0.5)',
+      selectedOutline: 'rgba(4, 9, 44, 0.2)',
+      hoverInSeats: 'rgba(4, 9, 44, 0.025)',
+      selectedInSeats: 'rgba(4, 9, 44, 0.05)',
+    },
     seat: { ...SHARED_OVERLAYS },
   },
   venueFill: '#FFFFFF',         // production: onPrimary

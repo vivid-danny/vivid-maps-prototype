@@ -23,8 +23,27 @@ export const LAYER_ROW_LABEL = 'row-label';
 
 // Layer IDs — seats (prototype-only; production stops at rows)
 export const LAYER_SEAT = 'seat';
+export const LAYER_SEAT_CONNECTOR = 'seat-connector';
+export const LAYER_SEAT_CONNECTOR_MUTED_OVERLAY = 'seat-connector-muted-overlay';
 export const LAYER_SEAT_HOVER_OVERLAY = 'seat-hover-overlay';
+export const LAYER_SEAT_MUTED_OVERLAY = 'seat-muted-overlay';
 export const LAYER_SEAT_SELECTED_OVERLAY = 'seat-selected-overlay';
+
+// Source IDs — seat connectors
+export const SOURCE_SEAT_CONNECTORS = 'seat-connectors';
+
+// Grouped layer arrays — used in MapLibreVenue for batch filter/visibility operations.
+
+/** Seat-level layers whose visibility toggles together in seats displayMode */
+export const SEAT_VISIBILITY_LAYERS = [LAYER_SEAT, LAYER_SEAT_CONNECTOR, LAYER_SEAT_HOVER_OVERLAY] as const;
+
+/** Seat + connector layers that receive the inventory filter (sectionId-based) */
+export const SEAT_FILTERED_LAYERS = [
+  LAYER_SEAT, LAYER_SEAT_CONNECTOR, LAYER_SEAT_CONNECTOR_MUTED_OVERLAY, LAYER_SEAT_HOVER_OVERLAY,
+] as const;
+
+/** Seat + connector muted overlay layers (filter + visibility toggled together) */
+export const SEAT_MUTED_LAYERS = [LAYER_SEAT_MUTED_OVERLAY, LAYER_SEAT_CONNECTOR_MUTED_OVERLAY] as const;
 
 // Zoom thresholds calibrated for synthetic lat/lng (~0,0) coordinates.
 // Prototype zoom ≈ production zoom + 8 (production uses 6-12 range).
@@ -51,18 +70,18 @@ export const STYLE_COLORS = {
 
 // Venue coordinate bounds  [[lngMin, latMin], [lngMax, latMax]]
 export const VENUE_BOUNDS: [[number, number], [number, number]] = [
-  [0.0003165, -0.072575],
-  [0.0985706, -0.0010108],
+  [0.0010938, -0.0745349],
+  [0.0986248, -0.0012535],
 ];
 
-export const VENUE_CENTER: [number, number] = [0.049443549999999996, -0.0367929];
+export const VENUE_CENTER: [number, number] = [0.0498593, -0.0378942];
 
-// Rink image corners: TL, TR, BR, BL (derived from rink_cropped frame in Figma background_updated)
-export const RINK_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
-  [0.03222217559814453, -0.02913394134170256],
-  [0.06850147247314453, -0.02913394134170256],
-  [0.06850147247314453, -0.044367681381944],
-  [0.03222217559814453, -0.044367681381944],
+// Background image corners: TL, TR, BR, BL (from manifest images[0].coordinates)
+export const BACKGROUND_IMAGE_COORDINATES: [[number, number], [number, number], [number, number], [number, number]] = [
+  [0, 0],
+  [0.1, 0],
+  [0.1, -0.075509],
+  [0, -0.075509],
 ];
 
 // Glyphs for section labels

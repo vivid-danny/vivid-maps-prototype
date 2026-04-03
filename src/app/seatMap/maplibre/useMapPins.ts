@@ -299,42 +299,74 @@ export function useMapPins({
       }
     }
 
-    // On-the-fly hover pin: show cheapest listing for a hovered row that has no static pin
-    if (
-      (displayMode === 'rows' || displayMode === 'seats') &&
-      hoverState.sectionId !== null &&
-      hoverState.rowId !== null
-    ) {
+    // On-the-fly hover pin: show cheapest listing for a hovered section/row that has no static pin
+    if (hoverState.sectionId !== null && mapRef.current) {
       const sectionData = sectionCenters.get(hoverState.sectionId);
-      const alreadyHasPin = basePins.some(
-        (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
-      );
 
-      if (!alreadyHasPin && sectionData && mapRef.current) {
-        const rowListings = (model.listingsBySection.get(hoverState.sectionId) ?? []).filter(
-          (l) => l.rowId === hoverState.rowId,
-        );
-        if (rowListings.length > 0) {
-          const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
-          const lngLat = sectionData.rows[hoverState.rowId]?.center ?? sectionData.center;
-          const existing = current.get(HOVER_PIN_ID);
-          if (existing) {
-            existing.marker.setLngLat(lngLat);
-            renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
-            existing.isHovered = true;
-          } else {
-            const sectionId = hoverState.sectionId;
-            const { wrapper, inner } = createMarkerEl((e) => {
-              e.stopPropagation();
-              onSelectRef.current(buildSectionSelection(sectionId));
-            });
-            const root = createRoot(inner);
-            renderPin(root, cheapest, true, false, seatColorsRef.current);
-            const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current);
-            marker.getElement().style.zIndex = markerZIndex(true, false);
-            current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
+      if (displayMode === 'sections') {
+        const alreadyHasPin = basePins.some((p) => p.sectionId === hoverState.sectionId);
+
+        if (!alreadyHasPin && sectionData) {
+          const sectionListings = model.listingsBySection.get(hoverState.sectionId) ?? [];
+          if (sectionListings.length > 0) {
+            const cheapest = sectionListings.reduce((a, b) => (a.price < b.price ? a : b));
+            const lngLat: [number, number] = [sectionData.center[0], sectionData.center[1]];
+            const existing = current.get(HOVER_PIN_ID);
+            if (existing) {
+              existing.marker.setLngLat(lngLat);
+              renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
+              existing.isHovered = true;
+            } else {
+              const sectionId = hoverState.sectionId;
+              const { wrapper, inner } = createMarkerEl((e) => {
+                e.stopPropagation();
+                onSelectRef.current(buildSectionSelection(sectionId));
+              });
+              const root = createRoot(inner);
+              renderPin(root, cheapest, true, false, seatColorsRef.current);
+              const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
+              marker.getElement().style.zIndex = markerZIndex(true, false);
+              current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
+            }
+            return;
           }
-          return; // on-the-fly pin placed — done
+        }
+      }
+
+      if (
+        (displayMode === 'rows' || displayMode === 'seats') &&
+        hoverState.rowId !== null
+      ) {
+        const alreadyHasPin = basePins.some(
+          (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
+        );
+
+        if (!alreadyHasPin && sectionData) {
+          const rowListings = (model.listingsBySection.get(hoverState.sectionId) ?? []).filter(
+            (l) => l.rowId === hoverState.rowId,
+          );
+          if (rowListings.length > 0) {
+            const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
+            const lngLat = sectionData.rows[hoverState.rowId]?.center ?? sectionData.center;
+            const existing = current.get(HOVER_PIN_ID);
+            if (existing) {
+              existing.marker.setLngLat(lngLat);
+              renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
+              existing.isHovered = true;
+            } else {
+              const sectionId = hoverState.sectionId;
+              const { wrapper, inner } = createMarkerEl((e) => {
+                e.stopPropagation();
+                onSelectRef.current(buildSectionSelection(sectionId));
+              });
+              const root = createRoot(inner);
+              renderPin(root, cheapest, true, false, seatColorsRef.current);
+              const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
+              marker.getElement().style.zIndex = markerZIndex(true, false);
+              current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
+            }
+            return;
+          }
         }
       }
     }

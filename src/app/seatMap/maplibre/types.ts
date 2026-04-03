@@ -5,8 +5,9 @@ export interface VenueMetadata {
 
 export interface VenueAssets {
   manifestUrl: string;
-  venueChromeUrl: string;
-  rinkUrl?: string;
+  venueChromeUrl?: string;
+  backgroundImageUrl?: string;
+  fieldUrl?: string;
   sectionsUrl: string;
   rowsUrl: string;
   seatsUrl: string;

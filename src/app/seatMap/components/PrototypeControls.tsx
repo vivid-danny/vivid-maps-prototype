@@ -455,6 +455,26 @@ export function PrototypeControls({
                 </div>
               ))}
             </div>
+            {/* Row overlays when seats are visible — softer values to avoid obscuring seat circles */}
+            <div className="mt-3">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
+              <div className="space-y-2 ml-2">
+                <ColorControl
+                  label="Row Hover Override"
+                  value={config.overlays.row.hoverInSeats ?? config.overlays.row.hover}
+                  onChange={(value) => onConfigChange({
+                    overlays: { ...config.overlays, row: { ...config.overlays.row, hoverInSeats: value } },
+                  })}
+                />
+                <ColorControl
+                  label="Row Selected Override"
+                  value={config.overlays.row.selectedInSeats ?? config.overlays.row.selected}
+                  onChange={(value) => onConfigChange({
+                    overlays: { ...config.overlays, row: { ...config.overlays.row, selectedInSeats: value } },
+                  })}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Theme Tokens — production design system */}

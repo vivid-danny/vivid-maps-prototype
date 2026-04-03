@@ -69,6 +69,10 @@ export function SeatMapRoot() {
   }, []);
 
   const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
+    // If initial and zoomed display are the same, there's no deeper detail to zoom into —
+    // skip auto-zoom and let the user pan/zoom manually.
+    if (config.initialDisplay === config.zoomedDisplay) return;
+
     const map = mapInstanceRef.current;
     if (!map || !sel.sectionId) return;
 
@@ -77,12 +81,14 @@ export function SeatMapRoot() {
 
     if (sel.rowId) {
       const center = entry.rows[sel.rowId]?.center ?? entry.center;
-      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN + 1 : SEAT_ZOOM_MIN + 0.5);
+      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN : SEAT_ZOOM_MIN);
       map.easeTo({ center, zoom: targetZoom, duration: 500, essential: true });
     } else {
-      map.easeTo({ center: entry.center, zoom: zoom ?? ROW_ZOOM_MIN + 0.5, duration: 500, essential: true });
+      const baseZoom = ROW_ZOOM_MIN + 2;
+      const targetZoom = zoom ?? Math.max(baseZoom, map.getZoom());
+      map.easeTo({ center: entry.center, zoom: targetZoom, duration: 500, essential: true });
     }
-  }, [sectionCenters]);
+  }, [sectionCenters, config.initialDisplay, config.zoomedDisplay]);
 
 
   const layoutMode = useLayoutMode();
@@ -291,8 +297,8 @@ export function SeatMapRoot() {
                   setCurrentScale(ROW_ZOOM_MIN - 1);
                   if (map) {
                     isResettingRef.current = true;
-                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, duration: 600, essential: true });
-                    map.once('moveend', () => {
+                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
+                    map.once('idle', () => {
                       isResettingRef.current = false;
                       setCurrentScale(map.getZoom());
                     });

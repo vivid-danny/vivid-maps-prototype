@@ -25,7 +25,7 @@ export const MAP_REGISTRY: MapDefinition[] = [
     assets: {
       manifestUrl: '/manifest.json',
       venueChromeUrl: '/venue-chrome.geojson',
-      rinkUrl: '/rink.png',
+      backgroundImageUrl: '/background.png',
       sectionsUrl: '/sections.geojson',
       rowsUrl: '/rows.geojson',
       seatsUrl: '/seats.geojson',

@@ -46,7 +46,10 @@ export function getToggledSelection(previous: SelectionState, next: SelectionSta
   } else if (isClickingRow) {
     shouldDeselect = previous.rowId === next.rowId;
   } else if (isClickingSection) {
-    shouldDeselect = previous.sectionId === next.sectionId;
+    // Only deselect if previous was also a section-level selection on the same section.
+    // If previous had a row/seat selected, clicking the section is a level change (e.g.
+    // clicking an unavailable row to select the parent section), not a toggle.
+    shouldDeselect = previous.sectionId === next.sectionId && !previous.rowId && previous.seatIds.length === 0;
   }
 
   return shouldDeselect ? EMPTY_SELECTION : next;

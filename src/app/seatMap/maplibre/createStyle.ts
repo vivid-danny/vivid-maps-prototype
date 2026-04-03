@@ -14,9 +14,9 @@
  * - Hard visibility toggling (not opacity crossfade)
  * - Three color themes (branded/zone/deal) for design exploration
  */
-import type { StyleSpecification } from 'maplibre-gl';
+import type { StyleSpecification, ExpressionSpecification } from 'maplibre-gl';
 import {
-  RINK_COORDINATES,
+  BACKGROUND_IMAGE_COORDINATES,
   GLYPHS_URL,
   LAYER_ROW,
   LAYER_ROW_HOVER_OVERLAY,
@@ -25,7 +25,10 @@ import {
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_CONNECTOR,
+  LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
   LAYER_SEAT_HOVER_OVERLAY,
+  LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
@@ -36,11 +39,12 @@ import {
   LAYER_SECTION_SELECTED_OVERLAY,
   SOURCE_ROWS,
   SOURCE_SEATS,
+  SOURCE_SEAT_CONNECTORS,
   SOURCE_SECTION_LABELS,
   SOURCE_SECTIONS,
   STYLE_COLORS,
 } from './constants';
-import type { SeatColors } from '../../model/types';
+import type { SeatColors } from '../model/types';
 import type { VenueAssets } from './types';
 import type { LevelOverlays } from '../config/types';
 
@@ -63,29 +67,36 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
     mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays,
   } = options;
 
+  // Shared zoom-interpolated size expressions — seat radius and connector width scale at the
+  // same exponential rate so they stay proportional across zoom levels.
+  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128];
+  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88];
+
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,
   // row-selected-overlay) matching the production pattern.
-  const sectionFillColor = [
+  const sectionFillColor: ExpressionSpecification = [
     'case',
     ['boolean', ['feature-state', 'hovered'], false], seatColors.hover,
     ['boolean', ['feature-state', 'unavailable'], false], seatColors.unavailable,
     seatColors.available,
-  ] as const;
+  ];
 
   return {
     version: 8,
     glyphs: GLYPHS_URL,
     sources: {
-      'venue-chrome': {
-        type: 'geojson',
-        data: assets.venueChromeUrl,
-      },
-      ...(assets.rinkUrl ? {
-        'venue-rink': {
+      ...(assets.venueChromeUrl ? {
+        'venue-chrome': {
+          type: 'geojson',
+          data: assets.venueChromeUrl,
+        },
+      } : {}),
+      ...(assets.backgroundImageUrl ? {
+        'venue-background': {
           type: 'image',
-          url: assets.rinkUrl,
-          coordinates: RINK_COORDINATES,
+          url: assets.backgroundImageUrl,
+          coordinates: BACKGROUND_IMAGE_COORDINATES,
         },
       } : {}),
       [SOURCE_SECTIONS]: {
@@ -103,6 +114,11 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         data: assets.seatsUrl,
         promoteId: 'id',
       },
+      [SOURCE_SEAT_CONNECTORS]: {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        promoteId: 'listingId',
+      },
       [SOURCE_SECTION_LABELS]: {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -116,33 +132,33 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: { 'background-color': mapBackground },
       },
 
-      // 2. Venue fill — stadium shape polygon (always visible).
+      // 2. Venue fill — stadium shape polygon (optional, needs venue-chrome source).
       // Production: theme.colors.onPrimary (white)
-      {
+      ...(assets.venueChromeUrl ? [{
         id: 'venue',
-        type: 'fill',
+        type: 'fill' as const,
         source: 'venue-chrome',
         paint: { 'fill-color': venueFill },
-      },
+      }] : []),
 
-      // 3. Venue stroke — stadium boundary line (always visible).
+      // 3. Background image — venue/playing surface PNG (optional, fallback for venues without vector field).
+      ...(assets.backgroundImageUrl ? [{
+        id: 'venue-background',
+        type: 'raster' as const,
+        source: 'venue-background',
+        paint: { 'raster-opacity': 1 },
+      }] : []),
+
+      // 4. Venue stroke — stadium boundary line (above background/field).
       // Production: theme.colors.onSurfaceDisabled
-      {
+      ...(assets.venueChromeUrl ? [{
         id: 'venue-stroke',
-        type: 'line',
+        type: 'line' as const,
         source: 'venue-chrome',
         paint: {
           'line-color': venueStroke,
           'line-width': 1,
         },
-      },
-
-      // 4. Rink image — playing surface PNG (optional, shown when rinkUrl provided).
-      ...(assets.rinkUrl ? [{
-        id: 'venue-rink',
-        type: 'raster' as const,
-        source: 'venue-rink',
-        paint: { 'raster-opacity': 1 },
       }] : []),
 
       // 5. Section base — neutral fill under all sections (always visible).
@@ -231,8 +247,8 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 7b. Row selected overlay — selected row gets dark tint, siblings get muted.
-      // Production: match expression on id; prototype uses feature-state.
+      // 7b. Row selected overlay — selected row gets dark tint, parentMuted rows get muted.
+      // Supports both row-level selection and cross-level section-only muting via parentMuted.
       {
         id: LAYER_ROW_SELECTED_OVERLAY,
         type: 'fill',
@@ -242,7 +258,9 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'fill-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], overlays.row.selected,
-            overlays.row.muted,
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'parentMuted'], false], overlays.row.muted,
+            'rgba(4,9,44,0)',
           ],
         },
       },
@@ -291,7 +309,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'visible' },
         paint: {
           'line-color': sectionStroke,
-          'line-width': 0.5,
+          'line-width': 1,
           'line-opacity': 0.3,
         },
       },
@@ -329,7 +347,59 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 12. Seats — prototype-only circle layer (production stops at row level).
+      // 12a. Seat connectors — lines connecting consecutive seats in a listing.
+      // Rendered below seat circles so the line doesn't intersect through them.
+      // Dynamic source populated at runtime. Feature-state driven color.
+      {
+        id: LAYER_SEAT_CONNECTOR,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], seatColors.connectorSelected,
+            ['boolean', ['feature-state', 'hovered'], false], seatColors.connectorHover,
+            ['boolean', ['feature-state', 'unavailable'], false], 'rgba(4,9,44,0)',
+            seatColors.connector,
+          ],
+          'line-width': CONNECTOR_WIDTH_EXPR,
+          'line-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'unavailable'], false], 0,
+            1,
+          ],
+        },
+      },
+
+      // 12a-ii. Seat connector muted overlay — white wash on connectors outside selected section.
+      // Filter-driven, mirrors LAYER_SEAT_MUTED_OVERLAY behavior.
+      {
+        id: LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        filter: ['==', ['get', 'sectionId'], ''],  // matches nothing until filter is set
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
+            overlays.seat.muted,
+          ],
+          'line-width': CONNECTOR_WIDTH_EXPR,
+        },
+      },
+
+      // 12b. Seats — prototype-only circle layer (production stops at row level).
       {
         id: LAYER_SEAT,
         type: 'circle',
@@ -337,11 +407,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'none' },
         paint: {
           'circle-color': sectionFillColor,
-          'circle-radius': [
-            'interpolate', ['exponential', 2], ['zoom'],
-            14, 2,
-            20, 128,
-          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
           'circle-stroke-width': 0,
         },
       },
@@ -359,11 +425,31 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
             ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
             'rgba(0,0,0,0)',
           ],
-          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128],
+          'circle-radius': SEAT_RADIUS_EXPR,
         },
       },
 
-      // 13b. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
+      // 13b. Seat muted overlay — white wash on seats outside the selected section.
+      // Filter-driven (like section-selected-overlay): filter updated imperatively in MapLibreVenue.
+      // Layer hidden when no selection or not in seats mode.
+      {
+        id: LAYER_SEAT_MUTED_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        filter: ['==', ['get', 'sectionId'], ''],  // matches nothing until filter is set
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
+            overlays.seat.muted,
+          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
+        },
+      },
+
+      // 13c. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
       // Uses a sectionId+rowId filter (like section-selected-outline) so it works whether a row
       // listing or an individual seat is selected — no per-seat feature-state required.
       {
@@ -374,15 +460,11 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'none' },
         paint: {
           'circle-color': overlays.seat.selected,
-          'circle-radius': [
-            'interpolate', ['exponential', 2], ['zoom'],
-            14, 2,
-            20, 128,
-          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
           'circle-stroke-color': overlays.seat.selectedOutline,
           'circle-stroke-width': [
             'interpolate', ['exponential', 2], ['zoom'],
-            14, 0.3,
+            14, 2,
             20, 16,
           ],
         },
