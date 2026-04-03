@@ -33,6 +33,18 @@ export function useFeatureState({
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
     const sections = model.sections;
+
+    // Build listing-based availability lookups — listings are the source of truth
+    // for whether a row/seat is interactable (not the seat.status generation artifact).
+    const seatIdsWithListings = new Set<string>();
+    const rowGeoIdsWithListings = new Set<string>();
+    for (const listing of model.listings) {
+      rowGeoIdsWithListings.add(`${listing.sectionId}:${listing.rowId}`);
+      for (const seatId of listing.seatIds) {
+        seatIdsWithListings.add(seatId);
+      }
+    }
+
     let i = 0;
     const BATCH = 10; // ~150–250 setFeatureState calls per chunk
 
@@ -56,17 +68,16 @@ export function useFeatureState({
 
         sectionData.rows.forEach((row) => {
           const rowGeoId = `${sectionId}:${row.rowId}`;
-          const rowHasAvailable = row.seats.some(s => s.status === 'available');
 
           map.setFeatureState(
             { source: SOURCE_ROWS, id: rowGeoId },
-            { unavailable: !rowHasAvailable },
+            { unavailable: !rowGeoIdsWithListings.has(rowGeoId) },
           );
 
           row.seats.forEach((seat) => {
             map.setFeatureState(
               { source: SOURCE_SEATS, id: seat.seatId },
-              { unavailable: seat.status === 'unavailable' },
+              { unavailable: !seatIdsWithListings.has(seat.seatId) },
             );
           });
         });
