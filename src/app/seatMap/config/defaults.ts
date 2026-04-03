@@ -3,9 +3,9 @@ import type { SeatMapConfig, LevelOverlays } from './types';
 
 const SHARED_OVERLAYS: LevelOverlays = {
   muted: 'rgba(255, 255, 255, 0.65)',
-  selected: 'rgba(4, 9, 44, 0.25)',
-  hover: 'rgba(4, 9, 44, 0.5)',
-  selectedOutline: 'rgba(4, 9, 44, 0.75)',
+  selected: 'rgba(4, 9, 44, 0.50)',
+  hover: 'rgba(4, 9, 44, 0.25)',
+  selectedOutline: 'rgba(4, 9, 44, 0)',
 };
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {

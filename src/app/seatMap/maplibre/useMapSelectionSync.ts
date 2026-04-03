@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
-import { SOURCE_ROWS, SOURCE_SEATS, SOURCE_SECTIONS } from './constants';
+import { SOURCE_ROWS, SOURCE_SEATS, SOURCE_SEAT_CONNECTORS, SOURCE_SECTIONS } from './constants';
 import type { SelectionState, HoverState, SectionData, DisplayMode } from '../model/types';
 
 interface UseMapSelectionSyncOptions {
@@ -45,7 +45,7 @@ export function useMapSelectionSync({
     const map = mapRef.current;
     const prev = prevSelectionRef.current;
 
-    // Clear previous row selection
+    // Clear previous row/seat/connector selection
     if (prev?.rowId && prev?.sectionId) {
       const rowGeoId = `${prev.sectionId}:${prev.rowId}`;
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: false });
@@ -55,8 +55,11 @@ export function useMapSelectionSync({
         safeSetState(map, SOURCE_SEATS, seatId, { selected: false });
       }
     }
+    if (prev?.listingId) {
+      safeSetState(map, SOURCE_SEAT_CONNECTORS, prev.listingId, { selected: false });
+    }
 
-    // Set new row/seat selection
+    // Set new row/seat/connector selection
     if (selection.rowId && selection.sectionId) {
       const rowGeoId = `${selection.sectionId}:${selection.rowId}`;
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: true });
@@ -65,6 +68,9 @@ export function useMapSelectionSync({
       for (const seatId of selection.seatIds) {
         safeSetState(map, SOURCE_SEATS, seatId, { selected: true });
       }
+    }
+    if (selection.listingId) {
+      safeSetState(map, SOURCE_SEAT_CONNECTORS, selection.listingId, { selected: true });
     }
 
     prevSelectionRef.current = selection;

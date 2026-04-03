@@ -14,7 +14,7 @@
  * - Hard visibility toggling (not opacity crossfade)
  * - Three color themes (branded/zone/deal) for design exploration
  */
-import type { StyleSpecification } from 'maplibre-gl';
+import type { StyleSpecification, ExpressionSpecification } from 'maplibre-gl';
 import {
   BACKGROUND_IMAGE_COORDINATES,
   GLYPHS_URL,
@@ -25,6 +25,8 @@ import {
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_CONNECTOR,
+  LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
   LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
@@ -37,11 +39,12 @@ import {
   LAYER_SECTION_SELECTED_OVERLAY,
   SOURCE_ROWS,
   SOURCE_SEATS,
+  SOURCE_SEAT_CONNECTORS,
   SOURCE_SECTION_LABELS,
   SOURCE_SECTIONS,
   STYLE_COLORS,
 } from './constants';
-import type { SeatColors } from '../../model/types';
+import type { SeatColors } from '../model/types';
 import type { VenueAssets } from './types';
 import type { LevelOverlays } from '../config/types';
 
@@ -64,15 +67,20 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
     mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays,
   } = options;
 
+  // Shared zoom-interpolated size expressions — seat radius and connector width scale at the
+  // same exponential rate so they stay proportional across zoom levels.
+  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128];
+  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88];
+
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,
   // row-selected-overlay) matching the production pattern.
-  const sectionFillColor = [
+  const sectionFillColor: ExpressionSpecification = [
     'case',
     ['boolean', ['feature-state', 'hovered'], false], seatColors.hover,
     ['boolean', ['feature-state', 'unavailable'], false], seatColors.unavailable,
     seatColors.available,
-  ] as const;
+  ];
 
   return {
     version: 8,
@@ -105,6 +113,11 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         type: 'geojson',
         data: assets.seatsUrl,
         promoteId: 'id',
+      },
+      [SOURCE_SEAT_CONNECTORS]: {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        promoteId: 'listingId',
       },
       [SOURCE_SECTION_LABELS]: {
         type: 'geojson',
@@ -334,7 +347,54 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 12. Seats — prototype-only circle layer (production stops at row level).
+      // 12a. Seat connectors — lines connecting consecutive seats in a listing.
+      // Rendered below seat circles so the line doesn't intersect through them.
+      // Dynamic source populated at runtime. Feature-state driven color.
+      {
+        id: LAYER_SEAT_CONNECTOR,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], seatColors.connectorSelected,
+            ['boolean', ['feature-state', 'hovered'], false], seatColors.connectorHover,
+            ['boolean', ['feature-state', 'unavailable'], false], 'rgba(4,9,44,0)',
+            seatColors.connector,
+          ],
+          'line-width': CONNECTOR_WIDTH_EXPR,
+          'line-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'unavailable'], false], 0,
+            1,
+          ],
+        },
+      },
+
+      // 12a-ii. Seat connector muted overlay — white wash on connectors outside selected section.
+      // Filter-driven, mirrors LAYER_SEAT_MUTED_OVERLAY behavior.
+      {
+        id: LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        filter: ['==', ['get', 'sectionId'], ''],  // matches nothing until filter is set
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': overlays.seat.muted,
+          'line-width': CONNECTOR_WIDTH_EXPR,
+        },
+      },
+
+      // 12b. Seats — prototype-only circle layer (production stops at row level).
       {
         id: LAYER_SEAT,
         type: 'circle',
@@ -342,11 +402,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'none' },
         paint: {
           'circle-color': sectionFillColor,
-          'circle-radius': [
-            'interpolate', ['exponential', 2], ['zoom'],
-            14, 2,
-            20, 128,
-          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
           'circle-stroke-width': 0,
         },
       },
@@ -364,7 +420,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
             ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
             'rgba(0,0,0,0)',
           ],
-          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128],
+          'circle-radius': SEAT_RADIUS_EXPR,
         },
       },
 
@@ -379,11 +435,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'none' },
         paint: {
           'circle-color': overlays.seat.muted,
-          'circle-radius': [
-            'interpolate', ['exponential', 2], ['zoom'],
-            14, 2,
-            20, 128,
-          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
         },
       },
 
@@ -398,15 +450,11 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         layout: { visibility: 'none' },
         paint: {
           'circle-color': overlays.seat.selected,
-          'circle-radius': [
-            'interpolate', ['exponential', 2], ['zoom'],
-            14, 2,
-            20, 128,
-          ],
+          'circle-radius': SEAT_RADIUS_EXPR,
           'circle-stroke-color': overlays.seat.selectedOutline,
           'circle-stroke-width': [
             'interpolate', ['exponential', 2], ['zoom'],
-            14, 0.3,
+            14, 2,
             20, 16,
           ],
         },

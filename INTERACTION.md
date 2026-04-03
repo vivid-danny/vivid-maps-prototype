@@ -377,51 +377,183 @@ Seat circles become visible when zoomed past `ROW_ZOOM_MIN`. Each seat belongs t
 
 ## Layer Stack (bottom to top)
 
-| Order | Layer ID                    | Type   | Driven by        | Visibility               |
-|-------|-----------------------------|--------|------------------|--------------------------|
-| 1     | `seat`                      | circle | paint expression | Seats mode only          |
-| 2     | `seat-hover-overlay`        | circle | feature-state    | Seats mode only          |
-| 3     | `seat-muted-overlay`        | circle | filter + feature-state | Seats mode, when selection active |
-| 4     | `seat-selected-overlay`     | circle | filter           | Seats mode, when seatIds selected |
+| Order | Layer ID                        | Type   | Driven by              | Visibility                          |
+|-------|---------------------------------|--------|------------------------|-------------------------------------|
+| 1     | `seat-connector`                | line   | feature-state          | Seats mode only                     |
+| 2     | `seat-connector-muted-overlay`  | line   | filter                 | Seats mode, when selection active   |
+| 3     | `seat`                          | circle | paint expression       | Seats mode only                     |
+| 4     | `seat-hover-overlay`            | circle | feature-state          | Seats mode only                     |
+| 5     | `seat-muted-overlay`            | circle | filter + feature-state | Seats mode, when selection active   |
+| 6     | `seat-selected-overlay`         | circle | filter                 | Seats mode, when seatIds selected   |
+
+Connectors render **below** seat circles so the line passes behind them, not through.
+
+## Base Layers
+
+### seat (circle)
+
+Per-seat zone color derived from the section's zone assignment. Same paint expression as the section fill (uses `['get', 'sectionId']` match).
+
+| Display Mode | Fill Color                        |
+|--------------|-----------------------------------|
+| Seats        | Section's zone/deal color         |
+
+Unavailable seats use `#EFEFF6` (matches section-base).
+
+### seat-connector (line)
+
+LineString features connecting consecutive seats within each listing. One feature per listing, built at runtime from seat coordinates once the seats source loads.
+
+| Property  | Value                                                                 |
+|-----------|-----------------------------------------------------------------------|
+| Color     | Section's zone/deal color (zone/deal themes), `seatColors.connector` (branded) |
+| Width     | Zoom-interpolated: `1px` at zoom 14 → `88px` at zoom 20 (exponential) |
+| Cap/Join  | Round                                                                 |
+
+The connector source uses `promoteId: 'listingId'` so feature-state operations key on listing ID.
+
+In zone/deal themes, the connector color stays at the section color across all states — the overlay layers on the seat circles handle the visual treatment, and the connector just maintains the correct hue.
+
+In branded theme, the connector has distinct state colors:
+
+| State     | Color                       |
+|-----------|-----------------------------|
+| Default   | `seatColors.connector`      |
+| Hovered   | `seatColors.connectorHover` |
+| Selected  | `seatColors.connectorSelected` |
+| Unavailable | transparent (hidden)      |
 
 ## Hover
 
-Hovering any seat in a listing puts **all seats in that listing** into the hovered state simultaneously. The lookup is done via a `seatId → Listing` map so the full `listing.seatIds` array is known at hover time.
+Hovering any seat in a listing puts **all seats in that listing** and the listing's **connector** into the hovered state simultaneously. The lookup is done via a `seatId → Listing` map so the full `listing.seatIds` array is known at hover time.
 
-| Seat             | Visual                                                      |
-|------------------|-------------------------------------------------------------|
-| Any seat in listing | Hover overlay applied to all seats in the listing      |
-| All others       | Unchanged                                                   |
+Hovering the connector line directly produces the same effect — the `listingId` from the connector feature properties is used to look up the listing, and all its seats + the connector receive the hovered feature-state.
+
+| Element                  | Visual                                                     |
+|--------------------------|-------------------------------------------------------------|
+| All seats in listing     | Hover overlay applied to every seat circle                  |
+| Listing connector        | Hovered feature-state set (color change in branded theme)   |
+| All other seats          | Unchanged                                                   |
+
+Cursor changes to `pointer` on both seat and connector hover.
+
+### Deferred mouseleave (flicker prevention)
+
+When the mouse moves between a seat circle and its connector line (or vice versa), MapLibre fires `mouseleave` on the departing layer before `mousemove` on the arriving layer. Without mitigation, this causes a one-frame flicker where all hover state is cleared and then immediately re-established.
+
+The fix: `mouseleave` on the seat and connector layers is **deferred to the next animation frame** via `requestAnimationFrame`. If a `mousemove` fires on either layer within the same frame, it calls `cancelAnimationFrame` to cancel the pending clear. The hover state stays continuous as the mouse traverses seat → connector → seat within a listing.
+
+This only applies to the seat and connector layers. Section and row `mouseleave` handlers fire immediately as before.
 
 ### Unavailable seats
 
-Hovering an unavailable seat circle triggers **no state change** anywhere. Crucially, it also does not clear the hover state of the row beneath — the `mouseleave` handler for the seat layer is a no-op when no available seat was being tracked (`hoveredSeatIds` is empty). The row's own `mousemove`/`mouseleave` maintains its own hover state independently.
+Hovering an unavailable seat circle triggers **no state change** anywhere. Crucially, it also does not clear the hover state of the row beneath — the deferred `mouseleave` handler for the seat layer is a no-op when no available seat was being tracked (`hoveredSeatIds` is empty). The row's own `mousemove`/`mouseleave` maintains its own hover state independently.
 
 ## Selection
 
 Clicking any seat in a listing selects the **full listing** — all `seatIds` from that listing are written into `selection.seatIds`. The `listingId` and `rowId` are resolved in `handleSelect` by matching the clicked seat ID against `model.listings`. The seat selected overlay (`seat-selected-overlay`) is filter-driven: its filter is set to `['in', ['get', 'id'], ['literal', seatIds]]`, so all seats in the listing receive the overlay automatically.
 
+Clicking a connector line also selects the listing — the `listingId` is read from the connector feature properties, and the corresponding listing's seats are selected.
+
 ## Muting
 
-When a seat is selected, all seats outside the selected seat's section are muted via the `seat-muted-overlay` layer. Unlike row-level muting (which uses `parentMuted` feature-state), seat muting is **filter-driven** — the overlay filter is set to `['!=', ['get', 'sectionId'], selection.sectionId]`, covering all seats in non-selected sections in a single operation.
+When a seat is selected, all seats and connectors outside the selected seat's section are muted. Unlike row-level muting (which uses `parentMuted` feature-state), seat and connector muting is **filter-driven** — the overlay filter is set to `['!=', ['get', 'sectionId'], selection.sectionId]`, covering all features in non-selected sections in a single operation.
+
+Both `seat-muted-overlay` (circle) and `seat-connector-muted-overlay` (line) use the same filter and are toggled together via the `SEAT_MUTED_LAYERS` constant.
 
 ### Hover-reveal
 
 When hovering a seat in a muted (non-selected) section, the muting is removed for:
 
-1. **The entire hovered row** — the filter is updated to also exclude the hovered row: `['!', ['all', ['==', sectionId, hoveredSection], ['==', rowId, hoveredRow]]]`
-2. **Individually hovered seats** — the paint expression checks `['feature-state', 'hovered']` and paints transparent instead of the muted color, handling multi-seat listing hover
+1. **The entire hovered row** — the filter on both seat and connector muted overlays is updated to also exclude the hovered row: `['!', ['all', ['==', sectionId, hoveredSection], ['==', rowId, hoveredRow]]]`
+2. **Individually hovered seats** — the `seat-muted-overlay` paint expression checks `['feature-state', 'hovered']` and paints transparent instead of the muted color, handling multi-seat listing hover across rows
 
-The row polygon underneath is also unmuted by the existing `parentMuted` hover-reveal in `useMapSelectionSync`, so both rows and seats reveal together.
+The row polygon underneath is also unmuted by the existing `parentMuted` hover-reveal in `useMapSelectionSync`, so rows, seats, and connectors all reveal together.
 
 ## Overlay Values
 
 | Name             | Color                        | Purpose                              |
 |------------------|------------------------------|--------------------------------------|
 | Hover            | `rgba(4, 9, 44, 0.5)`       | Darken tint on hovered seats         |
-| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected seats     |
+| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected seats + connectors |
 | Selected         | `rgba(4, 9, 44, 0.25)`      | Dark tint on selected seats          |
 | Selected Outline | `rgba(4, 9, 44, 0.75)`      | Outline ring around selected seats   |
+
+## Implementation Details
+
+### seat-connector source
+
+Dynamic GeoJSON source populated at runtime by `useListingConnectors`. Waits for the seats source to finish loading, then queries all seat features to build a coordinate map. One LineString per listing with 2+ seats. Uses `promoteId: 'listingId'` so feature-state operations target the correct feature.
+
+```js
+// Source definition
+{
+  type: 'geojson',
+  data: { type: 'FeatureCollection', features: [] },  // empty until populated
+  promoteId: 'listingId',
+}
+
+// Feature properties
+{
+  listingId: string,
+  sectionId: string,
+  rowId: string,
+}
+```
+
+### seat-connector-muted-overlay
+
+Line layer mirroring the connector geometry. Filter-driven — same filter as `seat-muted-overlay`. Applies the muted white wash color at the same width as the base connector.
+
+```js
+'line-color': overlays.seat.muted
+'line-width': CONNECTOR_WIDTH_EXPR  // same as seat-connector
+```
+
+### seat-hover-overlay
+
+Feature-state driven circle layer. Shows overlay color on hovered seats, transparent elsewhere.
+
+```js
+'circle-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], overlays.seat.hover,
+  'rgba(0,0,0,0)',
+]
+'circle-radius': SEAT_RADIUS_EXPR  // matches seat layer
+```
+
+### seat-muted-overlay
+
+Filter-driven circle layer (not feature-state). Filter updated imperatively when selection changes. Paint expression adds hover-reveal transparency:
+
+```js
+'circle-color': [
+  'case',
+  ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',  // hover-reveal
+  overlays.seat.muted,
+]
+```
+
+### seat-selected-overlay
+
+Filter-driven circle layer. Filter set to match selected seat IDs. Includes both a fill tint and a stroke ring:
+
+```js
+filter: ['in', ['get', 'id'], ['literal', seatIds]]
+'circle-color': overlays.seat.selected
+'circle-stroke-color': overlays.seat.selectedOutline
+'circle-stroke-width': ['interpolate', ['exponential', 2], ['zoom'], 14, 0.3, 20, 16]
+```
+
+### Shared zoom-interpolated sizes
+
+Seat circles and connector lines scale at the same exponential rate so they stay proportional:
+
+```js
+SEAT_RADIUS_EXPR:    ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128]
+CONNECTOR_WIDTH_EXPR: ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88]
+```
 
 ---
 
@@ -458,13 +590,14 @@ The `row-selected-overlay` paint expression evaluates feature-states in this ord
 
 This ensures that a row can be simultaneously `parentMuted` and `hovered`, and the hover wins.
 
-### Seat-level muting
+### Seat-level muting (seats + connectors)
 
-Seat muting uses a **different mechanism** than rows. Instead of per-feature `parentMuted` state, a dedicated `seat-muted-overlay` layer uses a **filter** to cover all seats outside the selected section. This avoids iterating every seat feature to set state.
+Seat and connector muting uses a **different mechanism** than rows. Instead of per-feature `parentMuted` state, dedicated muted overlay layers (`seat-muted-overlay` circle, `seat-connector-muted-overlay` line) use a **filter** to cover all features outside the selected section. This avoids iterating every seat/connector feature to set state.
 
 - **Filter**: `['!=', ['get', 'sectionId'], selection.sectionId]` — one filter covers the entire venue
-- **Hover-reveal**: the filter is dynamically updated to also exclude the hovered row, and the paint expression makes individually hovered seats transparent
+- **Hover-reveal**: the filter is dynamically updated to also exclude the hovered row, and the seat paint expression makes individually hovered seats transparent
 - **Visibility**: hidden when no selection is active or when not in seats mode
+- **Grouped**: both layers are toggled together via the `SEAT_MUTED_LAYERS` constant
 
 See the [Seats → Muting](#muting) section for full details.
 
@@ -499,6 +632,6 @@ Clicking or tapping any part of the map that does not hit a section, row, or sea
 
 ## Implementation Details
 
-A generic `map.on('click')` handler (no layer filter) fires on every map click. It calls `map.queryRenderedFeatures(e.point, { layers: [section, row, seat] })` — if any features are hit, the layer-specific handler already owns that click and the background handler bails out. If no features are hit, `EMPTY_SELECTION` and `EMPTY_HOVER` are dispatched.
+A generic `map.on('click')` handler (no layer filter) fires on every map click. It calls `map.queryRenderedFeatures(e.point, { layers: [section, row, seat, seat-connector] })` — if any features are hit, the layer-specific handler already owns that click and the background handler bails out. If no features are hit, `EMPTY_SELECTION` and `EMPTY_HOVER` are dispatched.
 
 This applies at all display modes and on both desktop and mobile.

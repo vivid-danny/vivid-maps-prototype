@@ -3,9 +3,11 @@ import type { Map as MaplibreMap, MapLayerMouseEvent } from 'maplibre-gl';
 import {
   LAYER_ROW,
   LAYER_SEAT,
+  LAYER_SEAT_CONNECTOR,
   LAYER_SECTION,
   SOURCE_ROWS,
   SOURCE_SEATS,
+  SOURCE_SEAT_CONNECTORS,
   SOURCE_SECTIONS,
 } from './constants';
 import type { SelectionState, HoverState, Listing } from '../model/types';
@@ -56,14 +58,40 @@ export function useMapInteractions({
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
 
+    /** Safely set feature state on a connector line (may not exist if source is empty). */
+    function setConnectorState(id: string | null, state: Record<string, boolean>) {
+      if (!id) return;
+      try { map.setFeatureState({ source: SOURCE_SEAT_CONNECTORS, id }, state); } catch { /* noop */ }
+    }
+
+    // Build listingId → Listing lookup for connector hover/click handlers
+    const listingsById = new Map<string, Listing>();
+    for (const listing of listingsBySeatIdRef.current.values()) {
+      if (!listingsById.has(listing.listingId)) {
+        listingsById.set(listing.listingId, listing);
+      }
+    }
+
     // Track the last hovered feature IDs to clear them on mouseleave/move
     let hoveredSeatIds: string[] = [];
+    let hoveredConnectorId: string | null = null;
     let hoveredSectionId: string | null = null;
     let hoveredRowGeoId: string | null = null;
 
     // Tracks last hover emitted to avoid redundant React state updates on mousemove
     let lastSectionId: string | null = null;
     let lastRowId: string | null = null;
+
+    // Deferred mouseleave: prevents flicker when moving between seat ↔ connector
+    // by deferring the clear to the next frame, allowing an adjacent mousemove to cancel it.
+    let pendingLeaveFrame: number | null = null;
+
+    function cancelPendingLeave() {
+      if (pendingLeaveFrame !== null) {
+        cancelAnimationFrame(pendingLeaveFrame);
+        pendingLeaveFrame = null;
+      }
+    }
 
     function clearHoverFeatureStates() {
       if (hoveredSectionId) {
@@ -191,6 +219,8 @@ export function useMapInteractions({
       const seatId = feature.properties?.id as string;
       if (!seatId) return;
 
+      cancelPendingLeave();
+
       // Resolve all seat IDs for this listing (multi-seat listings hover together)
       const listing = listingsBySeatIdRef.current.get(seatId);
       const nextSeatIds = listing ? listing.seatIds : [seatId];
@@ -198,14 +228,21 @@ export function useMapInteractions({
       // Skip if same set of seats already hovered
       if (hoveredSeatIds.length === nextSeatIds.length && nextSeatIds.every((id) => hoveredSeatIds.includes(id))) return;
 
-      // Clear previous hovered seats
+      // Clear previous hovered seats + connector
       for (const id of hoveredSeatIds) {
         map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
       }
+      setConnectorState(hoveredConnectorId, { hovered: false });
+      hoveredConnectorId = null;
 
       hoveredSeatIds = nextSeatIds;
       for (const id of hoveredSeatIds) {
         map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: true });
+      }
+      // Set connector hover
+      if (listing) {
+        hoveredConnectorId = listing.listingId;
+        setConnectorState(listing.listingId, { hovered: true });
       }
       map.getCanvas().style.cursor = 'pointer';
 
@@ -219,11 +256,67 @@ export function useMapInteractions({
       }
     }
 
+    function handleConnectorHover(e: MapLayerMouseEvent) {
+      if (isMobileRef.current) return;
+      if (!e.features?.[0]) return;
+
+      const listingId = e.features[0].properties?.listingId as string;
+      if (!listingId) return;
+
+      cancelPendingLeave();
+
+      // Skip if same listing already hovered
+      if (hoveredConnectorId === listingId) return;
+
+      const listing = listingsById.get(listingId);
+      if (!listing) return;
+
+      // Clear previous
+      for (const id of hoveredSeatIds) {
+        map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
+      }
+      setConnectorState(hoveredConnectorId, { hovered: false });
+
+      // Set new hover — same as handleSeatHover
+      hoveredSeatIds = listing.seatIds;
+      for (const id of hoveredSeatIds) {
+        map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: true });
+      }
+      hoveredConnectorId = listing.listingId;
+      setConnectorState(listing.listingId, { hovered: true });
+      map.getCanvas().style.cursor = 'pointer';
+
+      const sectionId = listing.sectionId;
+      const rowId = listing.rowId;
+      if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
+        lastSectionId = sectionId;
+        lastRowId = rowId;
+        onHoverRef.current(buildRowHover(sectionId, rowId));
+      }
+    }
+
+    function handleConnectorClick(e: MapLayerMouseEvent) {
+      if (!e.features?.[0]) return;
+      const listingId = e.features[0].properties?.listingId as string;
+      if (!listingId) return;
+      const listing = listingsById.get(listingId);
+      if (!listing) return;
+
+      onSelectRef.current({
+        sectionId: listing.sectionId,
+        rowId: listing.rowId ?? null,
+        listingId: null,
+        seatIds: listing.seatIds,
+      });
+    }
+
     function handleMouseLeave() {
       if (isMobileRef.current) return;
       for (const id of hoveredSeatIds) {
         map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
       }
+      setConnectorState(hoveredConnectorId, { hovered: false });
+      hoveredConnectorId = null;
       hoveredSeatIds = [];
       clearHoverFeatureStates();
       lastSectionId = null;
@@ -232,20 +325,23 @@ export function useMapInteractions({
       onHoverRef.current(EMPTY_HOVER);
     }
 
-    // Seat-specific mouseleave: only clears state if we were hovering an available seat.
-    // When leaving an unavailable seat circle, hoveredSeatId is null — skip the clear so
-    // the row hover underneath isn't disrupted.
-    function handleSeatMouseLeave() {
+    // Seat/connector mouseleave: deferred to next frame so that moving between
+    // seat ↔ connector doesn't flicker (the adjacent mousemove cancels the pending clear).
+    function handleSeatConnectorMouseLeave() {
       if (isMobileRef.current) return;
       if (hoveredSeatIds.length === 0) return;
-      handleMouseLeave();
+      cancelPendingLeave();
+      pendingLeaveFrame = requestAnimationFrame(() => {
+        pendingLeaveFrame = null;
+        handleMouseLeave();
+      });
     }
 
     // Background click — deselects when clicking outside any interactive layer.
     // queryRenderedFeatures guards against double-firing when a layer click already handled it.
     function handleBackgroundClick(e: MapLayerMouseEvent) {
       const hits = map.queryRenderedFeatures(e.point, {
-        layers: [LAYER_SECTION, LAYER_ROW, LAYER_SEAT],
+        layers: [LAYER_SECTION, LAYER_ROW, LAYER_SEAT, LAYER_SEAT_CONNECTOR],
       });
       if (hits.length > 0) return;
       onSelectRef.current(EMPTY_SELECTION);
@@ -257,28 +353,35 @@ export function useMapInteractions({
     map.on('click', LAYER_SECTION, handleSectionClick);
     map.on('click', LAYER_ROW, handleRowClick);
     map.on('click', LAYER_SEAT, handleSeatClick);
+    map.on('click', LAYER_SEAT_CONNECTOR, handleConnectorClick);
 
     map.on('mousemove', LAYER_SECTION, handleSectionHover);
     map.on('mousemove', LAYER_ROW, handleRowHover);
     map.on('mousemove', LAYER_SEAT, handleSeatHover);
+    map.on('mousemove', LAYER_SEAT_CONNECTOR, handleConnectorHover);
 
     map.on('mouseleave', LAYER_SECTION, handleMouseLeave);
     map.on('mouseleave', LAYER_ROW, handleMouseLeave);
-    map.on('mouseleave', LAYER_SEAT, handleSeatMouseLeave);
+    map.on('mouseleave', LAYER_SEAT, handleSeatConnectorMouseLeave);
+    map.on('mouseleave', LAYER_SEAT_CONNECTOR, handleSeatConnectorMouseLeave);
 
     return () => {
+      cancelPendingLeave();
       map.off('click', handleBackgroundClick);
       map.off('click', LAYER_SECTION, handleSectionClick);
       map.off('click', LAYER_ROW, handleRowClick);
       map.off('click', LAYER_SEAT, handleSeatClick);
+      map.off('click', LAYER_SEAT_CONNECTOR, handleConnectorClick);
 
       map.off('mousemove', LAYER_SECTION, handleSectionHover);
       map.off('mousemove', LAYER_ROW, handleRowHover);
       map.off('mousemove', LAYER_SEAT, handleSeatHover);
+      map.off('mousemove', LAYER_SEAT_CONNECTOR, handleConnectorHover);
 
       map.off('mouseleave', LAYER_SECTION, handleMouseLeave);
       map.off('mouseleave', LAYER_ROW, handleMouseLeave);
-      map.off('mouseleave', LAYER_SEAT, handleSeatMouseLeave);
+      map.off('mouseleave', LAYER_SEAT, handleSeatConnectorMouseLeave);
+      map.off('mouseleave', LAYER_SEAT_CONNECTOR, handleSeatConnectorMouseLeave);
     };
   }, [ready, mapRef]);
 }

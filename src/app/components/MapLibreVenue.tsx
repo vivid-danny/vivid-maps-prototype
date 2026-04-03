@@ -6,7 +6,8 @@ import { useFeatureState } from '../seatMap/maplibre/useFeatureState';
 import { useMapInteractions } from '../seatMap/maplibre/useMapInteractions';
 import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
 import { useMapPins } from '../seatMap/maplibre/useMapPins';
-import { buildSectionFillExpression } from '../seatMap/maplibre/paintExpressions';
+import { useListingConnectors } from '../seatMap/maplibre/useListingConnectors';
+import { buildSectionFillExpression, buildConnectorColorExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW,
   LAYER_ROW_HOVER_OVERLAY,
@@ -15,9 +16,13 @@ import {
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_CONNECTOR,
   LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
+  SEAT_VISIBILITY_LAYERS,
+  SEAT_FILTERED_LAYERS,
+  SEAT_MUTED_LAYERS,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
   LAYER_SECTION_HOVER_OVERLAY,
@@ -25,6 +30,7 @@ import {
   LAYER_SECTION_OUTLINE,
   LAYER_SECTION_SELECTED_OUTLINE,
   LAYER_SECTION_SELECTED_OVERLAY,
+  SOURCE_SEAT_CONNECTORS,
   SOURCE_SECTION_LABELS,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
@@ -165,6 +171,9 @@ export function MapLibreVenue({
     onSelect,
   });
 
+  // Listing connector lines — LineStrings connecting seats in the same listing
+  useListingConnectors({ mapRef, ready, listings: model.listings });
+
   // Notify parent of zoom changes (drives displayMode via useSeatMapController)
   useEffect(() => {
     onZoomChange?.(zoom);
@@ -206,8 +215,7 @@ export function MapLibreVenue({
     map.setFilter(LAYER_ROW_SELECTED_OVERLAY, rowSeatFilter);
     map.setFilter(LAYER_ROW_SELECTED_OUTLINE, rowSeatFilter);
     map.setFilter(LAYER_ROW_LABEL, rowSeatFilter);
-    map.setFilter(LAYER_SEAT, rowSeatFilter);
-    map.setFilter(LAYER_SEAT_HOVER_OVERLAY, rowSeatFilter);
+    for (const layer of SEAT_FILTERED_LAYERS) map.setFilter(layer, rowSeatFilter);
     // LAYER_SEAT_SELECTED_OVERLAY filter is managed by the seat selection effect below
   }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -258,10 +266,10 @@ export function MapLibreVenue({
     // Row-selected-outline: rows + seats (paint expression handles transparency when nothing selected)
     setLayerVisibility(map, LAYER_ROW_SELECTED_OUTLINE, (isRows || isSeats) ? 'visible' : 'none');
 
-    // Seats: only in seats mode
-    setLayerVisibility(map, LAYER_SEAT, isSeats ? 'visible' : 'none');
-    setLayerVisibility(map, LAYER_SEAT_HOVER_OVERLAY, isSeats ? 'visible' : 'none');
+    // Seats + connectors: only in seats mode
+    for (const layer of SEAT_VISIBILITY_LAYERS) setLayerVisibility(map, layer, isSeats ? 'visible' : 'none');
     // LAYER_SEAT_SELECTED_OVERLAY visibility managed by seat selection effect
+    // LAYER_SEAT_CONNECTOR_MUTED_OVERLAY visibility managed by seat muted overlay effect
 
     // Section-outline: always visible, opacity varies.
     // Production: 0.3 at section zoom → 1.0 at row zoom.
@@ -335,20 +343,22 @@ export function MapLibreVenue({
 
       if (isHoveringMutedRow) {
         // Exclude selected section AND the specific hovered row
-        map.setFilter(LAYER_SEAT_MUTED_OVERLAY, [
+        const mutedFilter = [
           'all',
           ['!=', ['get', 'sectionId'], selection.sectionId],
           ['!', ['all',
             ['==', ['get', 'sectionId'], hoverState.sectionId],
             ['==', ['get', 'rowId'], hoverState.rowId],
           ]],
-        ]);
+        ] as const;
+        for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
       } else {
-        map.setFilter(LAYER_SEAT_MUTED_OVERLAY, ['!=', ['get', 'sectionId'], selection.sectionId]);
+        const mutedFilter = ['!=', ['get', 'sectionId'], selection.sectionId] as const;
+        for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
       }
-      setLayerVisibility(map, LAYER_SEAT_MUTED_OVERLAY, 'visible');
+      for (const layer of SEAT_MUTED_LAYERS) setLayerVisibility(map, layer, 'visible');
     } else {
-      setLayerVisibility(map, LAYER_SEAT_MUTED_OVERLAY, 'none');
+      for (const layer of SEAT_MUTED_LAYERS) setLayerVisibility(map, layer, 'none');
     }
   }, [ready, displayMode, selection.sectionId, hoverState.sectionId, hoverState.rowId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -364,6 +374,7 @@ export function MapLibreVenue({
     // Seats mode: white background so seat circles stand out against a neutral field.
     map.setPaintProperty(LAYER_ROW, 'fill-color', displayMode === 'seats' ? rowFillColor : fillExpr);
     map.setPaintProperty(LAYER_SEAT, 'circle-color', fillExpr);
+    map.setPaintProperty(LAYER_SEAT_CONNECTOR, 'line-color', buildConnectorColorExpression(theme, model, seatColors));
   }, [ready, theme, seatColors, model, rowFillColor, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wire up remaining style properties so controls panel changes are reflected on the map.
