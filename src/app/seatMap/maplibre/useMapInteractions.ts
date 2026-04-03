@@ -8,7 +8,7 @@ import {
   SOURCE_SEATS,
   SOURCE_SECTIONS,
 } from './constants';
-import type { SelectionState, HoverState } from '../model/types';
+import type { SelectionState, HoverState, Listing } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import {
   buildSectionSelection,
@@ -23,6 +23,7 @@ interface UseMapInteractionsOptions {
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
+  listingsBySeatId: Map<string, Listing>;
 }
 
 /**
@@ -37,6 +38,7 @@ export function useMapInteractions({
   onSelect,
   onHover,
   isMobile,
+  listingsBySeatId,
 }: UseMapInteractionsOptions) {
   // Store callbacks in refs to avoid re-registering event handlers when they change
   const onSelectRef = useRef(onSelect);
@@ -47,12 +49,15 @@ export function useMapInteractions({
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
 
+  const listingsBySeatIdRef = useRef(listingsBySeatId);
+  listingsBySeatIdRef.current = listingsBySeatId;
+
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
 
     // Track the last hovered feature IDs to clear them on mouseleave/move
-    let hoveredSeatId: string | null = null;
+    let hoveredSeatIds: string[] = [];
     let hoveredSectionId: string | null = null;
     let hoveredRowGeoId: string | null = null;
 
@@ -186,13 +191,22 @@ export function useMapInteractions({
       const seatId = feature.properties?.id as string;
       if (!seatId) return;
 
-      // Clear previous hovered seat
-      if (hoveredSeatId && hoveredSeatId !== seatId) {
-        map.setFeatureState({ source: SOURCE_SEATS, id: hoveredSeatId }, { hovered: false });
+      // Resolve all seat IDs for this listing (multi-seat listings hover together)
+      const listing = listingsBySeatIdRef.current.get(seatId);
+      const nextSeatIds = listing ? listing.seatIds : [seatId];
+
+      // Skip if same set of seats already hovered
+      if (hoveredSeatIds.length === nextSeatIds.length && nextSeatIds.every((id) => hoveredSeatIds.includes(id))) return;
+
+      // Clear previous hovered seats
+      for (const id of hoveredSeatIds) {
+        map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
       }
 
-      hoveredSeatId = seatId;
-      map.setFeatureState({ source: SOURCE_SEATS, id: seatId }, { hovered: true });
+      hoveredSeatIds = nextSeatIds;
+      for (const id of hoveredSeatIds) {
+        map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: true });
+      }
       map.getCanvas().style.cursor = 'pointer';
 
       // Emit row-level hover to React so pins can react
@@ -207,15 +221,24 @@ export function useMapInteractions({
 
     function handleMouseLeave() {
       if (isMobileRef.current) return;
-      if (hoveredSeatId) {
-        map.setFeatureState({ source: SOURCE_SEATS, id: hoveredSeatId }, { hovered: false });
-        hoveredSeatId = null;
+      for (const id of hoveredSeatIds) {
+        map.setFeatureState({ source: SOURCE_SEATS, id }, { hovered: false });
       }
+      hoveredSeatIds = [];
       clearHoverFeatureStates();
       lastSectionId = null;
       lastRowId = null;
       map.getCanvas().style.cursor = '';
       onHoverRef.current(EMPTY_HOVER);
+    }
+
+    // Seat-specific mouseleave: only clears state if we were hovering an available seat.
+    // When leaving an unavailable seat circle, hoveredSeatId is null — skip the clear so
+    // the row hover underneath isn't disrupted.
+    function handleSeatMouseLeave() {
+      if (isMobileRef.current) return;
+      if (hoveredSeatIds.length === 0) return;
+      handleMouseLeave();
     }
 
     // Background click — deselects when clicking outside any interactive layer.
@@ -241,7 +264,7 @@ export function useMapInteractions({
 
     map.on('mouseleave', LAYER_SECTION, handleMouseLeave);
     map.on('mouseleave', LAYER_ROW, handleMouseLeave);
-    map.on('mouseleave', LAYER_SEAT, handleMouseLeave);
+    map.on('mouseleave', LAYER_SEAT, handleSeatMouseLeave);
 
     return () => {
       map.off('click', handleBackgroundClick);
@@ -255,7 +278,7 @@ export function useMapInteractions({
 
       map.off('mouseleave', LAYER_SECTION, handleMouseLeave);
       map.off('mouseleave', LAYER_ROW, handleMouseLeave);
-      map.off('mouseleave', LAYER_SEAT, handleMouseLeave);
+      map.off('mouseleave', LAYER_SEAT, handleSeatMouseLeave);
     };
   }, [ready, mapRef]);
 }

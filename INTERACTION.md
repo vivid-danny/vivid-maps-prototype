@@ -242,6 +242,17 @@ Row ID text, visible in rows and seats modes.
 | Selected         | `rgba(4, 9, 44, 0.1)`       | Dark tint on the selected row      |
 | Selected Outline | `rgba(4, 9, 44, 0.2)`       | 1.5px border around selected row   |
 
+### Seats-Mode Overrides
+
+When `displayMode === 'seats'`, the hover and selected overlay values are replaced with softer versions so the row tint doesn't obscure seat circles:
+
+| Name             | Color                         |
+|------------------|-------------------------------|
+| Hover (seats)    | `rgba(4, 9, 44, 0.025)`      |
+| Selected (seats) | `rgba(4, 9, 44, 0.05)`       |
+
+Muted and Selected Outline are unchanged between modes.
+
 ## Interaction States
 
 ### Default (no hover, no selection)
@@ -357,6 +368,38 @@ line-width: 0.5
 line-cap: round
 line-join: round
 ```
+
+---
+
+# Seats
+
+Seat circles become visible when zoomed past `ROW_ZOOM_MIN`. Each seat belongs to a listing; a listing may span multiple adjacent seats in the same row.
+
+## Hover
+
+Hovering any seat in a listing puts **all seats in that listing** into the hovered state simultaneously. The lookup is done via a `seatId → Listing` map so the full `listing.seatIds` array is known at hover time.
+
+| Seat             | Visual                                                      |
+|------------------|-------------------------------------------------------------|
+| Any seat in listing | Hover overlay applied to all seats in the listing      |
+| All others       | Unchanged                                                   |
+
+### Unavailable seats
+
+Hovering an unavailable seat circle triggers **no state change** anywhere. Crucially, it also does not clear the hover state of the row beneath — the `mouseleave` handler for the seat layer is a no-op when no available seat was being tracked (`hoveredSeatIds` is empty). The row's own `mousemove`/`mouseleave` maintains its own hover state independently.
+
+## Selection
+
+Clicking any seat in a listing selects the **full listing** — all `seatIds` from that listing are written into `selection.seatIds`. The `listingId` and `rowId` are resolved in `handleSelect` by matching the clicked seat ID against `model.listings`. The seat selected overlay (`seat-selected-overlay`) is filter-driven: its filter is set to `['in', ['get', 'id'], ['literal', seatIds]]`, so all seats in the listing receive the overlay automatically.
+
+## Overlay Values
+
+| Name             | Color                        | Purpose                              |
+|------------------|------------------------------|--------------------------------------|
+| Hover            | `rgba(4, 9, 44, 0.5)`       | Darken tint on hovered seats         |
+| Muted            | `rgba(255, 255, 255, 0.65)`  | White wash on non-selected seats     |
+| Selected         | `rgba(4, 9, 44, 0.25)`      | Dark tint on selected seats          |
+| Selected Outline | `rgba(4, 9, 44, 0.75)`      | Outline ring around selected seats   |
 
 ---
 

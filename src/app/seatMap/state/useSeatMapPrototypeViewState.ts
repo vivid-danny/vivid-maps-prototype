@@ -64,7 +64,7 @@ export function useSeatMapPrototypeViewState({
           nextSelection.seatIds.some((id) => l.seatIds.includes(id))
         );
         if (match) {
-          nextSelection = { ...nextSelection, listingId: match.listingId, rowId: match.rowId };
+          nextSelection = { ...nextSelection, listingId: match.listingId, rowId: match.rowId, seatIds: match.seatIds };
         }
       }
       setSelection(nextSelection);

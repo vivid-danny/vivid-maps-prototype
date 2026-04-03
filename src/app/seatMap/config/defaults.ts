@@ -2,10 +2,10 @@ import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig, LevelOverlays } from './types';
 
 const SHARED_OVERLAYS: LevelOverlays = {
-  muted: 'rgba(255, 255, 255, 0.5)',       // production: STYLE_COLORS.muted
-  selected: 'rgba(4, 9, 44, 0.4)',         // production: STYLE_COLORS.selected
-  hover: 'rgba(0, 0, 0, 0.12)',
-  selectedOutline: 'rgba(0, 0, 0, 0.8)',
+  muted: 'rgba(255, 255, 255, 0.65)',
+  selected: 'rgba(4, 9, 44, 0.25)',
+  hover: 'rgba(4, 9, 44, 0.5)',
+  selectedOutline: 'rgba(4, 9, 44, 0.75)',
 };
 
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
@@ -37,6 +37,8 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
       selected: 'rgba(4, 9, 44, 0.1)',
       hover: 'rgba(4, 9, 44, 0.5)',
       selectedOutline: 'rgba(4, 9, 44, 0.2)',
+      hoverInSeats: 'rgba(4, 9, 44, 0.025)',
+      selectedInSeats: 'rgba(4, 9, 44, 0.05)',
     },
     seat: { ...SHARED_OVERLAYS },
   },
