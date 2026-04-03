@@ -5,7 +5,6 @@ import {
   LAYER_SEAT,
   LAYER_SEAT_CONNECTOR,
   LAYER_SECTION,
-  SOURCE_ROWS,
   SOURCE_SEATS,
   SOURCE_SEAT_CONNECTORS,
   SOURCE_SECTIONS,
@@ -24,6 +23,8 @@ interface UseMapInteractionsOptions {
   ready: boolean;
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
+  /** Synchronous hover visual update — applies all map visuals in the same frame. */
+  syncHoverFromMap: (hover: HoverState) => void;
   isMobile: boolean;
   listingsBySeatId: Map<string, Listing>;
 }
@@ -39,14 +40,17 @@ export function useMapInteractions({
   ready,
   onSelect,
   onHover,
+  syncHoverFromMap,
   isMobile,
   listingsBySeatId,
 }: UseMapInteractionsOptions) {
   // Store callbacks in refs to avoid re-registering event handlers when they change
   const onSelectRef = useRef(onSelect);
   const onHoverRef = useRef(onHover);
+  const syncHoverFromMapRef = useRef(syncHoverFromMap);
   onSelectRef.current = onSelect;
   onHoverRef.current = onHover;
+  syncHoverFromMapRef.current = syncHoverFromMap;
 
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
@@ -75,8 +79,6 @@ export function useMapInteractions({
     // Track the last hovered feature IDs to clear them on mouseleave/move
     let hoveredSeatIds: string[] = [];
     let hoveredConnectorId: string | null = null;
-    let hoveredSectionId: string | null = null;
-    let hoveredRowGeoId: string | null = null;
 
     // Tracks last hover emitted to avoid redundant React state updates on mousemove
     let lastSectionId: string | null = null;
@@ -90,17 +92,6 @@ export function useMapInteractions({
       if (pendingLeaveFrame !== null) {
         cancelAnimationFrame(pendingLeaveFrame);
         pendingLeaveFrame = null;
-      }
-    }
-
-    function clearHoverFeatureStates() {
-      if (hoveredSectionId) {
-        map.setFeatureState({ source: SOURCE_SECTIONS, id: hoveredSectionId }, { hovered: false });
-        hoveredSectionId = null;
-      }
-      if (hoveredRowGeoId) {
-        map.setFeatureState({ source: SOURCE_ROWS, id: hoveredRowGeoId }, { hovered: false });
-        hoveredRowGeoId = null;
       }
     }
 
@@ -176,13 +167,12 @@ export function useMapInteractions({
       // Skip if already hovering this section in sections mode
       if (lastSectionId === sectionId && lastRowId === null) return;
 
-      clearHoverFeatureStates();
-      hoveredSectionId = sectionId;
-      map.setFeatureState({ source: SOURCE_SECTIONS, id: sectionId }, { hovered: true });
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = null;
-      onHoverRef.current(buildSectionHover(sectionId));
+      const hover = buildSectionHover(sectionId);
+      syncHoverFromMapRef.current(hover);
+      onHoverRef.current(hover);
     }
 
     function handleRowHover(e: MapLayerMouseEvent) {
@@ -198,16 +188,12 @@ export function useMapInteractions({
       // Skip if already hovering this row
       if (lastSectionId === sectionId && lastRowId === rowId) return;
 
-      const rowGeoId = `${sectionId}:${rowId}`;
-      clearHoverFeatureStates();
-      hoveredSectionId = sectionId;
-      hoveredRowGeoId = rowGeoId;
-      map.setFeatureState({ source: SOURCE_SECTIONS, id: sectionId }, { hovered: true });
-      map.setFeatureState({ source: SOURCE_ROWS, id: rowGeoId }, { hovered: true });
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = rowId;
-      onHoverRef.current(buildRowHover(sectionId, rowId));
+      const hover = buildRowHover(sectionId, rowId);
+      syncHoverFromMapRef.current(hover);
+      onHoverRef.current(hover);
     }
 
     function handleSeatHover(e: MapLayerMouseEvent) {
@@ -246,13 +232,15 @@ export function useMapInteractions({
       }
       map.getCanvas().style.cursor = 'pointer';
 
-      // Emit row-level hover to React so pins can react
+      // Emit row-level hover so pins can react + sync all hover visuals
       const sectionId = feature.properties?.sectionId as string;
       const rowId = feature.properties?.rowId as string;
       if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
         lastSectionId = sectionId;
         lastRowId = rowId;
-        onHoverRef.current(buildRowHover(sectionId, rowId));
+        const hover = buildRowHover(sectionId, rowId);
+        syncHoverFromMapRef.current(hover);
+        onHoverRef.current(hover);
       }
     }
 
@@ -291,7 +279,9 @@ export function useMapInteractions({
       if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
         lastSectionId = sectionId;
         lastRowId = rowId;
-        onHoverRef.current(buildRowHover(sectionId, rowId));
+        const hover = buildRowHover(sectionId, rowId);
+        syncHoverFromMapRef.current(hover);
+        onHoverRef.current(hover);
       }
     }
 
@@ -318,10 +308,10 @@ export function useMapInteractions({
       setConnectorState(hoveredConnectorId, { hovered: false });
       hoveredConnectorId = null;
       hoveredSeatIds = [];
-      clearHoverFeatureStates();
       lastSectionId = null;
       lastRowId = null;
       map.getCanvas().style.cursor = '';
+      syncHoverFromMapRef.current(EMPTY_HOVER);
       onHoverRef.current(EMPTY_HOVER);
     }
 

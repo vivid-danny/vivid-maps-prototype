@@ -389,7 +389,12 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           'line-join': 'round',
         },
         paint: {
-          'line-color': overlays.seat.muted,
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
+            overlays.seat.muted,
+          ],
           'line-width': CONNECTOR_WIDTH_EXPR,
         },
       },
@@ -434,7 +439,12 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         filter: ['==', ['get', 'sectionId'], ''],  // matches nothing until filter is set
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': overlays.seat.muted,
+          'circle-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+            ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
+            overlays.seat.muted,
+          ],
           'circle-radius': SEAT_RADIUS_EXPR,
         },
       },

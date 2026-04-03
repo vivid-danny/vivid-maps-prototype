@@ -148,11 +148,11 @@ export function MapLibreVenue({
     return m;
   }, [model.listings]);
 
-  // Wire click/hover event handlers on map layers
-  useMapInteractions({ mapRef, ready, onSelect, onHover, isMobile, listingsBySeatId });
-
   // Sync React selection/hover state → MapLibre feature state
-  useMapSelectionSync({ mapRef, ready, selection, hoverState, sectionDataById: model.sectionDataById, displayMode });
+  const { syncHoverFromMap } = useMapSelectionSync({ mapRef, ready, selection, hoverState, sectionDataById: model.sectionDataById, displayMode });
+
+  // Wire click/hover event handlers on map layers
+  useMapInteractions({ mapRef, ready, onSelect, onHover, syncHoverFromMap, isMobile, listingsBySeatId });
 
   // Pin overlays — MapLibre Markers wrapping React <Pin> components
   useMapPins({
@@ -331,36 +331,19 @@ export function MapLibreVenue({
   }, [ready, displayMode, selection.seatIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seat muted overlay — white wash on all seats outside the selected section.
-  // Hover-reveal: exclude the hovered row so its seats are unmuted alongside the row.
+  // Hover-reveal filter updates are handled synchronously by syncHover in useMapSelectionSync.
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
 
     if (displayMode === 'seats' && selection.sectionId) {
-      const isHoveringMutedRow = hoverState.sectionId
-        && hoverState.sectionId !== selection.sectionId
-        && hoverState.rowId;
-
-      if (isHoveringMutedRow) {
-        // Exclude selected section AND the specific hovered row
-        const mutedFilter = [
-          'all',
-          ['!=', ['get', 'sectionId'], selection.sectionId],
-          ['!', ['all',
-            ['==', ['get', 'sectionId'], hoverState.sectionId],
-            ['==', ['get', 'rowId'], hoverState.rowId],
-          ]],
-        ] as const;
-        for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
-      } else {
-        const mutedFilter = ['!=', ['get', 'sectionId'], selection.sectionId] as const;
-        for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
-      }
+      const mutedFilter: any = ['!=', ['get', 'sectionId'], selection.sectionId];
+      for (const layer of SEAT_MUTED_LAYERS) map.setFilter(layer, mutedFilter);
       for (const layer of SEAT_MUTED_LAYERS) setLayerVisibility(map, layer, 'visible');
     } else {
       for (const layer of SEAT_MUTED_LAYERS) setLayerVisibility(map, layer, 'none');
     }
-  }, [ready, displayMode, selection.sectionId, hoverState.sectionId, hoverState.rowId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, displayMode, selection.sectionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update fill-color expressions when theme, colors, or displayMode change
   useEffect(() => {
