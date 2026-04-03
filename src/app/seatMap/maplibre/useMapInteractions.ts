@@ -9,7 +9,7 @@ import {
   SOURCE_SECTIONS,
 } from './constants';
 import type { SelectionState, HoverState } from '../model/types';
-import { EMPTY_HOVER } from '../model/types';
+import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import {
   buildSectionSelection,
   buildRowSelection,
@@ -218,7 +218,19 @@ export function useMapInteractions({
       onHoverRef.current(EMPTY_HOVER);
     }
 
+    // Background click — deselects when clicking outside any interactive layer.
+    // queryRenderedFeatures guards against double-firing when a layer click already handled it.
+    function handleBackgroundClick(e: MapLayerMouseEvent) {
+      const hits = map.queryRenderedFeatures(e.point, {
+        layers: [LAYER_SECTION, LAYER_ROW, LAYER_SEAT],
+      });
+      if (hits.length > 0) return;
+      onSelectRef.current(EMPTY_SELECTION);
+      onHoverRef.current(EMPTY_HOVER);
+    }
+
     // Register handlers
+    map.on('click', handleBackgroundClick);
     map.on('click', LAYER_SECTION, handleSectionClick);
     map.on('click', LAYER_ROW, handleRowClick);
     map.on('click', LAYER_SEAT, handleSeatClick);
@@ -232,6 +244,7 @@ export function useMapInteractions({
     map.on('mouseleave', LAYER_SEAT, handleMouseLeave);
 
     return () => {
+      map.off('click', handleBackgroundClick);
       map.off('click', LAYER_SECTION, handleSectionClick);
       map.off('click', LAYER_ROW, handleRowClick);
       map.off('click', LAYER_SEAT, handleSeatClick);

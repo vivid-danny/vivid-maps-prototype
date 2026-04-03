@@ -420,3 +420,17 @@ When selecting a section while already zoomed past the base zoom, the camera **p
 ## Auto-Zoom Disabled
 
 When the initial display and zoomed-in display are configured to the same value (e.g., both set to "sections"), **all auto-zoom on selection is disabled**. Since there is no deeper level of detail to zoom into, the user controls pan and zoom manually. Selection still works — overlays, muting, and the listings panel all respond — but the camera does not move.
+
+---
+
+# Deselection
+
+## Tap Outside
+
+Clicking or tapping any part of the map that does not hit a section, row, or seat polygon clears the active selection. This includes the venue background, the playing field, and gaps between sections when zoomed in. The camera does **not** move.
+
+## Implementation Details
+
+A generic `map.on('click')` handler (no layer filter) fires on every map click. It calls `map.queryRenderedFeatures(e.point, { layers: [section, row, seat] })` — if any features are hit, the layer-specific handler already owns that click and the background handler bails out. If no features are hit, `EMPTY_SELECTION` and `EMPTY_HOVER` are dispatched.
+
+This applies at all display modes and on both desktop and mobile.
