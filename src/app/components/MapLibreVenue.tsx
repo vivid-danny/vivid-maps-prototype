@@ -16,6 +16,7 @@ import {
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
   LAYER_SEAT_HOVER_OVERLAY,
+  LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
@@ -321,6 +322,36 @@ export function MapLibreVenue({
     }
   }, [ready, displayMode, selection.seatIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Seat muted overlay — white wash on all seats outside the selected section.
+  // Hover-reveal: exclude the hovered row so its seats are unmuted alongside the row.
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const map = mapRef.current;
+
+    if (displayMode === 'seats' && selection.sectionId) {
+      const isHoveringMutedRow = hoverState.sectionId
+        && hoverState.sectionId !== selection.sectionId
+        && hoverState.rowId;
+
+      if (isHoveringMutedRow) {
+        // Exclude selected section AND the specific hovered row
+        map.setFilter(LAYER_SEAT_MUTED_OVERLAY, [
+          'all',
+          ['!=', ['get', 'sectionId'], selection.sectionId],
+          ['!', ['all',
+            ['==', ['get', 'sectionId'], hoverState.sectionId],
+            ['==', ['get', 'rowId'], hoverState.rowId],
+          ]],
+        ]);
+      } else {
+        map.setFilter(LAYER_SEAT_MUTED_OVERLAY, ['!=', ['get', 'sectionId'], selection.sectionId]);
+      }
+      setLayerVisibility(map, LAYER_SEAT_MUTED_OVERLAY, 'visible');
+    } else {
+      setLayerVisibility(map, LAYER_SEAT_MUTED_OVERLAY, 'none');
+    }
+  }, [ready, displayMode, selection.sectionId, hoverState.sectionId, hoverState.rowId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Update fill-color expressions when theme, colors, or displayMode change
   useEffect(() => {
     if (!ready || !mapRef.current) return;
@@ -384,6 +415,13 @@ export function MapLibreVenue({
       'case',
       ['boolean', ['feature-state', 'selected'], false], effectiveOverlays.row.selectedOutline,
       'rgba(0,0,0,0)',
+    ]);
+
+    // Seat muted overlay color — transparent on hovered seats for hover-reveal
+    map.setPaintProperty(LAYER_SEAT_MUTED_OVERLAY, 'circle-color', [
+      'case',
+      ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+      effectiveOverlays.seat.muted,
     ]);
 
     // Seat selected overlay (filter controls which seats are visible; simple values here)

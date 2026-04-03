@@ -375,6 +375,15 @@ line-join: round
 
 Seat circles become visible when zoomed past `ROW_ZOOM_MIN`. Each seat belongs to a listing; a listing may span multiple adjacent seats in the same row.
 
+## Layer Stack (bottom to top)
+
+| Order | Layer ID                    | Type   | Driven by        | Visibility               |
+|-------|-----------------------------|--------|------------------|--------------------------|
+| 1     | `seat`                      | circle | paint expression | Seats mode only          |
+| 2     | `seat-hover-overlay`        | circle | feature-state    | Seats mode only          |
+| 3     | `seat-muted-overlay`        | circle | filter + feature-state | Seats mode, when selection active |
+| 4     | `seat-selected-overlay`     | circle | filter           | Seats mode, when seatIds selected |
+
 ## Hover
 
 Hovering any seat in a listing puts **all seats in that listing** into the hovered state simultaneously. The lookup is done via a `seatId → Listing` map so the full `listing.seatIds` array is known at hover time.
@@ -391,6 +400,19 @@ Hovering an unavailable seat circle triggers **no state change** anywhere. Cruci
 ## Selection
 
 Clicking any seat in a listing selects the **full listing** — all `seatIds` from that listing are written into `selection.seatIds`. The `listingId` and `rowId` are resolved in `handleSelect` by matching the clicked seat ID against `model.listings`. The seat selected overlay (`seat-selected-overlay`) is filter-driven: its filter is set to `['in', ['get', 'id'], ['literal', seatIds]]`, so all seats in the listing receive the overlay automatically.
+
+## Muting
+
+When a seat is selected, all seats outside the selected seat's section are muted via the `seat-muted-overlay` layer. Unlike row-level muting (which uses `parentMuted` feature-state), seat muting is **filter-driven** — the overlay filter is set to `['!=', ['get', 'sectionId'], selection.sectionId]`, covering all seats in non-selected sections in a single operation.
+
+### Hover-reveal
+
+When hovering a seat in a muted (non-selected) section, the muting is removed for:
+
+1. **The entire hovered row** — the filter is updated to also exclude the hovered row: `['!', ['all', ['==', sectionId, hoveredSection], ['==', rowId, hoveredRow]]]`
+2. **Individually hovered seats** — the paint expression checks `['feature-state', 'hovered']` and paints transparent instead of the muted color, handling multi-seat listing hover
+
+The row polygon underneath is also unmuted by the existing `parentMuted` hover-reveal in `useMapSelectionSync`, so both rows and seats reveal together.
 
 ## Overlay Values
 
@@ -436,12 +458,15 @@ The `row-selected-overlay` paint expression evaluates feature-states in this ord
 
 This ensures that a row can be simultaneously `parentMuted` and `hovered`, and the hover wins.
 
-### Extending to seats
+### Seat-level muting
 
-The same pattern applies at the seat level. When a row is selected in seats mode:
-- Set `parentMuted: true` on all seat features not in the selected row
-- The `seat-selected-overlay` paint expression gets the same 4-state priority chain
-- Hover-reveal: hovering a muted row temporarily unmutes its seats
+Seat muting uses a **different mechanism** than rows. Instead of per-feature `parentMuted` state, a dedicated `seat-muted-overlay` layer uses a **filter** to cover all seats outside the selected section. This avoids iterating every seat feature to set state.
+
+- **Filter**: `['!=', ['get', 'sectionId'], selection.sectionId]` — one filter covers the entire venue
+- **Hover-reveal**: the filter is dynamically updated to also exclude the hovered row, and the paint expression makes individually hovered seats transparent
+- **Visibility**: hidden when no selection is active or when not in seats mode
+
+See the [Seats → Muting](#muting) section for full details.
 
 ---
 

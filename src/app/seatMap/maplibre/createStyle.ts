@@ -26,6 +26,7 @@ import {
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
   LAYER_SEAT_HOVER_OVERLAY,
+  LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
@@ -367,7 +368,26 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         },
       },
 
-      // 13b. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
+      // 13b. Seat muted overlay — white wash on seats outside the selected section.
+      // Filter-driven (like section-selected-overlay): filter updated imperatively in MapLibreVenue.
+      // Layer hidden when no selection or not in seats mode.
+      {
+        id: LAYER_SEAT_MUTED_OVERLAY,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        filter: ['==', ['get', 'sectionId'], ''],  // matches nothing until filter is set
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': overlays.seat.muted,
+          'circle-radius': [
+            'interpolate', ['exponential', 2], ['zoom'],
+            14, 2,
+            20, 128,
+          ],
+        },
+      },
+
+      // 13c. Seat selected overlay — dark tint + outline ring on selected row's seats (filter-driven).
       // Uses a sectionId+rowId filter (like section-selected-outline) so it works whether a row
       // listing or an individual seat is selected — no per-seat feature-state required.
       {

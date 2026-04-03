@@ -313,11 +313,8 @@ export function createManifestSeatMapModel(): SeatMapModel {
 
   for (const sectionId of sectionIds) {
     const rawRowSeatCounts = seatCounts[sectionId]!;
-    // Lowercase row IDs to match GeoJSON feature IDs (pipeline outputs lowercase)
-    const rowSeatCounts: Record<string, number> = {};
-    for (const [k, v] of Object.entries(rawRowSeatCounts)) {
-      rowSeatCounts[k.toLowerCase()] = v;
-    }
+    // Preserve original row ID casing to match GeoJSON feature IDs
+    const rowSeatCounts = rawRowSeatCounts;
     // Sort row IDs numerically
     const rowIds = Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
     if (rowIds.length === 0) continue;
