@@ -9,12 +9,16 @@ interface UseMapLibreOptions {
   minZoom?: number;
   maxZoom?: number;
   fitBoundsPadding?: number;
+  onZoomChange?: (zoom: number) => void;
 }
 
-export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom = 22, fitBoundsPadding = 40 }: UseMapLibreOptions) {
+export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom = 22, fitBoundsPadding = 40, onZoomChange }: UseMapLibreOptions) {
   const mapRef = useRef<MaplibreMap | null>(null);
-  const [zoom, setZoom] = useState<number>(5);
   const [ready, setReady] = useState(false);
+
+  // Stable ref for the callback so map event listeners never go stale
+  const onZoomChangeRef = useRef(onZoomChange);
+  onZoomChangeRef.current = onZoomChange;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,12 +41,12 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
     (window as any).__map = map;
 
     map.on('load', () => {
-      setZoom(map.getZoom());
+      onZoomChangeRef.current?.(map.getZoom());
       setReady(true);
     });
 
     map.on('zoom', () => {
-      setZoom(map.getZoom());
+      onZoomChangeRef.current?.(map.getZoom());
     });
 
     return () => {
@@ -53,5 +57,5 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
 
-  return { mapRef, zoom, ready };
+  return { mapRef, ready };
 }

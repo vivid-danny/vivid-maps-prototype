@@ -15,27 +15,56 @@ import type { SeatMapModel } from '../model/types';
  * Model row IDs are the raw rowId string (e.g. "3"), combined with sectionId to build
  * the GeoJSON feature ID (e.g. "101:3"). Seat IDs in the model match GeoJSON ids directly.
  *
- * Work is chunked via requestIdleCallback (10 sections per chunk) so the main thread
- * isn't blocked on the ~18K setFeatureState calls at load time.
+ * Sections are processed immediately (source always has data). Rows and seats are
+ * deferred until detailSourcesLoaded flips to true (when the GeoJSON is loaded on demand).
+ * Row/seat work is chunked via requestIdleCallback so the main thread isn't blocked.
  */
 export function useFeatureState({
   mapRef,
   ready,
   model,
   seatableIds,
+  detailSourcesLoaded,
 }: {
   mapRef: React.RefObject<MaplibreMap | null>;
   ready: boolean;
   model: SeatMapModel;
   seatableIds: string[];
+  detailSourcesLoaded: boolean;
 }) {
+  // --- Section feature states (sections source is always loaded) ---
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
+
+    for (const section of model.sections) {
+      const sectionListings = model.listingsBySection.get(section.sectionId);
+      const sectionHasAvailable = !!sectionListings && sectionListings.length > 0;
+      map.setFeatureState(
+        { source: SOURCE_SECTIONS, id: section.sectionId },
+        { unavailable: !sectionHasAvailable },
+      );
+    }
+  }, [ready, model]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mark seatable sections that have no model data as unavailable.
+  useEffect(() => {
+    if (!ready || !mapRef.current || seatableIds.length === 0) return;
+    const map = mapRef.current;
+    for (const id of seatableIds) {
+      if (!model.sectionDataById.has(id)) {
+        map.setFeatureState({ source: SOURCE_SECTIONS, id }, { unavailable: true });
+      }
+    }
+  }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Row + seat feature states (deferred until sources are loaded) ---
+  useEffect(() => {
+    if (!ready || !mapRef.current || !detailSourcesLoaded) return;
+    const map = mapRef.current;
     const sections = model.sections;
 
-    // Build listing-based availability lookups — listings are the source of truth
-    // for whether a row/seat is interactable (not the seat.status generation artifact).
+    // Build listing-based availability lookups
     const seatIdsWithListings = new Set<string>();
     const rowGeoIdsWithListings = new Set<string>();
     for (const listing of model.listings) {
@@ -55,15 +84,6 @@ export function useFeatureState({
         const section = sections[i];
         const sectionId = section.sectionId;
         const sectionData = model.sectionDataById.get(sectionId);
-        // A section is available only if it has listings (not just available seats)
-        const sectionListings = model.listingsBySection.get(sectionId);
-        const sectionHasAvailable = !!sectionListings && sectionListings.length > 0;
-
-        map.setFeatureState(
-          { source: SOURCE_SECTIONS, id: sectionId },
-          { unavailable: !sectionHasAvailable },
-        );
-
         if (!sectionData) continue;
 
         sectionData.rows.forEach((row) => {
@@ -93,18 +113,5 @@ export function useFeatureState({
     }
 
     processBatch();
-  }, [ready, model]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Mark seatable sections that have no model data as unavailable.
-  // Runs in a separate effect so the async arrival of seatableIds (from the manifest fetch)
-  // doesn't restart the expensive ~18K-item batch above.
-  useEffect(() => {
-    if (!ready || !mapRef.current || seatableIds.length === 0) return;
-    const map = mapRef.current;
-    for (const id of seatableIds) {
-      if (!model.sectionDataById.has(id)) {
-        map.setFeatureState({ source: SOURCE_SECTIONS, id }, { unavailable: true });
-      }
-    }
-  }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, model, detailSourcesLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 }
