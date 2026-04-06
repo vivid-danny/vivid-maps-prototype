@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { HoverState, LayoutMode, Listing, SeatMapModel, SelectionState, ViewMode } from '../model/types';
+import type { HoverState, LayoutMode, Listing, PinData, SeatMapModel, SelectionState, ViewMode } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
@@ -26,16 +26,43 @@ export function useSeatMapPrototypeViewState({
   const [hoverState, setHoverState] = useState<HoverState>(EMPTY_HOVER);
   const [showControls, setShowControls] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('listings');
+  const [quantityFilter, setQuantityFilter] = useState<number>(2);
 
-  const listings = model.listings;
+  const listings = useMemo(() => {
+    return model.listings.filter(l => l.quantityAvailable >= quantityFilter);
+  }, [model.listings, quantityFilter]);
 
   const selectedListing = useMemo(() => {
     if (!selection.listingId) return null;
     return listings.find((l) => l.listingId === selection.listingId) || null;
   }, [listings, selection.listingId]);
 
-  const listingsBySection = model.listingsBySection;
-  const pinsBySection = model.pinsBySection;
+  const listingsBySection = useMemo(() => {
+    const map = new Map<string, Listing[]>();
+    for (const l of listings) {
+      const arr = map.get(l.sectionId);
+      if (arr) arr.push(l);
+      else map.set(l.sectionId, [l]);
+    }
+    return map;
+  }, [listings]);
+
+  const pinsBySection = useMemo(() => {
+    const map = new Map<string, PinData[]>();
+    for (const [sectionId, pins] of model.pinsBySection) {
+      const filtered = pins.filter(p => p.listing.quantityAvailable >= quantityFilter);
+      if (filtered.length > 0) map.set(sectionId, filtered);
+    }
+    return map;
+  }, [model.pinsBySection, quantityFilter]);
+
+  // Clear selected listing if it gets filtered out by quantity change
+  useEffect(() => {
+    if (selection.listingId && !listings.some(l => l.listingId === selection.listingId)) {
+      setSelection(prev => ({ ...prev, listingId: null, seatIds: [] }));
+      setViewMode('listings');
+    }
+  }, [listings, selection.listingId]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -146,6 +173,8 @@ export function useSeatMapPrototypeViewState({
     selectedListing,
     listingsBySection,
     pinsBySection,
+    quantityFilter,
+    setQuantityFilter,
     setShowControls,
     setSelection,
     handleSelect,

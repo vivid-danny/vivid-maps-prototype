@@ -15,9 +15,11 @@ interface ListingsPanelProps {
   pressedColor?: string;
   disableHover?: boolean;
   listingCardSize?: ListingCardSize;
+  quantityFilter?: number;
+  onQuantityFilterChange?: (qty: number) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize, quantityFilter, onQuantityFilterChange }: ListingsPanelProps) {
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
 
   // Filter listings based on selection
@@ -50,6 +52,20 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
 
   return (
     <div className={`flex flex-col min-h-0 bg-gray-50 ${className}`}>
+      {/* Quantity filter */}
+      {onQuantityFilterChange && (
+        <div className="px-4 h-12 flex items-center border-b border-gray-200 bg-white">
+          <select
+            value={quantityFilter ?? 2}
+            onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
+            className="w-full text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-1 cursor-pointer"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {/* Header */}
       <div className="px-4 h-12 flex items-center border-b border-gray-200 bg-white">
         <h2 className="text-sm font-semibold text-gray-900">
