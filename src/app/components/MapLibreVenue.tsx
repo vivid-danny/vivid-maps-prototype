@@ -140,6 +140,8 @@ export function MapLibreVenue({
     style,
     bounds: VENUE_BOUNDS,
     fitBoundsPadding: isMobile ? 20 : 40,
+    minZoom: 12,
+    maxZoom: 20,
     onZoomChange,
   });
 

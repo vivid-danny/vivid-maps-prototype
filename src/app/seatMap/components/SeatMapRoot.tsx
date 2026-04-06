@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
-import { RotateCcw } from 'lucide-react';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
@@ -308,30 +308,46 @@ export function SeatMapRoot() {
                 filteredListingsBySection={viewState.listingsBySection}
                 filteredPinsBySection={viewState.pinsBySection}
               />
-              <button
-                onClick={() => {
-                  const map = mapInstanceRef.current;
-                  viewState.setSelection(EMPTY_SELECTION);
-                  // Immediately drop displayMode to sections so pins switch before the animation runs.
-                  setCurrentScale(ROW_ZOOM_MIN - 1);
-                  if (map) {
-                    isResettingRef.current = true;
-                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
-                    map.once('idle', () => {
-                      isResettingRef.current = false;
-                      setCurrentScale(map.getZoom());
-                    });
-                  }
-                }}
-                className="absolute top-4 left-4 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
-                style={{
-                  padding: '6px 8px',
-                  opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
-                  pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
-                }}
-              >
-                Reset Map <RotateCcw className="w-4 h-4" />
-              </button>
+              <div className="absolute top-4 left-4 z-[40] flex gap-2">
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomIn()}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                  aria-label="Zoom in"
+                >
+                  <Plus className="w-4 h-4 text-[#04092C]" />
+                </button>
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomOut()}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                  aria-label="Zoom out"
+                >
+                  <Minus className="w-4 h-4 text-[#04092C]" />
+                </button>
+                <button
+                  onClick={() => {
+                    const map = mapInstanceRef.current;
+                    viewState.setSelection(EMPTY_SELECTION);
+                    // Immediately drop displayMode to sections so pins switch before the animation runs.
+                    setCurrentScale(ROW_ZOOM_MIN - 1);
+                    if (map) {
+                      isResettingRef.current = true;
+                      map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
+                      map.once('idle', () => {
+                        isResettingRef.current = false;
+                        setCurrentScale(map.getZoom());
+                      });
+                    }
+                  }}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                  style={{
+                    opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
+                    pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
+                  }}
+                  aria-label="Reset map"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#04092C]" />
+                </button>
+              </div>
             </div>
           </div>
 
