@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
-import { RotateCcw } from 'lucide-react';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
@@ -31,17 +31,16 @@ export function SeatMapRoot() {
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
-    ...mapDef.scaleDefaults,
     ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
     ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
     ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
   });
-  const [currentScale, setCurrentScale] = useState(mapDef.scaleDefaults.desktopInitialScale);
+  const [currentScale, setCurrentScale] = useState(ROW_ZOOM_MIN - 1);
+  const [displayZoom, setDisplayZoom] = useState(ROW_ZOOM_MIN - 1);
 
   const resetConfig = useCallback(() => {
     rawResetConfig();
-    updateConfig(mapDef.scaleDefaults);
-  }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
+  }, [rawResetConfig]);
 
   // Sync URL params live
   useEffect(() => {
@@ -62,6 +61,7 @@ export function SeatMapRoot() {
   // briefly flipping displayMode back to rows/seats and flashing extra pins.
   const handleZoomChange = useCallback((zoom: number) => {
     if (isResettingRef.current) return;
+    setDisplayZoom(zoom);
     setCurrentScale(prev => {
       if ((prev >= ROW_ZOOM_MIN) !== (zoom >= ROW_ZOOM_MIN)) return zoom;
       return prev; // same zone — bail out, no re-render
@@ -69,23 +69,22 @@ export function SeatMapRoot() {
   }, []);
 
   const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
-    // If initial and zoomed display are the same, there's no deeper detail to zoom into —
-    // skip auto-zoom and let the user pan/zoom manually.
-    if (config.initialDisplay === config.zoomedDisplay) return;
-
     const map = mapInstanceRef.current;
     if (!map || !sel.sectionId) return;
 
     const entry = sectionCenters.get(sel.sectionId);
     if (!entry) return;
 
+    // When initial and zoomed display are the same, pan only — no zoom change.
+    const panOnly = config.initialDisplay === config.zoomedDisplay;
+
     if (sel.rowId) {
       const center = entry.rows[sel.rowId]?.center ?? entry.center;
-      const targetZoom = zoom ?? (sel.listingId ? SEAT_ZOOM_MIN : SEAT_ZOOM_MIN);
+      const targetZoom = panOnly ? map.getZoom() : (zoom ?? SEAT_ZOOM_MIN);
       map.easeTo({ center, zoom: targetZoom, duration: 500, essential: true });
     } else {
       const baseZoom = ROW_ZOOM_MIN + 2;
-      const targetZoom = zoom ?? Math.max(baseZoom, map.getZoom());
+      const targetZoom = panOnly ? map.getZoom() : (zoom ?? Math.max(baseZoom, map.getZoom()));
       map.easeTo({ center: entry.center, zoom: targetZoom, duration: 500, essential: true });
     }
   }, [sectionCenters, config.initialDisplay, config.zoomedDisplay]);
@@ -201,7 +200,7 @@ export function SeatMapRoot() {
     <div className="size-full flex">
       <PrototypeControls
         showControls={viewState.showControls}
-        currentScale={viewState.currentScale}
+        currentScale={displayZoom}
         displayMode={controller.displayMode}
         config={config}
         onConfigChange={updateConfig}
@@ -210,52 +209,68 @@ export function SeatMapRoot() {
 
       <div
         className="flex-1 min-w-0 flex"
-        style={{ backgroundColor: '#f3f4f6' }}
+        style={{ backgroundColor: config.mapBackground }}
       >
         <div
-          className={`flex bg-white ${
+          className={`flex ${
             isMobile
-              ? 'flex-col w-full h-full overflow-hidden relative'
+              ? 'flex-col bg-white w-full h-full overflow-hidden relative'
               : 'flex-row w-full h-full overflow-hidden'
           }`}
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="w-[450px] h-full shrink-0 relative overflow-hidden">
-              <ListingsPanel
-                className="w-full h-full"
-                listings={viewState.listings}
-                selection={panelSelection}
-                hoverState={viewState.hoverState}
-                onSelectListing={viewState.handleSelectFromPanel}
-                onHoverListing={viewState.handleHoverFromPanel}
-                selectedColor={config.seatColors.selected}
-                hoverColor={config.seatColors.hover}
-                pressedColor={config.seatColors.pressed}
-                disableHover={isMobile}
-                listingCardSize={config.listingCardSize}
-                quantityFilter={viewState.quantityFilter}
-                onQuantityFilterChange={viewState.setQuantityFilter}
-              />
-              {showDetailOverlay && detailListing && (
-                <div
-                  className={`absolute inset-0 detail-panel--${detailPhase}`}
-                  onAnimationEnd={handleDetailAnimationEnd}
-                >
+            <div className="h-full shrink-0 p-4" style={{ width: 482 }}>
+              <div className="w-full h-full rounded-xl overflow-hidden shadow-sm relative">
+                <ListingsPanel
+                  className="w-full h-full"
+                  listings={viewState.listings}
+                  selection={panelSelection}
+                  hoverState={viewState.hoverState}
+                  onSelectListing={viewState.handleSelectFromPanel}
+                  onHoverListing={viewState.handleHoverFromPanel}
+                  selectedColor={config.seatColors.selected}
+                  hoverColor={config.seatColors.hover}
+                  pressedColor={config.seatColors.pressed}
+                  disableHover={isMobile}
+                  listingCardSize={config.listingCardSize}
+                  quantityFilter={viewState.quantityFilter}
+                  onQuantityFilterChange={viewState.setQuantityFilter}
+                />
+                {showDetailOverlay && detailListing && (
                   <div
-                    key={detailListing.listingId}
-                    className="detail-content w-full h-full"
+                    className={`absolute inset-0 detail-panel--${detailPhase}`}
+                    onAnimationEnd={handleDetailAnimationEnd}
                   >
-                    <TicketDetail
-                      className="w-full h-full"
-                      listing={detailListing}
-                      eventInfo={model.eventInfo}
-                      layoutMode={layoutMode}
-                      onBack={viewState.handleBackToListings}
-                    />
+                    <div
+                      key={detailListing.listingId}
+                      className="detail-content w-full h-full"
+                    >
+                      <TicketDetail
+                        className="w-full h-full"
+                        listing={detailListing}
+                        eventInfo={model.eventInfo}
+                        layoutMode={layoutMode}
+                        onBack={viewState.handleBackToListings}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile: event info header */}
+          {isMobile && (
+            <div className="px-4 py-3 flex items-center gap-3 bg-white border-b border-gray-200 shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
+                <span className="text-white font-bold text-lg">C</span>
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs St. Louis Cardinals</div>
+                <div className="text-xs text-gray-500 mt-0.5">Wrigley Field · Chicago, IL</div>
+                <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
+              </div>
             </div>
           )}
 
@@ -293,30 +308,46 @@ export function SeatMapRoot() {
                 filteredListingsBySection={viewState.listingsBySection}
                 filteredPinsBySection={viewState.pinsBySection}
               />
-              <button
-                onClick={() => {
-                  const map = mapInstanceRef.current;
-                  viewState.setSelection(EMPTY_SELECTION);
-                  // Immediately drop displayMode to sections so pins switch before the animation runs.
-                  setCurrentScale(ROW_ZOOM_MIN - 1);
-                  if (map) {
-                    isResettingRef.current = true;
-                    map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
-                    map.once('idle', () => {
-                      isResettingRef.current = false;
-                      setCurrentScale(map.getZoom());
-                    });
-                  }
-                }}
-                className="absolute top-2 left-2 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
-                style={{
-                  padding: '6px 8px',
-                  opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
-                  pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
-                }}
-              >
-                Reset Map <RotateCcw className="w-4 h-4" />
-              </button>
+              <div className="absolute top-4 left-4 z-[40] flex gap-2">
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomIn()}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                  aria-label="Zoom in"
+                >
+                  <Plus className="w-4 h-4 text-[#04092C]" />
+                </button>
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomOut()}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                  aria-label="Zoom out"
+                >
+                  <Minus className="w-4 h-4 text-[#04092C]" />
+                </button>
+                <button
+                  onClick={() => {
+                    const map = mapInstanceRef.current;
+                    viewState.setSelection(EMPTY_SELECTION);
+                    // Immediately drop displayMode to sections so pins switch before the animation runs.
+                    setCurrentScale(ROW_ZOOM_MIN - 1);
+                    if (map) {
+                      isResettingRef.current = true;
+                      map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
+                      map.once('idle', () => {
+                        isResettingRef.current = false;
+                        setCurrentScale(map.getZoom());
+                      });
+                    }
+                  }}
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                  style={{
+                    opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
+                    pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
+                  }}
+                  aria-label="Reset map"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#04092C]" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -337,6 +368,7 @@ export function SeatMapRoot() {
                 listingCardSize={config.listingCardSize}
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
+                showEventInfo={false}
               />
             </div>
           )}

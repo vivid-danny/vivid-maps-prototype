@@ -106,31 +106,26 @@ export function useMapSelectionSync({
     if (sel.sectionId && isChildMode) {
       const hoverReveal = hoveredSectionId && hoveredSectionId !== sel.sectionId;
 
-      if (sel.rowId) {
-        // Row selected: mute everything except selected row (and hovered section if hover-revealing)
-        const mutedCondition = hoverReveal
-          ? ['all',
-              ['!=', ['get', 'sectionId'], hoveredSectionId],
-              ['any',
-                ['!=', ['get', 'sectionId'], sel.sectionId],
-                ['!=', ['get', 'rowId'], sel.rowId],
-              ],
-            ]
-          : ['any',
-              ['!=', ['get', 'sectionId'], sel.sectionId],
+      // Core muted condition (without hover-reveal guard).
+      // Row selected: mute rows outside the section, or inside the section but not the selected
+      // row and still available (rows without inventory are left unobscured).
+      // Section selected: mute all rows outside the selected section.
+      const coreMuted = sel.rowId
+        ? ['any',
+            ['!=', ['get', 'sectionId'], sel.sectionId],
+            ['all',
               ['!=', ['get', 'rowId'], sel.rowId],
-            ];
-        expr.push(mutedCondition, rowOverlays.muted);
-      } else {
-        // Section selected: mute all rows outside selected section (and hovered section if hover-revealing)
-        const mutedCondition = hoverReveal
-          ? ['all',
-              ['!=', ['get', 'sectionId'], sel.sectionId],
-              ['!=', ['get', 'sectionId'], hoveredSectionId],
-            ]
-          : ['!=', ['get', 'sectionId'], sel.sectionId];
-        expr.push(mutedCondition, rowOverlays.muted);
-      }
+              ['!', ['boolean', ['feature-state', 'unavailable'], false]],
+            ],
+          ]
+        : ['!=', ['get', 'sectionId'], sel.sectionId];
+
+      // Hover-reveal: exempt the hovered section from muting by wrapping with a guard.
+      const mutedCondition = hoverReveal
+        ? ['all', ['!=', ['get', 'sectionId'], hoveredSectionId], coreMuted]
+        : coreMuted;
+
+      expr.push(mutedCondition, rowOverlays.muted);
     }
 
     expr.push(transparent);
@@ -141,12 +136,13 @@ export function useMapSelectionSync({
   // When hovering the selected section or no section, the expression is the same (no reveal clause).
   const hoverRevealActiveRef = useRef(false);
 
-  function applyRowOverlay(map: MaplibreMap, hoveredSectionId: string | null) {
+  function applyRowOverlay(map: MaplibreMap, hoveredSectionId: string | null, force = false) {
     const sel = selectionRef.current;
     const needsReveal = !!hoveredSectionId && hoveredSectionId !== sel.sectionId;
 
-    // Skip the expensive setPaintProperty call if hover-reveal state hasn't changed
-    if (!needsReveal && !hoverRevealActiveRef.current) return;
+    // Skip the expensive setPaintProperty call if hover-reveal state hasn't changed.
+    // force=true bypasses this cache (used when selection changes to always rebuild).
+    if (!force && !needsReveal && !hoverRevealActiveRef.current) return;
 
     hoverRevealActiveRef.current = needsReveal;
     const expr = buildRowOverlayExpression(
@@ -158,8 +154,8 @@ export function useMapSelectionSync({
   // Rebuild when selection/displayMode/overlays change — always apply (bypass hover-reveal cache)
   useEffect(() => {
     if (!ready || !mapRef.current) return;
-    hoverRevealActiveRef.current = false; // force rebuild
-    applyRowOverlay(mapRef.current, prevHoverSectionId.current);
+    hoverRevealActiveRef.current = false; // reset so applyRowOverlay recalculates from scratch
+    applyRowOverlay(mapRef.current, prevHoverSectionId.current, true);
   }, [ready, selection.sectionId, selection.rowId, displayMode, overlays]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Synchronous hover visual update ---

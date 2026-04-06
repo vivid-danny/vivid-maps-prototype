@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { memo, useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
 import type { ListingCardSize } from '../seatMap/config/types';
 import { useHoverIntent } from './useHoverIntent';
@@ -24,7 +24,7 @@ interface ListingCardProps {
   size?: ListingCardSize;
 }
 
-export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false, size = 'standard' }: ListingCardProps) {
+function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false, size = 'standard' }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
@@ -113,3 +113,5 @@ export function ListingCard({ listing, isSelected, isHovered, onClick, onHover, 
     </div>
   );
 }
+
+export const ListingCard = memo(ListingCardInner);

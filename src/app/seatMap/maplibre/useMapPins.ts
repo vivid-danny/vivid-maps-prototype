@@ -321,6 +321,7 @@ export function useMapPins({
             const existing = current.get(HOVER_PIN_ID);
             if (existing) {
               existing.marker.setLngLat(lngLat);
+              existing.marker.getElement().style.display = '';
               renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
               existing.isHovered = true;
             } else {
@@ -358,6 +359,7 @@ export function useMapPins({
             const existing = current.get(HOVER_PIN_ID);
             if (existing) {
               existing.marker.setLngLat(lngLat);
+              existing.marker.getElement().style.display = '';
               renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
               existing.isHovered = true;
             } else {
@@ -378,14 +380,12 @@ export function useMapPins({
       }
     }
 
-    // No matching on-the-fly hover — remove stale hover pin if present.
-    // Defer root.unmount() to avoid "synchronously unmount during render" warning.
+    // No matching on-the-fly hover — hide the hover pin but keep the root alive
+    // so it can be reused on the next hover without creating a new React root.
     const existing = current.get(HOVER_PIN_ID);
     if (existing) {
-      existing.marker.remove();
-      const root = existing.root;
-      setTimeout(() => root.unmount(), 0);
-      current.delete(HOVER_PIN_ID);
+      existing.marker.getElement().style.display = 'none';
+      existing.isHovered = false;
     }
   }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
 

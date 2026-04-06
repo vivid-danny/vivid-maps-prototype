@@ -4,6 +4,7 @@ import type { HoverState, LayoutMode, Listing, PinData, SeatMapModel, SelectionS
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
+import { ROW_ZOOM_MIN } from '../maplibre/constants';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
@@ -67,11 +68,11 @@ export function useSeatMapPrototypeViewState({
   useEffect(() => {
     const timeout = setTimeout(() => {
       setSelection(EMPTY_SELECTION);
-      setCurrentScale(controller.initialScale);
+      setCurrentScale(ROW_ZOOM_MIN - 1);
     }, 50);
 
     return () => clearTimeout(timeout);
-  }, [controller.initialScale, layoutMode, setCurrentScale]);
+  }, [layoutMode, setCurrentScale]);
 
   const navigateToSelection = useCallback((sel: SelectionState) => {
     if (!sel.sectionId) return;

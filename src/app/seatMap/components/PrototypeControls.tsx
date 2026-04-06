@@ -205,7 +205,6 @@ function SectionHeader({ title, prodSource }: {
 
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
 
 export function PrototypeControls({
@@ -317,48 +316,7 @@ export function PrototypeControls({
                 />
               </div>
 
-              {/* Mixed Inventory Display */}
-              <div className="mb-4">
-                <label className="text-xs text-gray-600 block mb-2">Mixed Inventory Display</label>
-                <ToggleGroup
-                  options={ZONE_ROW_DISPLAYS}
-                  value={config.zoneRowDisplay}
-                  onChange={(zoneRowDisplay) => onConfigChange({ zoneRowDisplay })}
-                />
-              </div>
             </div>
-          </div>
-
-          {/* Initial Scales */}
-          <div className="mb-6">
-            <div className="text-xs font-bold text-black mb-2">Initial Scales</div>
-
-            <div className="space-y-3">
-              <SliderControl
-                label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
-                value={config.desktopInitialScale}
-                onChange={(desktopInitialScale) => onConfigChange({ desktopInitialScale })}
-                min={0.02} max={0.25} step={0.01}
-              />
-              <SliderControl
-                label={`Desktop Zoom Threshold: ${config.desktopZoomThreshold}x`}
-                value={config.desktopZoomThreshold}
-                onChange={(desktopZoomThreshold) => onConfigChange({ desktopZoomThreshold })}
-                min={0.1} max={1.0} step={0.05}
-              />
-              <SliderControl
-                label={`Mobile Initial Scale: ${config.mobileInitialScale}`}
-                value={config.mobileInitialScale}
-                onChange={(mobileInitialScale) => onConfigChange({ mobileInitialScale })}
-                min={0.01} max={0.1} step={0.005}
-              />
-              <SliderControl
-                label={`Mobile Zoom Threshold: ${config.mobileZoomThreshold}x`}
-                value={config.mobileZoomThreshold}
-                onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
-                min={0.05} max={0.5} step={0.05}
-              />
-              </div>
           </div>
 
         </>
@@ -395,11 +353,6 @@ export function PrototypeControls({
                 value={config.sectionStroke}
                 onChange={(value) => onConfigChange({ sectionStroke: value })}
                 prodRef="sectionStrokeColor"
-              />
-              <ColorControl
-                label="Row Fill"
-                value={config.rowFillColor}
-                onChange={(value) => onConfigChange({ rowFillColor: value })}
               />
               <ColorControl
                 label="Row Stroke"
@@ -459,6 +412,11 @@ export function PrototypeControls({
             <div className="mt-3">
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
               <div className="space-y-2 ml-2">
+                <ColorControl
+                  label="Row Fill"
+                  value={config.rowFillColor}
+                  onChange={(value) => onConfigChange({ rowFillColor: value })}
+                />
                 <ColorControl
                   label="Row Hover Override"
                   value={config.overlays.row.hoverInSeats ?? config.overlays.row.hover}

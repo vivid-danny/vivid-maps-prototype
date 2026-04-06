@@ -1,4 +1,3 @@
-import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig, LevelOverlays } from './types';
 
 const SHARED_OVERLAYS: LevelOverlays = {
@@ -11,19 +10,14 @@ const SHARED_OVERLAYS: LevelOverlays = {
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   initialDisplay: 'sections',
   zoomedDisplay: 'seats',
-  desktopInitialScale: 0.12,
-  desktopZoomThreshold: ZOOM_THRESHOLD,
-  mobileInitialScale: 0.5,
-  mobileZoomThreshold: 3,
   connectorWidth: 3,
   sectionStrokeWidth: 16,
   venueStrokeWidth: 2,
-  zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
-  theme: 'branded',
+  theme: 'zone',
   themeOverrides: {},
   listingCardSize: 'standard',
-  rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
+  rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill
   rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
   overlays: {
     section: {
