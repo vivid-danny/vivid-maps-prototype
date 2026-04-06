@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
 import type { ListingCardSize } from '../seatMap/config/types';
 import { ListingCard } from './ListingCard';
@@ -19,7 +20,8 @@ interface ListingsPanelProps {
   onQuantityFilterChange?: (qty: number) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize, quantityFilter, onQuantityFilterChange }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize = 'standard', quantityFilter, onQuantityFilterChange }: ListingsPanelProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
 
   // Filter listings based on selection
@@ -49,6 +51,16 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
     }
     return sorted;
   }, [filteredListings, sortBy]);
+
+  const virtualizer = useVirtualizer({
+    count: sortedListings.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => listingCardSize === 'dense' ? 56 : listingCardSize === 'spacious' ? 120 : 80,
+    gap: 8,
+    paddingStart: 12,
+    paddingEnd: 12,
+    overscan: 5,
+  });
 
   return (
     <div className={`flex flex-col min-h-0 bg-gray-50 ${className}`}>
@@ -86,28 +98,54 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
         </select>
       </div>
 
-      {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+      {/* Scrollable virtualized list */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-3 no-scrollbar"
+      >
         {sortedListings.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
             No listings available
           </div>
         ) : (
-          sortedListings.map((listing) => (
-            <ListingCard
-              key={listing.listingId}
-              listing={listing}
-              isSelected={listing.listingId === selection.listingId}
-              isHovered={listing.listingId === hoverState.listingId}
-              onClick={onSelectListing}
-              onHover={onHoverListing}
-              selectedColor={selectedColor}
-              hoverColor={hoverColor}
-              pressedColor={pressedColor}
-              disableHover={disableHover}
-              size={listingCardSize}
-            />
-          ))
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const listing = sortedListings[virtualRow.index]!;
+              return (
+                <div
+                  key={listing.listingId}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <ListingCard
+                    listing={listing}
+                    isSelected={listing.listingId === selection.listingId}
+                    isHovered={listing.listingId === hoverState.listingId}
+                    onClick={onSelectListing}
+                    onHover={onHoverListing}
+                    selectedColor={selectedColor}
+                    hoverColor={hoverColor}
+                    pressedColor={pressedColor}
+                    disableHover={disableHover}
+                    size={listingCardSize}
+                  />
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
