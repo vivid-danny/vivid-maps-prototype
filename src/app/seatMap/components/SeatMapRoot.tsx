@@ -234,6 +234,8 @@ export function SeatMapRoot() {
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
                 listingCardSize={config.listingCardSize}
+                quantityFilter={viewState.quantityFilter}
+                onQuantityFilterChange={viewState.setQuantityFilter}
               />
               {showDetailOverlay && detailListing && (
                 <div
@@ -288,6 +290,8 @@ export function SeatMapRoot() {
                 overlays={config.overlays}
                 onZoomChange={handleZoomChange}
                 onMapReady={handleMapReady}
+                filteredListingsBySection={viewState.listingsBySection}
+                filteredPinsBySection={viewState.pinsBySection}
               />
               <button
                 onClick={() => {
@@ -331,6 +335,8 @@ export function SeatMapRoot() {
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
                 listingCardSize={config.listingCardSize}
+                quantityFilter={viewState.quantityFilter}
+                onQuantityFilterChange={viewState.setQuantityFilter}
               />
             </div>
           )}
