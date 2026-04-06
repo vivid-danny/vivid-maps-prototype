@@ -7,6 +7,7 @@ import { useMapInteractions } from '../seatMap/maplibre/useMapInteractions';
 import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
 import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { useListingConnectors } from '../seatMap/maplibre/useListingConnectors';
+import { useSeatCoordinates } from '../seatMap/maplibre/useSeatCoordinates';
 import { buildSectionFillExpression, buildConnectorColorExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW,
@@ -203,8 +204,11 @@ export function MapLibreVenue({
     onSelect,
   });
 
+  // Cached seat coordinates — fetched once, reused for all connector rebuilds
+  const seatCoords = useSeatCoordinates({ seatsUrl: assets.seatsUrl, detailSourcesLoaded });
+
   // Listing connector lines — LineStrings connecting seats in the same listing
-  useListingConnectors({ mapRef, ready, listings: effectiveModel.listings });
+  useListingConnectors({ mapRef, ready, listings: effectiveModel.listings, coordsBySeatId: seatCoords });
 
   // Zoom changes are now reported directly from useMapLibre's map event listener,
   // bypassing React state entirely to avoid re-rendering MapLibreVenue on every frame.
