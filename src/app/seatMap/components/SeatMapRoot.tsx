@@ -210,52 +210,68 @@ export function SeatMapRoot() {
 
       <div
         className="flex-1 min-w-0 flex"
-        style={{ backgroundColor: '#f3f4f6' }}
+        style={{ backgroundColor: config.mapBackground }}
       >
         <div
-          className={`flex bg-white ${
+          className={`flex ${
             isMobile
-              ? 'flex-col w-full h-full overflow-hidden relative'
+              ? 'flex-col bg-white w-full h-full overflow-hidden relative'
               : 'flex-row w-full h-full overflow-hidden'
           }`}
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="w-[450px] h-full shrink-0 relative overflow-hidden">
-              <ListingsPanel
-                className="w-full h-full"
-                listings={viewState.listings}
-                selection={panelSelection}
-                hoverState={viewState.hoverState}
-                onSelectListing={viewState.handleSelectFromPanel}
-                onHoverListing={viewState.handleHoverFromPanel}
-                selectedColor={config.seatColors.selected}
-                hoverColor={config.seatColors.hover}
-                pressedColor={config.seatColors.pressed}
-                disableHover={isMobile}
-                listingCardSize={config.listingCardSize}
-                quantityFilter={viewState.quantityFilter}
-                onQuantityFilterChange={viewState.setQuantityFilter}
-              />
-              {showDetailOverlay && detailListing && (
-                <div
-                  className={`absolute inset-0 detail-panel--${detailPhase}`}
-                  onAnimationEnd={handleDetailAnimationEnd}
-                >
+            <div className="h-full shrink-0 p-4" style={{ width: 482 }}>
+              <div className="w-full h-full rounded-xl overflow-hidden shadow-sm relative">
+                <ListingsPanel
+                  className="w-full h-full"
+                  listings={viewState.listings}
+                  selection={panelSelection}
+                  hoverState={viewState.hoverState}
+                  onSelectListing={viewState.handleSelectFromPanel}
+                  onHoverListing={viewState.handleHoverFromPanel}
+                  selectedColor={config.seatColors.selected}
+                  hoverColor={config.seatColors.hover}
+                  pressedColor={config.seatColors.pressed}
+                  disableHover={isMobile}
+                  listingCardSize={config.listingCardSize}
+                  quantityFilter={viewState.quantityFilter}
+                  onQuantityFilterChange={viewState.setQuantityFilter}
+                />
+                {showDetailOverlay && detailListing && (
                   <div
-                    key={detailListing.listingId}
-                    className="detail-content w-full h-full"
+                    className={`absolute inset-0 detail-panel--${detailPhase}`}
+                    onAnimationEnd={handleDetailAnimationEnd}
                   >
-                    <TicketDetail
-                      className="w-full h-full"
-                      listing={detailListing}
-                      eventInfo={model.eventInfo}
-                      layoutMode={layoutMode}
-                      onBack={viewState.handleBackToListings}
-                    />
+                    <div
+                      key={detailListing.listingId}
+                      className="detail-content w-full h-full"
+                    >
+                      <TicketDetail
+                        className="w-full h-full"
+                        listing={detailListing}
+                        eventInfo={model.eventInfo}
+                        layoutMode={layoutMode}
+                        onBack={viewState.handleBackToListings}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile: event info header */}
+          {isMobile && (
+            <div className="px-4 py-3 flex items-center gap-3 bg-white border-b border-gray-200 shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
+                <span className="text-white font-bold text-lg">C</span>
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs St. Louis Cardinals</div>
+                <div className="text-xs text-gray-500 mt-0.5">Wrigley Field · Chicago, IL</div>
+                <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
+              </div>
             </div>
           )}
 
@@ -308,7 +324,7 @@ export function SeatMapRoot() {
                     });
                   }
                 }}
-                className="absolute top-2 left-2 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                className="absolute top-4 left-4 z-[40] flex items-center gap-2 bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-medium rounded shadow-sm cursor-pointer transition-opacity duration-200"
                 style={{
                   padding: '6px 8px',
                   opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
@@ -337,6 +353,7 @@ export function SeatMapRoot() {
                 listingCardSize={config.listingCardSize}
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
+                showEventInfo={false}
               />
             </div>
           )}
