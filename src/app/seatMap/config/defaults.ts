@@ -23,7 +23,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   theme: 'zone',
   themeOverrides: {},
   listingCardSize: 'standard',
-  rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
+  rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill
   rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
   overlays: {
     section: {
