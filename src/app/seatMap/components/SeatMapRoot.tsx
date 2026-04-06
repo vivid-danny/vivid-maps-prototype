@@ -31,17 +31,16 @@ export function SeatMapRoot() {
   const model = venueModel;
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     ...DEFAULT_SEAT_MAP_CONFIG,
-    ...mapDef.scaleDefaults,
     ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
     ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
     ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
   });
-  const [currentScale, setCurrentScale] = useState(mapDef.scaleDefaults.desktopInitialScale);
+  const [currentScale, setCurrentScale] = useState(ROW_ZOOM_MIN - 1);
+  const [displayZoom, setDisplayZoom] = useState(ROW_ZOOM_MIN - 1);
 
   const resetConfig = useCallback(() => {
     rawResetConfig();
-    updateConfig(mapDef.scaleDefaults);
-  }, [rawResetConfig, updateConfig, mapDef.scaleDefaults]);
+  }, [rawResetConfig]);
 
   // Sync URL params live
   useEffect(() => {
@@ -62,6 +61,7 @@ export function SeatMapRoot() {
   // briefly flipping displayMode back to rows/seats and flashing extra pins.
   const handleZoomChange = useCallback((zoom: number) => {
     if (isResettingRef.current) return;
+    setDisplayZoom(zoom);
     setCurrentScale(prev => {
       if ((prev >= ROW_ZOOM_MIN) !== (zoom >= ROW_ZOOM_MIN)) return zoom;
       return prev; // same zone — bail out, no re-render
@@ -200,7 +200,7 @@ export function SeatMapRoot() {
     <div className="size-full flex">
       <PrototypeControls
         showControls={viewState.showControls}
-        currentScale={viewState.currentScale}
+        currentScale={displayZoom}
         displayMode={controller.displayMode}
         config={config}
         onConfigChange={updateConfig}

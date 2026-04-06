@@ -329,38 +329,6 @@ export function PrototypeControls({
             </div>
           </div>
 
-          {/* Initial Scales */}
-          <div className="mb-6">
-            <div className="text-xs font-bold text-black mb-2">Initial Scales</div>
-
-            <div className="space-y-3">
-              <SliderControl
-                label={`Desktop Initial Scale: ${config.desktopInitialScale}`}
-                value={config.desktopInitialScale}
-                onChange={(desktopInitialScale) => onConfigChange({ desktopInitialScale })}
-                min={0.02} max={0.25} step={0.01}
-              />
-              <SliderControl
-                label={`Desktop Zoom Threshold: ${config.desktopZoomThreshold}x`}
-                value={config.desktopZoomThreshold}
-                onChange={(desktopZoomThreshold) => onConfigChange({ desktopZoomThreshold })}
-                min={0.1} max={1.0} step={0.05}
-              />
-              <SliderControl
-                label={`Mobile Initial Scale: ${config.mobileInitialScale}`}
-                value={config.mobileInitialScale}
-                onChange={(mobileInitialScale) => onConfigChange({ mobileInitialScale })}
-                min={0.01} max={0.1} step={0.005}
-              />
-              <SliderControl
-                label={`Mobile Zoom Threshold: ${config.mobileZoomThreshold}x`}
-                value={config.mobileZoomThreshold}
-                onChange={(mobileZoomThreshold) => onConfigChange({ mobileZoomThreshold })}
-                min={0.05} max={0.5} step={0.05}
-              />
-              </div>
-          </div>
-
         </>
       )}
 

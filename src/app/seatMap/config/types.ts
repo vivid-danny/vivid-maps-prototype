@@ -16,10 +16,6 @@ export interface LevelOverlays {
 export interface SeatMapConfig {
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
-  desktopInitialScale: number;
-  desktopZoomThreshold: number;
-  mobileInitialScale: number;
-  mobileZoomThreshold: number;
   connectorWidth: number;
   sectionStrokeWidth: number;
   venueStrokeWidth: number;

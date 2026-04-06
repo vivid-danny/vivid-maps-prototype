@@ -13,21 +13,10 @@ interface UseSeatMapControllerParams {
 export interface SeatMapController {
   model: MapConfig;
   sections: MapConfig['sections'];
-  zoomThreshold: number;
-  initialScale: number;
-  minScale: number;
   displayMode: DisplayMode;
 }
 
 export function useSeatMapController({ model, config, layoutMode, currentScale }: UseSeatMapControllerParams): SeatMapController {
-  const zoomThreshold =
-    layoutMode === 'mobile' ? config.mobileZoomThreshold : config.desktopZoomThreshold;
-
-  const initialScale =
-    layoutMode === 'mobile' ? config.mobileInitialScale : config.desktopInitialScale;
-
-  const minScale = layoutMode === 'mobile' ? config.mobileInitialScale : Math.min(1, initialScale);
-
   // currentScale is now the MapLibre zoom level (passed via onZoomChange).
   const displayMode: DisplayMode =
     currentScale >= ROW_ZOOM_MIN ? config.zoomedDisplay : config.initialDisplay;
@@ -38,9 +27,6 @@ export function useSeatMapController({ model, config, layoutMode, currentScale }
   return {
     model,
     sections,
-    zoomThreshold,
-    initialScale,
-    minScale,
     displayMode,
   };
 }

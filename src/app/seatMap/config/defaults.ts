@@ -1,4 +1,3 @@
-import { ZOOM_THRESHOLD } from '../../components/constants';
 import type { SeatMapConfig, LevelOverlays } from './types';
 
 const SHARED_OVERLAYS: LevelOverlays = {
@@ -11,10 +10,6 @@ const SHARED_OVERLAYS: LevelOverlays = {
 export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   initialDisplay: 'sections',
   zoomedDisplay: 'seats',
-  desktopInitialScale: 0.12,
-  desktopZoomThreshold: ZOOM_THRESHOLD,
-  mobileInitialScale: 0.5,
-  mobileZoomThreshold: 3,
   connectorWidth: 3,
   sectionStrokeWidth: 16,
   venueStrokeWidth: 2,
