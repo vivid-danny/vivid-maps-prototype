@@ -20,7 +20,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   venueStrokeWidth: 2,
   zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
-  theme: 'branded',
+  theme: 'zone',
   themeOverrides: {},
   listingCardSize: 'standard',
   rowStrokeColor: '#E3E3E8',  // production: sectionNoInventoryFill
