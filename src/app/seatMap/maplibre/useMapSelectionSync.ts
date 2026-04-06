@@ -141,12 +141,13 @@ export function useMapSelectionSync({
   // When hovering the selected section or no section, the expression is the same (no reveal clause).
   const hoverRevealActiveRef = useRef(false);
 
-  function applyRowOverlay(map: MaplibreMap, hoveredSectionId: string | null) {
+  function applyRowOverlay(map: MaplibreMap, hoveredSectionId: string | null, force = false) {
     const sel = selectionRef.current;
     const needsReveal = !!hoveredSectionId && hoveredSectionId !== sel.sectionId;
 
-    // Skip the expensive setPaintProperty call if hover-reveal state hasn't changed
-    if (!needsReveal && !hoverRevealActiveRef.current) return;
+    // Skip the expensive setPaintProperty call if hover-reveal state hasn't changed.
+    // force=true bypasses this cache (used when selection changes to always rebuild).
+    if (!force && !needsReveal && !hoverRevealActiveRef.current) return;
 
     hoverRevealActiveRef.current = needsReveal;
     const expr = buildRowOverlayExpression(
@@ -158,8 +159,8 @@ export function useMapSelectionSync({
   // Rebuild when selection/displayMode/overlays change — always apply (bypass hover-reveal cache)
   useEffect(() => {
     if (!ready || !mapRef.current) return;
-    hoverRevealActiveRef.current = false; // force rebuild
-    applyRowOverlay(mapRef.current, prevHoverSectionId.current);
+    hoverRevealActiveRef.current = false; // reset so applyRowOverlay recalculates from scratch
+    applyRowOverlay(mapRef.current, prevHoverSectionId.current, true);
   }, [ready, selection.sectionId, selection.rowId, displayMode, overlays]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Synchronous hover visual update ---

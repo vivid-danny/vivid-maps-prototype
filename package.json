@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.23",
     "agentation": "^3.0.2",
     "canvas": "^3.2.1",
     "lucide-react": "0.487.0",
