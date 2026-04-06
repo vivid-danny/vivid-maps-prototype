@@ -397,11 +397,6 @@ export function PrototypeControls({
                 prodRef="sectionStrokeColor"
               />
               <ColorControl
-                label="Row Fill"
-                value={config.rowFillColor}
-                onChange={(value) => onConfigChange({ rowFillColor: value })}
-              />
-              <ColorControl
                 label="Row Stroke"
                 value={config.rowStrokeColor}
                 onChange={(value) => onConfigChange({ rowStrokeColor: value })}
@@ -459,6 +454,11 @@ export function PrototypeControls({
             <div className="mt-3">
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
               <div className="space-y-2 ml-2">
+                <ColorControl
+                  label="Row Fill"
+                  value={config.rowFillColor}
+                  onChange={(value) => onConfigChange({ rowFillColor: value })}
+                />
                 <ColorControl
                   label="Row Hover Override"
                   value={config.overlays.row.hoverInSeats ?? config.overlays.row.hover}

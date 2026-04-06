@@ -106,31 +106,26 @@ export function useMapSelectionSync({
     if (sel.sectionId && isChildMode) {
       const hoverReveal = hoveredSectionId && hoveredSectionId !== sel.sectionId;
 
-      if (sel.rowId) {
-        // Row selected: mute everything except selected row (and hovered section if hover-revealing)
-        const mutedCondition = hoverReveal
-          ? ['all',
-              ['!=', ['get', 'sectionId'], hoveredSectionId],
-              ['any',
-                ['!=', ['get', 'sectionId'], sel.sectionId],
-                ['!=', ['get', 'rowId'], sel.rowId],
-              ],
-            ]
-          : ['any',
-              ['!=', ['get', 'sectionId'], sel.sectionId],
+      // Core muted condition (without hover-reveal guard).
+      // Row selected: mute rows outside the section, or inside the section but not the selected
+      // row and still available (rows without inventory are left unobscured).
+      // Section selected: mute all rows outside the selected section.
+      const coreMuted = sel.rowId
+        ? ['any',
+            ['!=', ['get', 'sectionId'], sel.sectionId],
+            ['all',
               ['!=', ['get', 'rowId'], sel.rowId],
-            ];
-        expr.push(mutedCondition, rowOverlays.muted);
-      } else {
-        // Section selected: mute all rows outside selected section (and hovered section if hover-revealing)
-        const mutedCondition = hoverReveal
-          ? ['all',
-              ['!=', ['get', 'sectionId'], sel.sectionId],
-              ['!=', ['get', 'sectionId'], hoveredSectionId],
-            ]
-          : ['!=', ['get', 'sectionId'], sel.sectionId];
-        expr.push(mutedCondition, rowOverlays.muted);
-      }
+              ['!', ['boolean', ['feature-state', 'unavailable'], false]],
+            ],
+          ]
+        : ['!=', ['get', 'sectionId'], sel.sectionId];
+
+      // Hover-reveal: exempt the hovered section from muting by wrapping with a guard.
+      const mutedCondition = hoverReveal
+        ? ['all', ['!=', ['get', 'sectionId'], hoveredSectionId], coreMuted]
+        : coreMuted;
+
+      expr.push(mutedCondition, rowOverlays.muted);
     }
 
     expr.push(transparent);
