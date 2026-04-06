@@ -7,6 +7,7 @@ import { useMapInteractions } from '../seatMap/maplibre/useMapInteractions';
 import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
 import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { useListingConnectors } from '../seatMap/maplibre/useListingConnectors';
+import { useSeatCoordinates } from '../seatMap/maplibre/useSeatCoordinates';
 import { buildSectionFillExpression, buildConnectorColorExpression } from '../seatMap/maplibre/paintExpressions';
 import {
   LAYER_ROW,
@@ -36,7 +37,7 @@ import {
   SOURCE_SECTION_LABELS,
   VENUE_BOUNDS,
 } from '../seatMap/maplibre/constants';
-import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing } from '../seatMap/model/types';
+import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing, PinData } from '../seatMap/model/types';
 import type { SeatMapModel } from '../seatMap/model/types';
 import type { ThemeId } from '../seatMap/config/themes';
 import type { SeatMapConfig, LevelOverlays } from '../seatMap/config/types';
@@ -68,6 +69,8 @@ interface MapLibreVenueProps {
   overlays: { section: LevelOverlays; row: LevelOverlays; seat: LevelOverlays };
   onZoomChange?: (zoom: number) => void;
   onMapReady?: (map: MaplibreMap) => void;
+  filteredListingsBySection?: Map<string, Listing[]>;
+  filteredPinsBySection?: Map<string, PinData[]>;
 }
 
 type Visibility = 'visible' | 'none';
@@ -106,6 +109,8 @@ export function MapLibreVenue({
   overlays,
   onZoomChange,
   onMapReady,
+  filteredListingsBySection,
+  filteredPinsBySection,
 }: MapLibreVenueProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -150,18 +155,31 @@ export function MapLibreVenue({
     setDetailSourcesLoaded(true);
   }, [ready, displayMode, assets, detailSourcesLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Build an effective model that uses filtered listings/pins when provided
+  const effectiveModel = useMemo(() => {
+    if (!filteredListingsBySection && !filteredPinsBySection) return model;
+    return {
+      ...model,
+      listings: filteredListingsBySection
+        ? Array.from(filteredListingsBySection.values()).flat()
+        : model.listings,
+      listingsBySection: filteredListingsBySection ?? model.listingsBySection,
+      pinsBySection: filteredPinsBySection ?? model.pinsBySection,
+    };
+  }, [model, filteredListingsBySection, filteredPinsBySection]);
+
   // Wire inventory feature states (available/unavailable)
-  useFeatureState({ mapRef, ready, model, seatableIds, detailSourcesLoaded });
+  useFeatureState({ mapRef, ready, model: effectiveModel, seatableIds, detailSourcesLoaded });
 
   const listingsBySeatId = useMemo(() => {
-    const m = new Map<string, (typeof model.listings)[0]>();
-    for (const listing of model.listings) {
+    const m = new Map<string, (typeof effectiveModel.listings)[0]>();
+    for (const listing of effectiveModel.listings) {
       for (const seatId of listing.seatIds) {
         m.set(seatId, listing);
       }
     }
     return m;
-  }, [model.listings]);
+  }, [effectiveModel.listings]);
 
   // Sync React selection/hover state → MapLibre feature state + paint expressions
   const { syncHoverFromMap } = useMapSelectionSync({ mapRef, ready, selection, hoverState, displayMode, overlays: { row: effectiveOverlays.row } });
@@ -173,7 +191,7 @@ export function MapLibreVenue({
   useMapPins({
     mapRef,
     ready,
-    model,
+    model: effectiveModel,
     sectionCenters,
     seatsUrl: assets.seatsUrl,
     selection,
@@ -186,8 +204,11 @@ export function MapLibreVenue({
     onSelect,
   });
 
+  // Cached seat coordinates — fetched once, reused for all connector rebuilds
+  const seatCoords = useSeatCoordinates({ seatsUrl: assets.seatsUrl, detailSourcesLoaded });
+
   // Listing connector lines — LineStrings connecting seats in the same listing
-  useListingConnectors({ mapRef, ready, listings: model.listings });
+  useListingConnectors({ mapRef, ready, listings: effectiveModel.listings, coordsBySeatId: seatCoords });
 
   // Zoom changes are now reported directly from useMapLibre's map event listener,
   // bypassing React state entirely to avoid re-rendering MapLibreVenue on every frame.
@@ -220,7 +241,7 @@ export function MapLibreVenue({
     map.setFilter(LAYER_SECTION_SELECTED_OVERLAY, sectionFilter);
 
     // Only show rows/seats for sections that have listings (inventory)
-    const sectionsWithListings = [...model.listingsBySection.keys()];
+    const sectionsWithListings = [...effectiveModel.listingsBySection.keys()];
     const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', sectionsWithListings]] as const;
     map.setFilter(LAYER_ROW, rowSeatFilter);
     map.setFilter(LAYER_ROW_HOVER_OVERLAY, rowSeatFilter);
@@ -230,7 +251,7 @@ export function MapLibreVenue({
     map.setFilter(LAYER_ROW_LABEL, rowSeatFilter);
     for (const layer of SEAT_FILTERED_LAYERS) map.setFilter(layer, rowSeatFilter);
     // LAYER_SEAT_SELECTED_OVERLAY filter is managed by the seat selection effect below
-  }, [ready, seatableIds, model]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, seatableIds, effectiveModel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Populate section label points — one Point per section at its manifest center.
   // Switching to a point source (vs. polygon source) guarantees exactly one label per section.
