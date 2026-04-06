@@ -205,7 +205,6 @@ function SectionHeader({ title, prodSource }: {
 
 
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const ZONE_ROW_DISPLAYS = ['rows', 'seats'] as const;
 const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
 
 export function PrototypeControls({
@@ -317,15 +316,6 @@ export function PrototypeControls({
                 />
               </div>
 
-              {/* Mixed Inventory Display */}
-              <div className="mb-4">
-                <label className="text-xs text-gray-600 block mb-2">Mixed Inventory Display</label>
-                <ToggleGroup
-                  options={ZONE_ROW_DISPLAYS}
-                  value={config.zoneRowDisplay}
-                  onChange={(zoneRowDisplay) => onConfigChange({ zoneRowDisplay })}
-                />
-              </div>
             </div>
           </div>
 

@@ -21,7 +21,6 @@ export interface SeatMapConfig {
   venueStrokeWidth: number;
   seatColors: SeatColors;
   pinDensity: PinDensityConfig;
-  zoneRowDisplay: 'rows' | 'seats';
   theme: ThemeId;
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
   listingCardSize: ListingCardSize;

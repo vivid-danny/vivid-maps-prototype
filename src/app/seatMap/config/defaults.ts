@@ -13,7 +13,6 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
   connectorWidth: 3,
   sectionStrokeWidth: 16,
   venueStrokeWidth: 2,
-  zoneRowDisplay: 'seats',
   pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
   theme: 'zone',
   themeOverrides: {},
