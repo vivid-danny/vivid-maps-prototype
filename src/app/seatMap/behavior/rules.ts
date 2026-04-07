@@ -1,4 +1,4 @@
-import { parseSeatId } from './utils';
+import { parseSeatFeatureId } from '../model/ids';
 import type { HoverState, SelectionState } from '../model/types';
 import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 
@@ -21,7 +21,7 @@ export function buildRowSelection(sectionId: string, rowId: string): SelectionSt
 }
 
 export function buildListingSelection(sectionId: string, listingId: string, seatIds: string[], rowId?: string): SelectionState {
-  const derivedRowId = rowId ?? (seatIds.length > 0 ? (parseSeatId(seatIds[0])?.rowId ?? null) : null);
+  const derivedRowId = rowId ?? (seatIds.length > 0 ? (parseSeatFeatureId(seatIds[0])?.rowId ?? null) : null);
 
   return {
     sectionId,

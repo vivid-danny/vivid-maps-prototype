@@ -6,6 +6,7 @@ import {
 } from './constants';
 import type { SelectionState, HoverState, DisplayMode } from '../model/types';
 import type { LevelOverlays } from '../config/types';
+import { buildRowFeatureId } from '../model/ids';
 
 interface UseMapSelectionSyncOptions {
   mapRef: React.RefObject<MaplibreMap | null>;
@@ -56,7 +57,7 @@ export function useMapSelectionSync({
 
     // Clear previous row/seat/connector selection
     if (prev?.rowId && prev?.sectionId) {
-      const rowGeoId = `${prev.sectionId}:${prev.rowId}`;
+      const rowGeoId = buildRowFeatureId(prev.sectionId, prev.rowId);
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: false });
     }
     if (prev?.seatIds) {
@@ -70,7 +71,7 @@ export function useMapSelectionSync({
 
     // Set new row/seat/connector selection
     if (selection.rowId && selection.sectionId) {
-      const rowGeoId = `${selection.sectionId}:${selection.rowId}`;
+      const rowGeoId = buildRowFeatureId(selection.sectionId, selection.rowId);
       safeSetState(map, SOURCE_ROWS, rowGeoId, { selected: true });
     }
     if (selection.seatIds) {
@@ -180,7 +181,7 @@ export function useMapSelectionSync({
       safeSetState(map, SOURCE_SECTIONS, nextHover.sectionId, { hovered: true });
     }
     const nextRowGeoId = (nextHover.sectionId && nextHover.rowId)
-      ? `${nextHover.sectionId}:${nextHover.rowId}` : null;
+      ? buildRowFeatureId(nextHover.sectionId, nextHover.rowId) : null;
     if (nextRowGeoId) {
       safeSetState(map, SOURCE_ROWS, nextRowGeoId, { hovered: true });
     }

@@ -242,9 +242,10 @@ export function MapLibreVenue({
     map.setFilter(LAYER_SECTION_HOVER_OVERLAY, sectionFilter);
     map.setFilter(LAYER_SECTION_SELECTED_OVERLAY, sectionFilter);
 
-    // Only show rows/seats for sections that have listings (inventory)
-    const sectionsWithListings = [...effectiveModel.listingsBySection.keys()];
-    const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', sectionsWithListings]] as const;
+    // Keep detail geometry visible for every seatable section we have model data for so
+    // no-inventory rows/seats render unavailable instead of disappearing.
+    const modeledSectionIds = [...effectiveModel.sectionDataById.keys()];
+    const rowSeatFilter = ['in', ['get', 'sectionId'], ['literal', modeledSectionIds]] as const;
     map.setFilter(LAYER_ROW, rowSeatFilter);
     map.setFilter(LAYER_ROW_HOVER_OVERLAY, rowSeatFilter);
     map.setFilter(LAYER_ROW_OUTLINE, rowSeatFilter);

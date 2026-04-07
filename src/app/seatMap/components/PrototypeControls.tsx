@@ -10,6 +10,7 @@ interface PrototypeControlsProps {
   currentScale: number;
   displayMode: DisplayMode;
   config: SeatMapConfig;
+  resetVersion: number;
   onConfigChange: (updates: Partial<SeatMapConfig>) => void;
   onResetConfig: () => void;
 }
@@ -212,10 +213,15 @@ export function PrototypeControls({
   currentScale,
   displayMode,
   config,
+  resetVersion,
   onConfigChange,
   onResetConfig,
 }: PrototypeControlsProps) {
   const [activeTab, setActiveTab] = useState<'controls' | 'styles'>('controls');
+
+  useEffect(() => {
+    setActiveTab('controls');
+  }, [resetVersion]);
 
   const handleColorChange = (key: keyof SeatMapConfig['seatColors'], value: string) => {
     onConfigChange({

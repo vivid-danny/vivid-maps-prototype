@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
-import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
-import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
+import { createDefaultSeatMapConfig } from '../config/defaults';
 import { getDealColor, getZoneColor, THEMES } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { MAP_REGISTRY } from '../mock/mapRegistry';
-import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
+import { clearUrlParams, INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useVenueManifest } from '../maplibre/useVenueManifest';
 import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN, VENUE_BOUNDS } from '../maplibre/constants';
@@ -20,6 +19,11 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
+const LazyMapLibreVenue = lazy(async () => {
+  const mod = await import('../../components/MapLibreVenue');
+  return { default: mod.MapLibreVenue };
+});
+
 export function SeatMapRoot() {
   const mapDef = MAP_REGISTRY[0]!;
 
@@ -29,14 +33,20 @@ export function SeatMapRoot() {
   const venueModel = useMemo(() => mapDef.createModel(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const { seatableIds, sectionCenters } = useVenueManifest(mapDef.assets.manifestUrl);
   const model = venueModel;
-  const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
-    ...DEFAULT_SEAT_MAP_CONFIG,
+  const defaultConfig = useMemo(() => createDefaultSeatMapConfig(), []);
+  const startupConfig = useMemo(() => ({
+    ...createDefaultSeatMapConfig(),
     ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
     ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
     ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
+  }), []);
+  const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
+    initialConfig: startupConfig,
+    resetConfig: defaultConfig,
   });
   const [currentScale, setCurrentScale] = useState(ROW_ZOOM_MIN - 1);
   const [displayZoom, setDisplayZoom] = useState(ROW_ZOOM_MIN - 1);
+  const [controlsResetVersion, setControlsResetVersion] = useState(0);
 
   const resetConfig = useCallback(() => {
     rawResetConfig();
@@ -108,6 +118,14 @@ export function SeatMapRoot() {
     setCurrentScale,
     navigateFn,
   });
+  const { resetViewState } = viewState;
+
+  const handleResetAll = useCallback(() => {
+    resetConfig();
+    resetViewState();
+    clearUrlParams();
+    setControlsResetVersion((prev) => prev + 1);
+  }, [resetConfig, resetViewState]);
 
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
   const seatColorsBySection = useMemo(() => {
@@ -196,6 +214,14 @@ export function SeatMapRoot() {
     ? { ...panelSelectionRef.current, listingId: viewState.selection.listingId }
     : viewState.selection;
 
+  const mapFallback = (
+    <div
+      className="size-full"
+      style={{ backgroundColor: config.mapBackground }}
+      aria-label="Loading venue map"
+    />
+  );
+
   return (
     <div className="size-full flex">
       <PrototypeControls
@@ -203,8 +229,9 @@ export function SeatMapRoot() {
         currentScale={displayZoom}
         displayMode={controller.displayMode}
         config={config}
+        resetVersion={controlsResetVersion}
         onConfigChange={updateConfig}
-        onResetConfig={resetConfig}
+        onResetConfig={handleResetAll}
       />
 
       <div
@@ -280,34 +307,36 @@ export function SeatMapRoot() {
             style={isMobile ? { height: 200 } : undefined}
           >
             <div className="relative w-full h-full">
-              <MapLibreVenue
-                seatColors={config.seatColors}
-                model={venueModel}
-                theme={config.theme}
-                displayMode={controller.displayMode}
-                seatableIds={seatableIds}
-                sectionCenters={sectionCenters}
-                assets={mapDef.assets}
-                selection={viewState.selection}
-                selectedListing={viewState.selectedListing}
-                hoverState={viewState.hoverState}
-                onSelect={viewState.handleSelect}
-                onHover={viewState.handleHoverFromMap}
-                isMobile={isMobile}
-                pinDensity={config.pinDensity}
-                venueFill={config.venueFill}
-                venueStroke={config.venueStroke}
-                sectionStroke={config.sectionStroke}
-                mapBackground={config.mapBackground}
-                sectionBase={config.sectionBase}
-                rowStrokeColor={config.rowStrokeColor}
-                rowFillColor={config.rowFillColor}
-                overlays={config.overlays}
-                onZoomChange={handleZoomChange}
-                onMapReady={handleMapReady}
-                filteredListingsBySection={viewState.listingsBySection}
-                filteredPinsBySection={viewState.pinsBySection}
-              />
+              <Suspense fallback={mapFallback}>
+                <LazyMapLibreVenue
+                  seatColors={config.seatColors}
+                  model={venueModel}
+                  theme={config.theme}
+                  displayMode={controller.displayMode}
+                  seatableIds={seatableIds}
+                  sectionCenters={sectionCenters}
+                  assets={mapDef.assets}
+                  selection={viewState.selection}
+                  selectedListing={viewState.selectedListing}
+                  hoverState={viewState.hoverState}
+                  onSelect={viewState.handleSelect}
+                  onHover={viewState.handleHoverFromMap}
+                  isMobile={isMobile}
+                  pinDensity={config.pinDensity}
+                  venueFill={config.venueFill}
+                  venueStroke={config.venueStroke}
+                  sectionStroke={config.sectionStroke}
+                  mapBackground={config.mapBackground}
+                  sectionBase={config.sectionBase}
+                  rowStrokeColor={config.rowStrokeColor}
+                  rowFillColor={config.rowFillColor}
+                  overlays={config.overlays}
+                  onZoomChange={handleZoomChange}
+                  onMapReady={handleMapReady}
+                  filteredListingsBySection={viewState.listingsBySection}
+                  filteredPinsBySection={viewState.pinsBySection}
+                />
+              </Suspense>
               <div className="absolute top-4 left-4 z-[40] flex gap-2">
                 <button
                   onClick={() => mapInstanceRef.current?.zoomIn()}

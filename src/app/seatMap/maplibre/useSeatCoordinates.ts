@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { buildSeatFeatureId } from '../model/ids';
 
 /**
  * Fetches the seats GeoJSON once when detail sources load and caches a
@@ -26,11 +27,31 @@ export function useSeatCoordinates({
         if (cancelled) return;
 
         const map = new Map<string, [number, number]>();
+        const mismatches: string[] = [];
         for (const f of geojson.features) {
           const seatId = f.properties?.id as string;
           if (seatId && f.geometry.type === 'Point') {
+            const sectionId = f.properties?.sectionId as string | undefined;
+            const rowId = f.properties?.rowId as string | undefined;
+            const seatIndex = f.properties?.seatIndex as number | undefined;
+            if (
+              sectionId
+              && rowId
+              && Number.isInteger(seatIndex)
+            ) {
+              const expectedSeatId = buildSeatFeatureId(sectionId, rowId, seatIndex + 1);
+              if (expectedSeatId !== seatId) {
+                mismatches.push(`${expectedSeatId} != ${seatId}`);
+              }
+            }
             map.set(seatId, (f.geometry as GeoJSON.Point).coordinates as [number, number]);
           }
+        }
+        if (mismatches.length > 0) {
+          console.warn(
+            'Seat feature ID mismatch detected:',
+            mismatches.slice(0, 10),
+          );
         }
         setCoordMap(map);
       });

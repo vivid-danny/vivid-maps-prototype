@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { SOURCE_ROWS, SOURCE_SEATS, SOURCE_SECTIONS } from './constants';
 import type { SeatMapModel } from '../model/types';
+import { buildRowFeatureId } from '../model/ids';
 
 /**
  * Sets available/unavailable feature state on all section, row, and seat features
@@ -68,7 +69,7 @@ export function useFeatureState({
     const seatIdsWithListings = new Set<string>();
     const rowGeoIdsWithListings = new Set<string>();
     for (const listing of model.listings) {
-      rowGeoIdsWithListings.add(`${listing.sectionId}:${listing.rowId}`);
+      rowGeoIdsWithListings.add(buildRowFeatureId(listing.sectionId, listing.rowId));
       for (const seatId of listing.seatIds) {
         seatIdsWithListings.add(seatId);
       }
@@ -87,7 +88,7 @@ export function useFeatureState({
         if (!sectionData) continue;
 
         sectionData.rows.forEach((row) => {
-          const rowGeoId = `${sectionId}:${row.rowId}`;
+          const rowGeoId = buildRowFeatureId(sectionId, row.rowId);
 
           map.setFeatureState(
             { source: SOURCE_ROWS, id: rowGeoId },

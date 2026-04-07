@@ -20,7 +20,12 @@ function readStoredConfig(): Partial<SeatMapConfig> | null {
   }
 }
 
-export function useSeatMapConfig(initialConfig: SeatMapConfig) {
+interface UseSeatMapConfigParams {
+  initialConfig: SeatMapConfig;
+  resetConfig: SeatMapConfig;
+}
+
+export function useSeatMapConfig({ initialConfig, resetConfig: resetConfigValue }: UseSeatMapConfigParams) {
   const [config, setConfig] = useState<SeatMapConfig>(() => {
     const stored = readStoredConfig();
     if (!stored) return initialConfig;
@@ -101,7 +106,7 @@ export function useSeatMapConfig(initialConfig: SeatMapConfig) {
   };
 
   const resetConfig = () => {
-    setConfig(initialConfig);
+    setConfig(resetConfigValue);
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }
