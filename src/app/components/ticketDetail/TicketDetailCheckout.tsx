@@ -2,11 +2,12 @@ import { useState } from 'react';
 
 interface TicketDetailCheckoutProps {
   quantityAvailable: number;
+  initialQuantity: number;
   className?: string;
 }
 
-export function TicketDetailCheckout({ quantityAvailable, className = '' }: TicketDetailCheckoutProps) {
-  const [quantity, setQuantity] = useState(1);
+export function TicketDetailCheckout({ quantityAvailable, initialQuantity, className = '' }: TicketDetailCheckoutProps) {
+  const [quantity, setQuantity] = useState(initialQuantity);
 
   return (
     <div className={`flex items-center gap-3 p-6 ${className}`}>
