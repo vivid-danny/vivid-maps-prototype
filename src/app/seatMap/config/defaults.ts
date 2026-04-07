@@ -52,7 +52,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
       connectorHover: '#d7c1cf',
       connectorPressed: '#c4c3d5',
       connectorSelected: '#e4e1ef',
-      labelDefault: 'rgba(4, 9, 44, 0.64)',
+      labelDefault: 'rgba(4, 9, 44, 0.5)',
       labelSelected: '#FFFFFF',
       labelUnavailable: '#B0B0B0',
       pinDefault: '#1a1a2e',
