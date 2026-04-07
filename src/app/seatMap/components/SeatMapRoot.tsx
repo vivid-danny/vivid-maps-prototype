@@ -3,11 +3,11 @@ import type { Map as MaplibreMap } from 'maplibre-gl';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
-import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
+import { createDefaultSeatMapConfig } from '../config/defaults';
 import { getDealColor, getZoneColor, THEMES } from '../config/themes';
 import { useSeatMapConfig } from '../state/useSeatMapConfig';
 import { MAP_REGISTRY } from '../mock/mapRegistry';
-import { INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
+import { clearUrlParams, INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useVenueManifest } from '../maplibre/useVenueManifest';
 import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN, VENUE_BOUNDS } from '../maplibre/constants';
@@ -33,14 +33,20 @@ export function SeatMapRoot() {
   const venueModel = useMemo(() => mapDef.createModel(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const { seatableIds, sectionCenters } = useVenueManifest(mapDef.assets.manifestUrl);
   const model = venueModel;
-  const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
-    ...DEFAULT_SEAT_MAP_CONFIG,
+  const defaultConfig = useMemo(() => createDefaultSeatMapConfig(), []);
+  const startupConfig = useMemo(() => ({
+    ...createDefaultSeatMapConfig(),
     ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
     ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
     ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
+  }), []);
+  const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
+    initialConfig: startupConfig,
+    resetConfig: defaultConfig,
   });
   const [currentScale, setCurrentScale] = useState(ROW_ZOOM_MIN - 1);
   const [displayZoom, setDisplayZoom] = useState(ROW_ZOOM_MIN - 1);
+  const [controlsResetVersion, setControlsResetVersion] = useState(0);
 
   const resetConfig = useCallback(() => {
     rawResetConfig();
@@ -112,6 +118,14 @@ export function SeatMapRoot() {
     setCurrentScale,
     navigateFn,
   });
+  const { resetViewState } = viewState;
+
+  const handleResetAll = useCallback(() => {
+    resetConfig();
+    resetViewState();
+    clearUrlParams();
+    setControlsResetVersion((prev) => prev + 1);
+  }, [resetConfig, resetViewState]);
 
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
   const seatColorsBySection = useMemo(() => {
@@ -215,8 +229,9 @@ export function SeatMapRoot() {
         currentScale={displayZoom}
         displayMode={controller.displayMode}
         config={config}
+        resetVersion={controlsResetVersion}
         onConfigChange={updateConfig}
-        onResetConfig={resetConfig}
+        onResetConfig={handleResetAll}
       />
 
       <div

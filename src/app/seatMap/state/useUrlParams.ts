@@ -1,13 +1,14 @@
 import type { DisplayMode } from '../model/types';
 import type { ThemeId } from '../config/themes';
 import { THEME_IDS } from '../config/themes';
+import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
 
 const DISPLAY_MODES: readonly DisplayMode[] = ['sections', 'rows', 'seats'];
 
 const DEFAULTS = {
-  initialDisplay: 'sections' as DisplayMode,
-  zoomedDisplay: 'seats' as DisplayMode,
-  theme: 'branded' as ThemeId,
+  initialDisplay: DEFAULT_SEAT_MAP_CONFIG.initialDisplay as DisplayMode,
+  zoomedDisplay: DEFAULT_SEAT_MAP_CONFIG.zoomedDisplay as DisplayMode,
+  theme: DEFAULT_SEAT_MAP_CONFIG.theme as ThemeId,
 };
 
 export interface UrlParamValues {
@@ -54,6 +55,11 @@ export function syncToUrl(values: {
   const search = params.toString();
   const newUrl = search ? `${window.location.pathname}?${search}` : window.location.pathname;
   window.history.replaceState(null, '', newUrl);
+}
+
+export function clearUrlParams() {
+  if (typeof window === 'undefined') return;
+  window.history.replaceState(null, '', window.location.pathname);
 }
 
 /** Returns URL params parsed once at module load time (stable across renders). */

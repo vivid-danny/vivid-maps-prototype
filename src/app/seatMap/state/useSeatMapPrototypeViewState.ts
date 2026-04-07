@@ -164,6 +164,13 @@ export function useSeatMapPrototypeViewState({
     setHoverState(hover);
   }, [layoutMode]);
 
+  const resetViewState = useCallback(() => {
+    setSelection(EMPTY_SELECTION);
+    setHoverState(EMPTY_HOVER);
+    setViewMode('listings');
+    setQuantityFilter(2);
+  }, []);
+
   return {
     selection,
     hoverState,
@@ -178,6 +185,7 @@ export function useSeatMapPrototypeViewState({
     setQuantityFilter,
     setShowControls,
     setSelection,
+    resetViewState,
     handleSelect,
     handleSelectFromPanel,
     handleBackToListings,
