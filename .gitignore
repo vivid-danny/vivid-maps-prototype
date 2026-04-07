@@ -6,3 +6,4 @@ dist/
 .env.*.local
 prompts/
 .claude
+AGENTS.md

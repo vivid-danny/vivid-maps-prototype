@@ -4,7 +4,7 @@ import type { Root } from 'react-dom/client';
 import { Marker } from 'maplibre-gl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Pin } from '../../components/Pin';
-import { buildSectionSelection } from '../behavior/rules';
+import { buildSectionSelection, buildRowSelection, buildListingSelection } from '../behavior/rules';
 import { declutterPins, getBestDealPin, getLowestPricePin, MAPLIBRE_DECLUTTER_BASE_DISTANCE } from '../behavior/pins';
 import type { ResolvedPin } from '../behavior/pins';
 import type { PinDensityConfig } from '../config/types';
@@ -60,6 +60,19 @@ function seatCentroid(
 
 function markerZIndex(isHovered: boolean, isSelected: boolean): string {
   return isHovered ? '30' : isSelected ? '20' : '10';
+}
+
+function buildPinSelection(pin: PinRenderData, mode: DisplayMode): SelectionState {
+  switch (mode) {
+    case 'sections':
+      return buildSectionSelection(pin.sectionId);
+    case 'rows':
+      return buildRowSelection(pin.sectionId, pin.listing.rowId);
+    case 'seats':
+      return buildListingSelection(
+        pin.sectionId, pin.listing.listingId, pin.listing.seatIds, pin.listing.rowId,
+      );
+  }
 }
 
 function createMarkerEl(onClick: (e: MouseEvent) => void): { wrapper: HTMLDivElement; inner: HTMLDivElement } {
@@ -140,6 +153,9 @@ export function useMapPins({
   onSelectRef.current = onSelect;
   const seatColorsRef = useRef(seatColors);
   seatColorsRef.current = seatColors;
+  const displayModeRef = useRef(displayMode);
+  displayModeRef.current = displayMode;
+  const pinDataRef = useRef(new Map<string, PinRenderData>());
 
   // basePins: computes the static set of pins (no hover state).
   // Rebuilds only when model/displayMode/selection changes — NOT on hover transitions.
@@ -258,15 +274,21 @@ export function useMapPins({
     for (const pin of basePins) {
       const existing = current.get(pin.listingId);
       if (existing) {
+        // Update position — lngLat changes when displayMode transitions
+        // (e.g. section center → row center)
+        existing.marker.setLngLat(pin.lngLat);
         if (existing.isSelected !== pin.isSelected) {
           renderPin(existing.root, pin.listing, existing.isHovered, pin.isSelected, seatColorsRef.current);
           existing.marker.getElement().style.zIndex = markerZIndex(existing.isHovered, pin.isSelected);
           existing.isSelected = pin.isSelected;
         }
       } else {
+        const pinId = pin.listingId;
         const { wrapper, inner } = createMarkerEl((e) => {
           e.stopPropagation();
-          onSelectRef.current(buildSectionSelection(pin.sectionId));
+          const data = pinDataRef.current.get(pinId);
+          if (!data) return;
+          onSelectRef.current(buildPinSelection(data, displayModeRef.current));
         });
         const root = createRoot(inner);
         renderPin(root, pin.listing, false, pin.isSelected, seatColorsRef.current);
@@ -275,6 +297,13 @@ export function useMapPins({
         current.set(pin.listingId, { marker, root, isHovered: false, isSelected: pin.isSelected });
       }
     }
+
+    // Keep pinDataRef in sync so click handlers can look up current pin data
+    const nextPinData = new Map<string, PinRenderData>();
+    for (const pin of basePins) nextPinData.set(pin.listingId, pin);
+    const hoverEntry = pinDataRef.current.get(HOVER_PIN_ID);
+    if (hoverEntry) nextPinData.set(HOVER_PIN_ID, hoverEntry);
+    pinDataRef.current = nextPinData;
   }, [ready, basePins]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Index basePins by listingId for O(1) lookup in the hover effect.
@@ -318,6 +347,11 @@ export function useMapPins({
           if (sectionListings.length > 0) {
             const cheapest = sectionListings.reduce((a, b) => (a.price < b.price ? a : b));
             const lngLat: [number, number] = [sectionData.center[0], sectionData.center[1]];
+            const hoverPinData: PinRenderData = {
+              listingId: HOVER_PIN_ID, lngLat, sectionId: hoverState.sectionId!,
+              listing: cheapest, isHovered: true, isSelected: false,
+            };
+            pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
             const existing = current.get(HOVER_PIN_ID);
             if (existing) {
               existing.marker.setLngLat(lngLat);
@@ -325,10 +359,11 @@ export function useMapPins({
               renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
               existing.isHovered = true;
             } else {
-              const sectionId = hoverState.sectionId;
               const { wrapper, inner } = createMarkerEl((e) => {
                 e.stopPropagation();
-                onSelectRef.current(buildSectionSelection(sectionId));
+                const data = pinDataRef.current.get(HOVER_PIN_ID);
+                if (!data) return;
+                onSelectRef.current(buildPinSelection(data, displayModeRef.current));
               });
               const root = createRoot(inner);
               renderPin(root, cheapest, true, false, seatColorsRef.current);
@@ -356,6 +391,11 @@ export function useMapPins({
           if (rowListings.length > 0) {
             const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
             const lngLat = sectionData.rows[hoverState.rowId]?.center ?? sectionData.center;
+            const hoverPinData: PinRenderData = {
+              listingId: HOVER_PIN_ID, lngLat, sectionId: hoverState.sectionId!,
+              listing: cheapest, isHovered: true, isSelected: false,
+            };
+            pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
             const existing = current.get(HOVER_PIN_ID);
             if (existing) {
               existing.marker.setLngLat(lngLat);
@@ -363,10 +403,11 @@ export function useMapPins({
               renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
               existing.isHovered = true;
             } else {
-              const sectionId = hoverState.sectionId;
               const { wrapper, inner } = createMarkerEl((e) => {
                 e.stopPropagation();
-                onSelectRef.current(buildSectionSelection(sectionId));
+                const data = pinDataRef.current.get(HOVER_PIN_ID);
+                if (!data) return;
+                onSelectRef.current(buildPinSelection(data, displayModeRef.current));
               });
               const root = createRoot(inner);
               renderPin(root, cheapest, true, false, seatColorsRef.current);
@@ -386,6 +427,7 @@ export function useMapPins({
     if (existing) {
       existing.marker.getElement().style.display = 'none';
       existing.isHovered = false;
+      pinDataRef.current.delete(HOVER_PIN_ID);
     }
   }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
