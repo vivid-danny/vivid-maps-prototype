@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
-import { MapLibreVenue } from '../../components/MapLibreVenue';
 import { ListingsPanel } from '../../components/ListingsPanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { DEFAULT_SEAT_MAP_CONFIG } from '../config/defaults';
@@ -19,6 +18,11 @@ import { EMPTY_SELECTION } from '../model/types';
 import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
+
+const LazyMapLibreVenue = lazy(async () => {
+  const mod = await import('../../components/MapLibreVenue');
+  return { default: mod.MapLibreVenue };
+});
 
 export function SeatMapRoot() {
   const mapDef = MAP_REGISTRY[0]!;
@@ -196,6 +200,14 @@ export function SeatMapRoot() {
     ? { ...panelSelectionRef.current, listingId: viewState.selection.listingId }
     : viewState.selection;
 
+  const mapFallback = (
+    <div
+      className="size-full"
+      style={{ backgroundColor: config.mapBackground }}
+      aria-label="Loading venue map"
+    />
+  );
+
   return (
     <div className="size-full flex">
       <PrototypeControls
@@ -280,34 +292,36 @@ export function SeatMapRoot() {
             style={isMobile ? { height: 200 } : undefined}
           >
             <div className="relative w-full h-full">
-              <MapLibreVenue
-                seatColors={config.seatColors}
-                model={venueModel}
-                theme={config.theme}
-                displayMode={controller.displayMode}
-                seatableIds={seatableIds}
-                sectionCenters={sectionCenters}
-                assets={mapDef.assets}
-                selection={viewState.selection}
-                selectedListing={viewState.selectedListing}
-                hoverState={viewState.hoverState}
-                onSelect={viewState.handleSelect}
-                onHover={viewState.handleHoverFromMap}
-                isMobile={isMobile}
-                pinDensity={config.pinDensity}
-                venueFill={config.venueFill}
-                venueStroke={config.venueStroke}
-                sectionStroke={config.sectionStroke}
-                mapBackground={config.mapBackground}
-                sectionBase={config.sectionBase}
-                rowStrokeColor={config.rowStrokeColor}
-                rowFillColor={config.rowFillColor}
-                overlays={config.overlays}
-                onZoomChange={handleZoomChange}
-                onMapReady={handleMapReady}
-                filteredListingsBySection={viewState.listingsBySection}
-                filteredPinsBySection={viewState.pinsBySection}
-              />
+              <Suspense fallback={mapFallback}>
+                <LazyMapLibreVenue
+                  seatColors={config.seatColors}
+                  model={venueModel}
+                  theme={config.theme}
+                  displayMode={controller.displayMode}
+                  seatableIds={seatableIds}
+                  sectionCenters={sectionCenters}
+                  assets={mapDef.assets}
+                  selection={viewState.selection}
+                  selectedListing={viewState.selectedListing}
+                  hoverState={viewState.hoverState}
+                  onSelect={viewState.handleSelect}
+                  onHover={viewState.handleHoverFromMap}
+                  isMobile={isMobile}
+                  pinDensity={config.pinDensity}
+                  venueFill={config.venueFill}
+                  venueStroke={config.venueStroke}
+                  sectionStroke={config.sectionStroke}
+                  mapBackground={config.mapBackground}
+                  sectionBase={config.sectionBase}
+                  rowStrokeColor={config.rowStrokeColor}
+                  rowFillColor={config.rowFillColor}
+                  overlays={config.overlays}
+                  onZoomChange={handleZoomChange}
+                  onMapReady={handleMapReady}
+                  filteredListingsBySection={viewState.listingsBySection}
+                  filteredPinsBySection={viewState.pinsBySection}
+                />
+              </Suspense>
               <div className="absolute top-4 left-4 z-[40] flex gap-2">
                 <button
                   onClick={() => mapInstanceRef.current?.zoomIn()}
