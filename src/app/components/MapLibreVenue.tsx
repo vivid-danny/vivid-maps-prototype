@@ -21,8 +21,8 @@ import {
   LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
-  SEAT_VISIBILITY_LAYERS,
   SEAT_FILTERED_LAYERS,
+  SEAT_VISIBILITY_LAYERS,
   SEAT_MUTED_LAYERS,
   LAYER_SECTION,
   LAYER_SECTION_BASE,
@@ -307,6 +307,7 @@ export function MapLibreVenue({
     for (const layer of SEAT_VISIBILITY_LAYERS) setLayerVisibility(map, layer, isSeats ? 'visible' : 'none');
     // LAYER_SEAT_SELECTED_OVERLAY visibility managed by seat selection effect
     // LAYER_SEAT_CONNECTOR_MUTED_OVERLAY visibility managed by seat muted overlay effect
+    setLayerVisibility(map, LAYER_ROW_LABEL, 'none');
 
     // Section-outline: always visible, opacity varies.
     // Production: 0.3 at section zoom → 1.0 at row zoom.
