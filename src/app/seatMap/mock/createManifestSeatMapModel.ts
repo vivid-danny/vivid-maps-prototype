@@ -1,6 +1,7 @@
 import seatCountsRaw from './venueSeatCounts.json';
 import { createSeededRandom } from './seededRandom';
 import { hashString } from '../behavior/utils';
+import { buildSeatFeatureId } from '../model/ids';
 import seatViewImg from '../../../assets/seatView.png';
 import type {
   SeatMapModel,
@@ -107,7 +108,7 @@ function buildSectionInventory(
     const rows: RowData[] = rowIds.map((rowId) => {
       const seatCount = rowSeatCounts[rowId] ?? 0;
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
         status: 'unavailable' as const,
       }));
       return { rowId, seats };
@@ -127,7 +128,7 @@ function buildSectionInventory(
       const listingId = `listing-${sectionId}-${rowId}-saver`;
       unmappedListingIds.add(listingId);
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
         status: 'available' as const,
         listingId,
       }));
@@ -138,7 +139,7 @@ function buildSectionInventory(
     if (rng.random() < 0.02) {
       const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
         status: 'available' as const,
         listingId,
       }));
@@ -149,7 +150,7 @@ function buildSectionInventory(
     if (rng.random() < 0.01) {
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
         const isUnavailable = rng.random() < 0.93;
-        const seatId = `${sectionId}:${rowId}:s${si + 1}`;
+        const seatId = buildSeatFeatureId(sectionId, rowId, si + 1);
         if (isUnavailable) return { seatId, status: 'unavailable' as const };
         const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
         return { seatId, status: 'available' as const, listingId };
@@ -164,7 +165,7 @@ function buildSectionInventory(
       const listingId2 = `listing-${sectionId}-${rowId}-${listingCounter++}`;
       unmappedListingIds.add(listingId2);
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: `${sectionId}:${rowId}:s${si + 1}`,
+        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
         status: 'available' as const,
         listingId: si < half ? listingId1 : listingId2,
       }));
@@ -174,7 +175,7 @@ function buildSectionInventory(
     // Normal row: ~93% unavailable, group available seats into listings
     const available: number[] = [];
     const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
-      const seatId = `${sectionId}:${rowId}:s${si + 1}`;
+      const seatId = buildSeatFeatureId(sectionId, rowId, si + 1);
       if (rng.random() < 0.93) return { seatId, status: 'unavailable' as const };
       available.push(si);
       return { seatId, status: 'available' as const };
