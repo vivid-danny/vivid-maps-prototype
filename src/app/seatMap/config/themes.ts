@@ -55,8 +55,8 @@ const ZONE_DEAL_COLORS: SeatColors = {
   labelUnavailable: '#A5ADB4',
   pinDefault: '#1a1a2e',
   pinHovered: '#2A2E31',
-  pinPressed: '#52143B',
-  pinSelected: '#52143B',
+  pinPressed: '#FFFFFF',
+  pinSelected: '#FFFFFF',
 };
 
 export const THEMES: Record<ThemeId, SeatColors> = {
@@ -75,8 +75,8 @@ export const THEMES: Record<ThemeId, SeatColors> = {
     labelUnavailable: '#B0B0B0',
     pinDefault: '#1a1a2e',
     pinHovered: '#310C24',
-    pinPressed: '#141035',
-    pinSelected: '#141035',
+    pinPressed: '#FFFFFF',
+    pinSelected: '#FFFFFF',
   },
   zone: ZONE_DEAL_COLORS,
   deal: ZONE_DEAL_COLORS,

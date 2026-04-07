@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { CSSProperties } from 'react';
+import type { InteractionState } from '../seatMap/behavior/visualState';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
 interface PinProps {
@@ -26,30 +27,87 @@ interface PinProps {
   interactive?: boolean;
 }
 
-export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = '#141035', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#141035', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber, useTransition, interactive }: PinProps) {
+interface PinAppearance {
+  backgroundColor: string;
+  textColor: string;
+  pinMultiplier: number;
+  zIndex: number;
+  animation?: string;
+  filter?: string;
+  showSeatView: string | false | undefined;
+}
+
+function resolvePinAppearance(params: {
+  pinState: InteractionState;
+  defaultColor: string;
+  hoverColor: string;
+  pressedColor: string;
+  selectedColor: string;
+  seatViewUrl?: string;
+  useTransition?: boolean;
+}): PinAppearance {
+  const { pinState, defaultColor, hoverColor, pressedColor, selectedColor, seatViewUrl, useTransition } = params;
+
+  switch (pinState) {
+    case 'selected':
+      return {
+        backgroundColor: selectedColor,
+        textColor: '#000000',
+        pinMultiplier: 1.875,
+        zIndex: 20,
+        animation: useTransition ? undefined : 'pinSelectedIn 300ms cubic-bezier(0.075, 0.82, 0.165, 1)',
+        filter: 'drop-shadow(0 6px 12px rgba(4, 9, 44, 0.40))',
+        showSeatView: false,
+      };
+    case 'pressed':
+      return {
+        backgroundColor: pressedColor,
+        textColor: '#000000',
+        pinMultiplier: 1.875,
+        zIndex: 20,
+        animation: undefined,
+        filter: 'drop-shadow(0 6px 12px rgba(4, 9, 44, 0.18))',
+        showSeatView: false,
+      };
+    case 'hover':
+      return {
+        backgroundColor: hoverColor,
+        textColor: '#FFFFFF',
+        pinMultiplier: 1.5,
+        zIndex: 30,
+        animation: useTransition ? undefined : 'pinHoverIn 200ms cubic-bezier(0.075, 0.82, 0.165, 1)',
+        showSeatView: seatViewUrl,
+      };
+    default:
+      return {
+        backgroundColor: defaultColor,
+        textColor: '#FFFFFF',
+        pinMultiplier: 1.25,
+        zIndex: 10,
+        animation: undefined,
+        showSeatView: false,
+      };
+  }
+}
+
+export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = '#FFFFFF', isHovered, hoverColor = '#310C24', isPressed, pressedColor = '#FFFFFF', defaultColor = '#1a1a2e', dealScore, seatViewUrl, sectionLabel, rowNumber, useTransition, interactive }: PinProps) {
   const displayPrice = `$${Math.round(price / 100)}`;
-  // Multiplier is computed at render time (only changes on selection/hover, not zoom)
-  // --map-scale CSS var is set by MapContainer via DOM mutation during zoom — no React re-render needed
-  const pinMultiplier = isSelected ? 1.875 : isHovered ? 1.5 : 1.25;
   const pinState = resolveInteractionState({
     isAvailable: true,
     isSelected: !!isSelected,
     isPressed: !!isPressed,
     isHovered: !!isHovered,
   });
-  const bgColor =
-    pinState === 'selected' ? selectedColor :
-    pinState === 'pressed'  ? pressedColor  :
-    pinState === 'hover'    ? hoverColor    : defaultColor;
-  const zIndex = isHovered ? 30 : isSelected ? 20 : 10;
+  const appearance = resolvePinAppearance({
+    pinState,
+    defaultColor,
+    hoverColor,
+    pressedColor,
+    selectedColor,
+    seatViewUrl,
+    useTransition,
+  });
   const showDealScore = dealScore !== undefined && dealScore > 7;
-  const showSeatView = isHovered && !isSelected && seatViewUrl;
-
-  const animation = useTransition ? undefined : isSelected
-    ? 'pinSelectedIn 300ms cubic-bezier(0.075, 0.82, 0.165, 1)'
-    : isHovered
-      ? 'pinHoverIn 200ms cubic-bezier(0.075, 0.82, 0.165, 1)'
-      : undefined;
 
   return (
     <div
@@ -57,19 +115,20 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
       style={{
         left: x,
         top: y,
-        '--pin-multiplier': pinMultiplier,
-        transform: `translate(-50%, -100%) scale(calc(var(--pin-multiplier, 1.25) / var(--map-scale, 1)))${isSelected ? ' translateY(-1px)' : ''}`,
+        '--pin-multiplier': appearance.pinMultiplier,
+        transform: `translate(-50%, -100%) scale(calc(var(--pin-multiplier, 1.25) / var(--map-scale, 1)))${pinState === 'selected' || pinState === 'pressed' ? ' translateY(-1px)' : ''}`,
         transformOrigin: 'center bottom',
-        zIndex,
-        animation,
-        transition: useTransition ? '--pin-multiplier 200ms cubic-bezier(0.075, 0.82, 0.165, 1)' : undefined,
+        zIndex: appearance.zIndex,
+        animation: appearance.animation,
+        filter: appearance.filter,
+        transition: useTransition ? '--pin-multiplier 200ms cubic-bezier(0.075, 0.82, 0.165, 1), filter 200ms ease' : undefined,
       } as CSSProperties}
     >
       {/* Seat view card */}
-      {showSeatView && (
+      {appearance.showSeatView && (
         <div className="w-[160px] rounded-md overflow-hidden shadow-md mb-1">
           <div className="relative">
-            <img src={seatViewUrl} className="w-full block aspect-[16/10] object-cover" />
+            <img src={appearance.showSeatView} className="w-full block aspect-[16/10] object-cover" />
             <div className="absolute top-1.5 left-1.5 bg-white rounded-sm px-1.5 py-0.5 text-[8px] leading-tight font-medium text-[#1a1a2e]">
               Section {sectionLabel}, Row {rowNumber}
             </div>
@@ -78,14 +137,15 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
       )}
       {/* Pill body */}
       <div
-        className="flex items-center gap-1 text-xs font-semibold leading-none px-[5px] py-1 rounded whitespace-nowrap text-center text-white"
+        className="flex items-center gap-1 text-xs font-semibold leading-none px-[5px] py-1 rounded whitespace-nowrap text-center"
         style={{
-          background: bgColor,
-          transition: useTransition ? 'background-color 200ms ease' : undefined,
+          background: appearance.backgroundColor,
+          color: appearance.textColor,
+          transition: useTransition ? 'background-color 200ms ease, color 200ms ease' : undefined,
         }}
       >
         {showDealScore && (
-          <span className="rounded-sm px-1 py-0.5 text-[10px] font-bold bg-[#4CAF50]">
+          <span className="rounded-sm bg-[#4CAF50] px-1 py-0.5 text-[10px] font-bold text-white">
             {dealScore.toFixed(1)}
           </span>
         )}
@@ -99,7 +159,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
           margin: '0 auto',
           borderLeft: '4px solid transparent',
           borderRight: '4px solid transparent',
-          borderTop: `4px solid ${bgColor}`,
+          borderTop: `4px solid ${appearance.backgroundColor}`,
           transition: useTransition ? 'border-top-color 200ms ease' : undefined,
         }}
       />

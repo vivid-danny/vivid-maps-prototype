@@ -57,8 +57,8 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
       labelUnavailable: '#B0B0B0',
       pinDefault: '#1a1a2e',
       pinHovered: '#310C24',
-      pinPressed: '#141035',
-      pinSelected: '#141035',
+      pinPressed: '#FFFFFF',
+      pinSelected: '#FFFFFF',
     },
   };
 }
