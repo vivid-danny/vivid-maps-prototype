@@ -46,6 +46,13 @@ interface MarkerEntry {
 // Sentinel ID for the on-the-fly hover pin (a row with no pre-existing pin candidate).
 const HOVER_PIN_ID = '__hover__';
 
+interface ResolvePinLngLatParams {
+  displayMode: DisplayMode;
+  listing: Listing;
+  sectionData: SectionManifestEntry;
+  seatCoords: Map<string, [number, number]>;
+}
+
 function seatCentroid(
   seatIds: string[],
   coords: Map<string, [number, number]>,
@@ -56,6 +63,24 @@ function seatCentroid(
     pts.reduce((s, p) => s + p[0], 0) / pts.length,
     pts.reduce((s, p) => s + p[1], 0) / pts.length,
   ];
+}
+
+function getRowCenter(
+  listing: Listing,
+  sectionData: SectionManifestEntry,
+): [number, number] {
+  return sectionData.rows[listing.rowId]?.center ?? sectionData.center;
+}
+
+function resolvePinLngLat({
+  displayMode,
+  listing,
+  sectionData,
+  seatCoords,
+}: ResolvePinLngLatParams): [number, number] {
+  if (displayMode === 'sections') return sectionData.center;
+  if (displayMode === 'rows') return getRowCenter(listing, sectionData);
+  return seatCentroid(listing.seatIds, seatCoords) ?? getRowCenter(listing, sectionData);
 }
 
 function markerZIndex(isHovered: boolean, isSelected: boolean): string {
@@ -196,24 +221,29 @@ export function useMapPins({
           // One pin per section (best deal) — same pin as sections mode, now at its row center.
           const bestDeal = getBestDealPin(sectionPins);
           if (!bestDeal) continue;
-          const lngLat = sectionData.rows[bestDeal.listing.rowId]?.center ?? sectionData.center;
+          const lngLat = resolvePinLngLat({
+            displayMode,
+            listing: bestDeal.listing,
+            sectionData,
+            seatCoords,
+          });
           candidates = [{ listing: bestDeal.listing, lngLat }];
         } else {
-          // seats mode — show all pins from pinsBySection, positioned at their row center
+          // seats mode — show all pins from pinsBySection, positioned at their listing location
           for (const pin of sectionPins) {
-            const lngLat = sectionData.rows[pin.listing.rowId]?.center ?? sectionData.center;
+            const lngLat = resolvePinLngLat({
+              displayMode,
+              listing: pin.listing,
+              sectionData,
+              seatCoords,
+            });
             candidates.push({ listing: pin.listing, lngLat });
           }
         }
 
         for (const { listing, lngLat } of candidates) {
           const isSelected = selectedListing?.listingId === listing.listingId;
-          // In seats mode, position the selected pin at the actual seat(s) location
-          const resolvedLngLat =
-            isSelected && displayMode === 'seats'
-              ? (seatCentroid(listing.seatIds, seatCoords) ?? lngLat)
-              : lngLat;
-          pins.push({ listingId: listing.listingId, lngLat: resolvedLngLat, sectionId, listing, isHovered: false, isSelected });
+          pins.push({ listingId: listing.listingId, lngLat, sectionId, listing, isHovered: false, isSelected });
         }
       }
     }
@@ -222,11 +252,12 @@ export function useMapPins({
     if (selectedListing && !pins.some((p) => p.listingId === selectedListing.listingId)) {
       const sectionData = sectionCenters.get(selectedListing.sectionId);
       if (sectionData) {
-        const rowCenter = sectionData.rows[selectedListing.rowId]?.center ?? sectionData.center;
-        const lngLat =
-          displayMode === 'seats'
-            ? (seatCentroid(selectedListing.seatIds, seatCoords) ?? rowCenter)
-            : rowCenter;
+        const lngLat = resolvePinLngLat({
+          displayMode,
+          listing: selectedListing,
+          sectionData,
+          seatCoords,
+        });
         pins.push({
           listingId: selectedListing.listingId,
           lngLat,
@@ -327,7 +358,9 @@ export function useMapPins({
       const isHovered =
         displayMode === 'sections'
           ? hoverState.sectionId === pin.sectionId
-          : hoverState.sectionId === pin.sectionId && hoverState.rowId === pin.listing.rowId;
+          : displayMode === 'rows'
+            ? hoverState.sectionId === pin.sectionId && hoverState.rowId === pin.listing.rowId
+            : hoverState.listingId === pin.listingId;
       if (entry.isHovered !== isHovered) {
         renderPin(entry.root, pin.listing, isHovered, entry.isSelected, seatColorsRef.current);
         entry.marker.getElement().style.zIndex = markerZIndex(isHovered, entry.isSelected);
@@ -376,10 +409,7 @@ export function useMapPins({
         }
       }
 
-      if (
-        (displayMode === 'rows' || displayMode === 'seats') &&
-        hoverState.rowId !== null
-      ) {
+      if (displayMode === 'rows' && hoverState.rowId !== null) {
         const alreadyHasPin = basePins.some(
           (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
         );
@@ -390,7 +420,12 @@ export function useMapPins({
           );
           if (rowListings.length > 0) {
             const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
-            const lngLat = sectionData.rows[hoverState.rowId]?.center ?? sectionData.center;
+            const lngLat = resolvePinLngLat({
+              displayMode,
+              listing: cheapest,
+              sectionData,
+              seatCoords,
+            });
             const hoverPinData: PinRenderData = {
               listingId: HOVER_PIN_ID, lngLat, sectionId: hoverState.sectionId!,
               listing: cheapest, isHovered: true, isSelected: false,
@@ -419,6 +454,50 @@ export function useMapPins({
           }
         }
       }
+
+      if (displayMode === 'seats' && hoverState.listingId !== null && sectionData) {
+        const hoveredListing = (model.listingsBySection.get(hoverState.sectionId) ?? []).find(
+          (listing) => listing.listingId === hoverState.listingId,
+        );
+
+        if (hoveredListing && !basePinsById.has(hoveredListing.listingId)) {
+          const lngLat = resolvePinLngLat({
+            displayMode,
+            listing: hoveredListing,
+            sectionData,
+            seatCoords,
+          });
+          const hoverPinData: PinRenderData = {
+            listingId: HOVER_PIN_ID,
+            lngLat,
+            sectionId: hoverState.sectionId,
+            listing: hoveredListing,
+            isHovered: true,
+            isSelected: false,
+          };
+          pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
+          const existing = current.get(HOVER_PIN_ID);
+          if (existing) {
+            existing.marker.setLngLat(lngLat);
+            existing.marker.getElement().style.display = '';
+            renderPin(existing.root, hoveredListing, true, false, seatColorsRef.current);
+            existing.isHovered = true;
+          } else {
+            const { wrapper, inner } = createMarkerEl((e) => {
+              e.stopPropagation();
+              const data = pinDataRef.current.get(HOVER_PIN_ID);
+              if (!data) return;
+              onSelectRef.current(buildPinSelection(data, displayModeRef.current));
+            });
+            const root = createRoot(inner);
+            renderPin(root, hoveredListing, true, false, seatColorsRef.current);
+            const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
+            marker.getElement().style.zIndex = markerZIndex(true, false);
+            current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
+          }
+          return;
+        }
+      }
     }
 
     // No matching on-the-fly hover — hide the hover pin but keep the root alive
@@ -429,7 +508,7 @@ export function useMapPins({
       existing.isHovered = false;
       pinDataRef.current.delete(HOVER_PIN_ID);
     }
-  }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model, seatCoords]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Remove all markers on unmount
   useEffect(() => {

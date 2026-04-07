@@ -15,6 +15,7 @@ import {
   buildSectionSelection,
   buildRowSelection,
   buildSectionHover,
+  buildListingHover,
   buildRowHover,
 } from '../behavior/rules';
 
@@ -83,6 +84,7 @@ export function useMapInteractions({
     // Tracks last hover emitted to avoid redundant React state updates on mousemove
     let lastSectionId: string | null = null;
     let lastRowId: string | null = null;
+    let lastListingId: string | null = null;
 
     // Deferred mouseleave: prevents flicker when moving between seat ↔ connector
     // by deferring the clear to the next frame, allowing an adjacent mousemove to cancel it.
@@ -180,6 +182,7 @@ export function useMapInteractions({
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = null;
+      lastListingId = null;
       const hover = buildSectionHover(sectionId);
       syncHoverFromMapRef.current(hover);
       onHoverRef.current(hover);
@@ -211,6 +214,7 @@ export function useMapInteractions({
       map.getCanvas().style.cursor = 'pointer';
       lastSectionId = sectionId;
       lastRowId = rowId;
+      lastListingId = null;
       const hover = buildRowHover(sectionId, rowId);
       syncHoverFromMapRef.current(hover);
       onHoverRef.current(hover);
@@ -252,13 +256,23 @@ export function useMapInteractions({
       }
       map.getCanvas().style.cursor = 'pointer';
 
-      // Emit row-level hover so pins can react + sync all hover visuals
+      // Emit listing-level hover so seat-mode pins anchor to the actual listing
       const sectionId = feature.properties?.sectionId as string;
       const rowId = feature.properties?.rowId as string;
-      if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
+      if (
+        listing &&
+        sectionId &&
+        rowId &&
+        (
+          lastListingId !== listing.listingId ||
+          lastSectionId !== sectionId ||
+          lastRowId !== rowId
+        )
+      ) {
         lastSectionId = sectionId;
         lastRowId = rowId;
-        const hover = buildRowHover(sectionId, rowId);
+        lastListingId = listing.listingId;
+        const hover = buildListingHover(sectionId, listing.listingId);
         syncHoverFromMapRef.current(hover);
         onHoverRef.current(hover);
       }
@@ -296,10 +310,19 @@ export function useMapInteractions({
 
       const sectionId = listing.sectionId;
       const rowId = listing.rowId;
-      if (sectionId && rowId && (lastSectionId !== sectionId || lastRowId !== rowId)) {
+      if (
+        sectionId &&
+        rowId &&
+        (
+          lastListingId !== listing.listingId ||
+          lastSectionId !== sectionId ||
+          lastRowId !== rowId
+        )
+      ) {
         lastSectionId = sectionId;
         lastRowId = rowId;
-        const hover = buildRowHover(sectionId, rowId);
+        lastListingId = listing.listingId;
+        const hover = buildListingHover(sectionId, listing.listingId);
         syncHoverFromMapRef.current(hover);
         onHoverRef.current(hover);
       }
@@ -330,6 +353,7 @@ export function useMapInteractions({
       hoveredSeatIds = [];
       lastSectionId = null;
       lastRowId = null;
+      lastListingId = null;
       map.getCanvas().style.cursor = '';
       syncHoverFromMapRef.current(EMPTY_HOVER);
       onHoverRef.current(EMPTY_HOVER);
