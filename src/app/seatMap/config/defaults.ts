@@ -51,7 +51,7 @@ export const DEFAULT_SEAT_MAP_CONFIG: SeatMapConfig = {
     connectorHover: '#d7c1cf',
     connectorPressed: '#c4c3d5',
     connectorSelected: '#e4e1ef',
-    labelDefault: '#5D1A1A',
+    labelDefault: 'rgba(4, 9, 44, 0.64)',
     labelSelected: '#FFFFFF',
     labelUnavailable: '#B0B0B0',
     pinDefault: '#1a1a2e',
