@@ -25,6 +25,7 @@ import {
   LAYER_ROW_SELECTED_OUTLINE,
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
+  LAYER_SEAT_INTERACTION,
   LAYER_SEAT_CONNECTOR,
   LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
   LAYER_SEAT_HOVER_OVERLAY,
@@ -70,6 +71,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
   // Shared zoom-interpolated size expressions — seat radius and connector width scale at the
   // same exponential rate so they stay proportional across zoom levels.
   const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128];
+  const SEAT_INTERACTION_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 8, 20, 144];
   const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88];
 
   // Base fill expression: hovered > unavailable > base color.
@@ -409,6 +411,19 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'circle-color': sectionFillColor,
           'circle-radius': SEAT_RADIUS_EXPR,
+          'circle-stroke-width': 0,
+        },
+      },
+
+      // 12c. Seat interaction layer — larger invisible hover target for pointer forgiveness.
+      {
+        id: LAYER_SEAT_INTERACTION,
+        type: 'circle',
+        source: SOURCE_SEATS,
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-radius': SEAT_INTERACTION_RADIUS_EXPR,
           'circle-stroke-width': 0,
         },
       },

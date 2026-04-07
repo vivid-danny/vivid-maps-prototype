@@ -23,6 +23,7 @@ export const LAYER_ROW_LABEL = 'row-label';
 
 // Layer IDs — seats (prototype-only; production stops at rows)
 export const LAYER_SEAT = 'seat';
+export const LAYER_SEAT_INTERACTION = 'seat-interaction';
 export const LAYER_SEAT_CONNECTOR = 'seat-connector';
 export const LAYER_SEAT_CONNECTOR_MUTED_OVERLAY = 'seat-connector-muted-overlay';
 export const LAYER_SEAT_HOVER_OVERLAY = 'seat-hover-overlay';
@@ -35,11 +36,11 @@ export const SOURCE_SEAT_CONNECTORS = 'seat-connectors';
 // Grouped layer arrays — used in MapLibreVenue for batch filter/visibility operations.
 
 /** Seat-level layers whose visibility toggles together in seats displayMode */
-export const SEAT_VISIBILITY_LAYERS = [LAYER_SEAT, LAYER_SEAT_CONNECTOR, LAYER_SEAT_HOVER_OVERLAY] as const;
+export const SEAT_VISIBILITY_LAYERS = [LAYER_SEAT, LAYER_SEAT_INTERACTION, LAYER_SEAT_CONNECTOR, LAYER_SEAT_HOVER_OVERLAY] as const;
 
 /** Seat + connector layers that receive the inventory filter (sectionId-based) */
 export const SEAT_FILTERED_LAYERS = [
-  LAYER_SEAT, LAYER_SEAT_CONNECTOR, LAYER_SEAT_CONNECTOR_MUTED_OVERLAY, LAYER_SEAT_HOVER_OVERLAY,
+  LAYER_SEAT, LAYER_SEAT_INTERACTION, LAYER_SEAT_CONNECTOR, LAYER_SEAT_CONNECTOR_MUTED_OVERLAY, LAYER_SEAT_HOVER_OVERLAY,
 ] as const;
 
 /** Seat + connector muted overlay layers (filter + visibility toggled together) */

@@ -3,6 +3,7 @@ import type { Map as MaplibreMap, MapLayerMouseEvent } from 'maplibre-gl';
 import {
   LAYER_ROW,
   LAYER_SEAT,
+  LAYER_SEAT_INTERACTION,
   LAYER_SEAT_CONNECTOR,
   LAYER_SECTION,
   SOURCE_SEATS,
@@ -45,6 +46,8 @@ export function useMapInteractions({
   isMobile,
   listingsBySeatId,
 }: UseMapInteractionsOptions) {
+  const HOVER_EXIT_GRACE_MS = 60;
+
   // Store callbacks in refs to avoid re-registering event handlers when they change
   const onSelectRef = useRef(onSelect);
   const onHoverRef = useRef(onHover);
@@ -88,12 +91,12 @@ export function useMapInteractions({
 
     // Deferred mouseleave: prevents flicker when moving between seat ↔ connector
     // by deferring the clear to the next frame, allowing an adjacent mousemove to cancel it.
-    let pendingLeaveFrame: number | null = null;
+    let pendingLeaveTimeout: number | null = null;
 
     function cancelPendingLeave() {
-      if (pendingLeaveFrame !== null) {
-        cancelAnimationFrame(pendingLeaveFrame);
-        pendingLeaveFrame = null;
+      if (pendingLeaveTimeout !== null) {
+        window.clearTimeout(pendingLeaveTimeout);
+        pendingLeaveTimeout = null;
       }
     }
 
@@ -359,16 +362,16 @@ export function useMapInteractions({
       onHoverRef.current(EMPTY_HOVER);
     }
 
-    // Seat/connector mouseleave: deferred to next frame so that moving between
-    // seat ↔ connector doesn't flicker (the adjacent mousemove cancels the pending clear).
+    // Seat/connector mouseleave: use a short grace window so brief pointer gaps
+    // between the seat hit target and connector do not clear hover immediately.
     function handleSeatConnectorMouseLeave() {
       if (isMobileRef.current) return;
       if (hoveredSeatIds.length === 0) return;
       cancelPendingLeave();
-      pendingLeaveFrame = requestAnimationFrame(() => {
-        pendingLeaveFrame = null;
+      pendingLeaveTimeout = window.setTimeout(() => {
+        pendingLeaveTimeout = null;
         handleMouseLeave();
-      });
+      }, HOVER_EXIT_GRACE_MS);
     }
 
     // Background click — deselects when clicking outside any interactive layer.
@@ -391,12 +394,12 @@ export function useMapInteractions({
 
     map.on('mousemove', LAYER_SECTION, handleSectionHover);
     map.on('mousemove', LAYER_ROW, handleRowHover);
-    map.on('mousemove', LAYER_SEAT, handleSeatHover);
+    map.on('mousemove', LAYER_SEAT_INTERACTION, handleSeatHover);
     map.on('mousemove', LAYER_SEAT_CONNECTOR, handleConnectorHover);
 
     map.on('mouseleave', LAYER_SECTION, handleMouseLeave);
     map.on('mouseleave', LAYER_ROW, handleMouseLeave);
-    map.on('mouseleave', LAYER_SEAT, handleSeatConnectorMouseLeave);
+    map.on('mouseleave', LAYER_SEAT_INTERACTION, handleSeatConnectorMouseLeave);
     map.on('mouseleave', LAYER_SEAT_CONNECTOR, handleSeatConnectorMouseLeave);
 
     return () => {
@@ -409,12 +412,12 @@ export function useMapInteractions({
 
       map.off('mousemove', LAYER_SECTION, handleSectionHover);
       map.off('mousemove', LAYER_ROW, handleRowHover);
-      map.off('mousemove', LAYER_SEAT, handleSeatHover);
+      map.off('mousemove', LAYER_SEAT_INTERACTION, handleSeatHover);
       map.off('mousemove', LAYER_SEAT_CONNECTOR, handleConnectorHover);
 
       map.off('mouseleave', LAYER_SECTION, handleMouseLeave);
       map.off('mouseleave', LAYER_ROW, handleMouseLeave);
-      map.off('mouseleave', LAYER_SEAT, handleSeatConnectorMouseLeave);
+      map.off('mouseleave', LAYER_SEAT_INTERACTION, handleSeatConnectorMouseLeave);
       map.off('mouseleave', LAYER_SEAT_CONNECTOR, handleSeatConnectorMouseLeave);
     };
   }, [ready, mapRef]);
