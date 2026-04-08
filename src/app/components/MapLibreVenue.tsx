@@ -69,6 +69,7 @@ interface MapLibreVenueProps {
   onSelect: (selection: SelectionState) => void;
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
+  zoomedDisplay: DisplayMode;
   pinDensity: SeatMapConfig['pinDensity'];
   venueFill: string;
   venueStroke: string;
@@ -109,6 +110,7 @@ export function MapLibreVenue({
   onSelect,
   onHover,
   isMobile,
+  zoomedDisplay,
   pinDensity,
   venueFill,
   venueStroke,
@@ -247,6 +249,7 @@ export function MapLibreVenue({
     selectedListing,
     hoverState,
     displayMode,
+    zoomedDisplay,
     seatColors,
     isMobile,
     pinDensity,

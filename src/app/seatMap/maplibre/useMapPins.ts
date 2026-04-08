@@ -21,6 +21,7 @@ interface UseMapPinsOptions {
   selectedListing: Listing | null;
   hoverState: HoverState;
   displayMode: DisplayMode;
+  zoomedDisplay: DisplayMode;
   seatColors: SeatColors;
   isMobile: boolean;
   pinDensity: PinDensityConfig;
@@ -51,6 +52,14 @@ interface ResolvePinLngLatParams {
   listing: Listing;
   sectionData: SectionManifestEntry;
   seatCoords: Map<string, [number, number]>;
+}
+
+function shouldExpandPinsForSelection(selection: SelectionState): boolean {
+  return !!selection.sectionId;
+}
+
+function getExpandedPinsDisplayMode(displayMode: DisplayMode, zoomedDisplay: DisplayMode): DisplayMode {
+  return displayMode === 'sections' ? zoomedDisplay : displayMode;
 }
 
 function seatCentroid(
@@ -148,6 +157,7 @@ export function useMapPins({
   selectedListing,
   hoverState,
   displayMode,
+  zoomedDisplay,
   seatColors,
   isMobile,
   pinDensity,
@@ -189,6 +199,7 @@ export function useMapPins({
 
     const pins: PinRenderData[] = [];
     const { pinsBySection } = model;
+    const expandSelectedSectionPins = shouldExpandPinsForSelection(selection);
 
     if (displayMode === 'sections' || displayMode === 'rows' || displayMode === 'seats') {
       // Collect candidates across the venue, then declutter them in venue space.
@@ -247,6 +258,32 @@ export function useMapPins({
       }
     }
 
+    if (expandSelectedSectionPins && selection.sectionId) {
+      const sectionData = sectionCenters.get(selection.sectionId);
+      const sectionListings = model.listingsBySection.get(selection.sectionId) ?? [];
+      const expandedPinsDisplayMode = getExpandedPinsDisplayMode(displayMode, zoomedDisplay);
+
+      if (sectionData) {
+        for (const listing of sectionListings) {
+          if (pins.some((pin) => pin.listingId === listing.listingId)) continue;
+          const lngLat = resolvePinLngLat({
+            displayMode: expandedPinsDisplayMode,
+            listing,
+            sectionData,
+            seatCoords,
+          });
+          pins.push({
+            listingId: listing.listingId,
+            lngLat,
+            sectionId: selection.sectionId,
+            listing,
+            isHovered: false,
+            isSelected: selectedListing?.listingId === listing.listingId,
+          });
+        }
+      }
+    }
+
     // If the selected listing has no default pin, add it as a selected overlay
     if (selectedListing && !pins.some((p) => p.listingId === selectedListing.listingId)) {
       const sectionData = sectionCenters.get(selectedListing.sectionId);
@@ -270,7 +307,7 @@ export function useMapPins({
 
     // Mobile: show roughly 2/3 of pins; declutter already uses 3x distance so remaining pins are well-spaced
     return isMobile ? pins.slice(0, Math.ceil(pins.length * 2 / 3)) : pins;
-  }, [model, sectionCenters, displayMode, selectedListing, isMobile, seatCoords, pinDensity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [model, sectionCenters, displayMode, zoomedDisplay, selectedListing, selection, isMobile, seatCoords, pinDensity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
   useEffect(() => {
