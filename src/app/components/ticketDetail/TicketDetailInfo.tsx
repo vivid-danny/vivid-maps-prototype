@@ -40,11 +40,10 @@ function formatSeatNumbers(seatIds: string[]): string | null {
 }
 
 export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
-  const ticketCount = listing.seatIds.length;
   const formattedSeatNumbers = formatSeatNumbers(listing.seatIds);
   const ticketSummary = [
-    `${ticketCount} ${ticketCount === 1 ? 'ticket' : 'tickets'}`,
-    formattedSeatNumbers,
+    `${listing.quantityAvailable} ${listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}`,
+    listing.isUnmapped ? null : formattedSeatNumbers,
   ].filter(Boolean).join(', ');
 
   return (

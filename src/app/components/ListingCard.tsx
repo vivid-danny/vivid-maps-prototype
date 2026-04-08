@@ -22,9 +22,6 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
-  const ticketCount = listing.seatIds.length;
-  const ticketLabel = ticketCount === 1 ? 'ticket' : 'tickets';
-
   const handleMouseEnter = () => {
     setLocalHover(true);
     hoverIntent.enter(listing);
@@ -82,7 +79,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
             Section {listing.sectionLabel}, Row {listing.rowNumber}
           </span>
           <span className="text-sm text-gray-500">
-            {ticketCount} {ticketLabel}
+            {listing.quantityAvailable} {listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}
           </span>
           {(listing.dealScore >= 6 || listing.perks.length > 0) && (
             <div className="flex flex-wrap gap-1 mt-2">
