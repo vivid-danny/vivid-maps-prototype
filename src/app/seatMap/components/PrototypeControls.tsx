@@ -204,9 +204,7 @@ function SectionHeader({ title, prodSource }: {
   );
 }
 
-
 const DISPLAY_MODES = ['sections', 'rows', 'seats'] as const;
-const LISTING_CARD_SIZES = ['dense', 'standard', 'spacious'] as const;
 
 export function PrototypeControls({
   showControls,
@@ -286,16 +284,6 @@ export function PrototypeControls({
               <span className="text-gray-500">Mode:</span>
               <span className="font-medium">{displayMode}</span>
             </div>
-          </div>
-
-          {/* Listing Card Size Toggle */}
-          <div className="mb-6">
-            <label className="text-xs text-black font-bold block mb-2">Listing Card</label>
-            <ToggleGroup
-              options={LISTING_CARD_SIZES}
-              value={config.listingCardSize}
-              onChange={(listingCardSize) => onConfigChange({ listingCardSize })}
-            />
           </div>
 
           <div className="mb-6">

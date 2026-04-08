@@ -260,7 +260,6 @@ export function SeatMapRoot() {
                   hoverColor={config.seatColors.hover}
                   pressedColor={config.seatColors.pressed}
                   disableHover={isMobile}
-                  listingCardSize={config.listingCardSize}
                   quantityFilter={viewState.quantityFilter}
                   onQuantityFilterChange={viewState.setQuantityFilter}
                 />
@@ -396,7 +395,6 @@ export function SeatMapRoot() {
                 hoverColor={config.seatColors.hover}
                 pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
-                listingCardSize={config.listingCardSize}
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
                 showEventInfo={false}

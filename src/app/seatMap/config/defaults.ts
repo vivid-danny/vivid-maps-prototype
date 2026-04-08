@@ -17,7 +17,6 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
     theme: 'zone',
     themeOverrides: {},
-    listingCardSize: 'standard',
     rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill
     rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
     overlays: {
