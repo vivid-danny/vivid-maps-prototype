@@ -150,11 +150,10 @@ export function buildConnectorColorExpression(
     ];
   }
 
-  // Branded: use distinct connector state colors
+  // Connector interaction visuals are handled by dedicated overlay layers.
+  // Keep the base connector line on the neutral/default color only.
   return [
     'case',
-    ['boolean', ['feature-state', 'selected'], false], seatColors.connectorSelected,
-    ['boolean', ['feature-state', 'hovered'], false], seatColors.connectorHover,
     ['boolean', ['feature-state', 'unavailable'], false], 'rgba(4,9,44,0)',
     seatColors.connector,
   ];

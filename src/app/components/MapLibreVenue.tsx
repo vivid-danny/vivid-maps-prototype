@@ -26,6 +26,9 @@ import {
   LAYER_ROW_SELECTED_OVERLAY,
   LAYER_SEAT,
   LAYER_SEAT_CONNECTOR,
+  LAYER_SEAT_CONNECTOR_HOVER_OVERLAY,
+  LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
+  LAYER_SEAT_CONNECTOR_SELECTED_OVERLAY,
   LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
@@ -135,7 +138,7 @@ export function MapLibreVenue({
 
   const style = useMemo(
     () => createVenueStyle({
-      seatColors, assets, venueFill, venueStroke, sectionStroke,
+      seatColors, theme, assets, venueFill, venueStroke, sectionStroke,
       mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays: effectiveOverlays,
     }),
     // Recreates when venue assets change (venue switch); paint properties updated imperatively below.
@@ -483,6 +486,9 @@ export function MapLibreVenue({
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
+    const connectorHoverColor = (theme === 'zone' || theme === 'deal')
+      ? effectiveOverlays.seat.hover
+      : seatColors.hover;
 
     // Row outline — transparent on selected row to avoid darkened stroke against overlay
     map.setPaintProperty(LAYER_ROW_OUTLINE, 'line-color', [
@@ -514,6 +520,29 @@ export function MapLibreVenue({
       effectiveOverlays.seat.muted,
     ]);
 
+    // Connector hover overlay
+    map.setPaintProperty(LAYER_SEAT_CONNECTOR_HOVER_OVERLAY, 'line-color', [
+      'case',
+      ['boolean', ['feature-state', 'hovered'], false], connectorHoverColor,
+      'rgba(0,0,0,0)',
+    ]);
+
+    // Connector muted overlay stays transparent for hovered/selected listings so
+    // state overlays punch through the white wash.
+    map.setPaintProperty(LAYER_SEAT_CONNECTOR_MUTED_OVERLAY, 'line-color', [
+      'case',
+      ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
+      ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
+      effectiveOverlays.seat.muted,
+    ]);
+
+    // Connector selected state reuses the seat pressed token.
+    map.setPaintProperty(LAYER_SEAT_CONNECTOR_SELECTED_OVERLAY, 'line-color', [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], seatColors.pressed,
+      'rgba(0,0,0,0)',
+    ]);
+
     // Seat selected overlay
     map.setPaintProperty(LAYER_SEAT_SELECTED_OVERLAY, 'circle-color', effectiveOverlays.seat.selected);
     map.setPaintProperty(LAYER_SEAT_SELECTED_OVERLAY, 'circle-stroke-color', effectiveOverlays.seat.selectedOutline);
@@ -521,7 +550,7 @@ export function MapLibreVenue({
     // Seat hover overlay
     const seatHoverExpr = ['case', ['boolean', ['feature-state', 'hovered'], false], effectiveOverlays.seat.hover, 'rgba(0,0,0,0)'] as const;
     map.setPaintProperty(LAYER_SEAT_HOVER_OVERLAY, 'circle-color', seatHoverExpr);
-  }, [ready, rowStrokeColor, effectiveOverlays.row, effectiveOverlays.seat, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, rowStrokeColor, effectiveOverlays.row, effectiveOverlays.seat, displayMode, seatColors.hover, seatColors.pressed, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

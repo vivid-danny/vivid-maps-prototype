@@ -27,7 +27,9 @@ import {
   LAYER_SEAT,
   LAYER_SEAT_INTERACTION,
   LAYER_SEAT_CONNECTOR,
+  LAYER_SEAT_CONNECTOR_HOVER_OVERLAY,
   LAYER_SEAT_CONNECTOR_MUTED_OVERLAY,
+  LAYER_SEAT_CONNECTOR_SELECTED_OVERLAY,
   LAYER_SEAT_HOVER_OVERLAY,
   LAYER_SEAT_MUTED_OVERLAY,
   LAYER_SEAT_SELECTED_OVERLAY,
@@ -48,9 +50,11 @@ import {
 import type { SeatColors } from '../model/types';
 import type { VenueAssets } from './types';
 import type { LevelOverlays } from '../config/types';
+import type { ThemeId } from '../config/themes';
 
 interface StyleOptions {
   seatColors: SeatColors;
+  theme: ThemeId;
   assets: VenueAssets;
   venueFill: string;
   venueStroke: string;
@@ -64,15 +68,18 @@ interface StyleOptions {
 
 export function createVenueStyle(options: StyleOptions): StyleSpecification {
   const {
-    seatColors, assets, venueFill, venueStroke, sectionStroke,
+    seatColors, theme, assets, venueFill, venueStroke, sectionStroke,
     mapBackground, sectionBase, rowStrokeColor, rowFillColor, overlays,
   } = options;
 
   // Shared zoom-interpolated size expressions — seat radius and connector width scale at the
   // same exponential rate so they stay proportional across zoom levels.
-  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1.5, 20, 80];
+  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 3, 20, 80];
   const SEAT_INTERACTION_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 8, 20, 144];
-  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 0.75, 20, 48];
+  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 48];
+  const connectorHoverColor = (theme === 'zone' || theme === 'deal')
+    ? overlays.seat.hover
+    : seatColors.hover;
 
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,
@@ -365,8 +372,6 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
         paint: {
           'line-color': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], seatColors.connectorSelected,
-            ['boolean', ['feature-state', 'hovered'], false], seatColors.connectorHover,
             ['boolean', ['feature-state', 'unavailable'], false], 'rgba(4,9,44,0)',
             seatColors.connector,
           ],
@@ -376,6 +381,26 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
             ['boolean', ['feature-state', 'unavailable'], false], 0,
             1,
           ],
+        },
+      },
+
+      // 12a-i. Seat connector hover overlay — matches the seat hover treatment.
+      {
+        id: LAYER_SEAT_CONNECTOR_HOVER_OVERLAY,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false], connectorHoverColor,
+            'rgba(0,0,0,0)',
+          ],
+          'line-width': CONNECTOR_WIDTH_EXPR,
         },
       },
 
@@ -397,6 +422,27 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
             ['boolean', ['feature-state', 'hovered'], false], 'rgba(4,9,44,0)',
             ['boolean', ['feature-state', 'selected'], false], 'rgba(4,9,44,0)',
             overlays.seat.muted,
+          ],
+          'line-width': CONNECTOR_WIDTH_EXPR,
+        },
+      },
+
+      // 12a-iii. Seat connector selected overlay — uses the seat pressed color for the
+      // persisted active listing state.
+      {
+        id: LAYER_SEAT_CONNECTOR_SELECTED_OVERLAY,
+        type: 'line',
+        source: SOURCE_SEAT_CONNECTORS,
+        layout: {
+          visibility: 'none',
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false], seatColors.pressed,
+            'rgba(0,0,0,0)',
           ],
           'line-width': CONNECTOR_WIDTH_EXPR,
         },
