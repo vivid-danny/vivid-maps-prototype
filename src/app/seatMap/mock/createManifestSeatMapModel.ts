@@ -22,6 +22,7 @@ const seatCounts = seatCountsRaw as Record<string, Record<string, number>>;
 
 const SEED = 54321;
 const DEAL_SCORE_BIAS = 0.8;
+const LISTING_DENSITY_SCALE = 0.45;
 
 const DELIVERY_OPTIONS: DeliveryInfo[] = [
   {
@@ -75,20 +76,6 @@ function getPriceRange(sectionId: string): [number, number] {
   return [2000, 8000]; // upper deck and other: $20–$80
 }
 
-// Deterministically select N section IDs from an array using a seeded hash
-function pickSeatSaverSections(sectionIds: string[], count: number): Set<string> {
-  const result = new Set<string>();
-  const pool = [...sectionIds];
-  let seed = hashString(`${SEED}-saver`);
-  while (result.size < count && pool.length > 0) {
-    seed = hashString(`${seed}`);
-    const idx = Math.abs(seed) % pool.length;
-    result.add(pool[idx]!);
-    pool.splice(idx, 1);
-  }
-  return result;
-}
-
 interface RowInventory {
   sectionData: SectionData;
   unmappedListingIds: Set<string>;
@@ -114,11 +101,97 @@ const MIXED_ROW_SCENARIOS: MixedRowScenario[] = [
   { sectionId: '24', rowId: '13', mappedSeatNumbers: [], unmappedQuantity: 4 },
 ];
 
+function buildClusteredRowSeats(
+  sectionId: string,
+  rowId: string,
+  seatCount: number,
+  nextListingId: () => string,
+  rng: ReturnType<typeof createSeededRandom>,
+): SeatData[] {
+  const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
+    seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
+    status: 'unavailable' as const,
+  }));
+
+  if (seatCount === 0) return seats;
+
+  const rowDensity = 0.4 + (rng.random() * 0.75);
+  if (rng.random() < 0.5 + ((1 - rowDensity) * 0.18)) return seats;
+
+  const interiorStart = seatCount >= 6 ? 1 : 0;
+  const interiorEnd = seatCount >= 6 ? seatCount - 2 : seatCount - 1;
+  const [minBlockSize, maxBlockSize] = seatCount <= 4
+    ? [1, 2]
+    : seatCount <= 8
+      ? [2, 4]
+      : seatCount <= 15
+        ? [3, 6]
+        : [4, 8];
+  const baseTargetBlocks = seatCount <= 8
+    ? rng.randInt(1, 3)
+    : seatCount <= 15
+      ? rng.randInt(1, 4)
+      : rng.randInt(2, 5);
+  const targetBlocks = Math.max(1, Math.round(baseTargetBlocks * LISTING_DENSITY_SCALE * rowDensity));
+
+  const canPlaceBlock = (startSeatIndex: number, blockSize: number): boolean => {
+    const endSeatIndex = startSeatIndex + blockSize - 1;
+    if (endSeatIndex > interiorEnd) return false;
+    if (startSeatIndex > interiorStart && seats[startSeatIndex - 1]?.status === 'available') return false;
+    if (endSeatIndex < interiorEnd && seats[endSeatIndex + 1]?.status === 'available') return false;
+
+    for (let seatIndex = startSeatIndex; seatIndex <= endSeatIndex; seatIndex++) {
+      if (seats[seatIndex]?.status === 'available') return false;
+    }
+    return true;
+  };
+
+  for (let blocksCreated = 0; blocksCreated < targetBlocks; blocksCreated++) {
+    let blockSize = rng.randInt(minBlockSize, Math.max(minBlockSize + 1, maxBlockSize + 1));
+    if (rng.random() < 0.35) {
+      blockSize = Math.max(minBlockSize, Math.round(blockSize * (0.75 + (rng.random() * 0.7))));
+    }
+    let startOptions: number[] = [];
+
+    while (blockSize >= minBlockSize && startOptions.length === 0) {
+      for (let startSeatIndex = interiorStart; startSeatIndex <= interiorEnd - blockSize + 1; startSeatIndex++) {
+        if (canPlaceBlock(startSeatIndex, blockSize)) {
+          startOptions.push(startSeatIndex);
+        }
+      }
+      if (startOptions.length === 0) blockSize -= 1;
+    }
+
+    if (startOptions.length === 0) break;
+
+    const anchorBias = rng.random();
+    const weightedOptions = anchorBias < 0.2
+      ? startOptions.slice(0, Math.max(1, Math.ceil(startOptions.length * 0.4)))
+      : anchorBias > 0.8
+        ? startOptions.slice(Math.max(0, Math.floor(startOptions.length * 0.6)))
+        : startOptions;
+    const startSeatIndex = weightedOptions[rng.randInt(0, weightedOptions.length)]!;
+    const listingId = nextListingId();
+    for (let seatIndex = startSeatIndex; seatIndex < startSeatIndex + blockSize; seatIndex++) {
+      seats[seatIndex] = {
+        seatId: buildSeatFeatureId(sectionId, rowId, seatIndex + 1),
+        status: 'available' as const,
+        listingId,
+      };
+    }
+
+    if (rng.random() < 0.18) {
+      blocksCreated += 1;
+    }
+  }
+
+  return seats;
+}
+
 function buildSectionInventory(
   sectionId: string,
   rowIds: string[],
   rowSeatCounts: Record<string, number>,
-  isSeatSaverSection: boolean,
   isSoldOut: boolean,
   rng: ReturnType<typeof createSeededRandom>,
 ): RowInventory {
@@ -144,30 +217,6 @@ function buildSectionInventory(
       return { rowId, seats: [] };
     }
 
-    // Seat saver: last row of designated sections → single unmapped listing covering all seats
-    const isLastRow = rowIndex === rowIds.length - 1;
-    if (isSeatSaverSection && isLastRow) {
-      const listingId = `listing-${sectionId}-${rowId}-saver`;
-      unmappedListingIds.add(listingId);
-      const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
-        status: 'available' as const,
-        listingId,
-      }));
-      return { rowId, seats };
-    }
-
-    // Full row listing (2% probability)
-    if (rng.random() < 0.02) {
-      const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
-      const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
-        status: 'available' as const,
-        listingId,
-      }));
-      return { rowId, seats };
-    }
-
     // Solo row (1% probability): each available seat is its own listing
     if (rng.random() < 0.01) {
       const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
@@ -180,56 +229,13 @@ function buildSectionInventory(
       return { rowId, seats };
     }
 
-    // Zone row (10% of normal rows)
-    if (rng.random() < 0.10) {
-      const half = Math.ceil(seatCount / 2);
-      const listingId1 = `listing-${sectionId}-${rowId}-${listingCounter++}`;
-      const listingId2 = `listing-${sectionId}-${rowId}-${listingCounter++}`;
-      unmappedListingIds.add(listingId2);
-      const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => ({
-        seatId: buildSeatFeatureId(sectionId, rowId, si + 1),
-        status: 'available' as const,
-        listingId: si < half ? listingId1 : listingId2,
-      }));
-      return { rowId, seats, isZoneRow: true };
-    }
-
-    // Normal row: ~93% unavailable, group available seats into listings
-    const available: number[] = [];
-    const seats: SeatData[] = Array.from({ length: seatCount }, (_, si) => {
-      const seatId = buildSeatFeatureId(sectionId, rowId, si + 1);
-      if (rng.random() < 0.93) return { seatId, status: 'unavailable' as const };
-      available.push(si);
-      return { seatId, status: 'available' as const };
-    });
-
-    // Group available seats — group size based on row width
-    const [minG, maxG] = seatCount <= 8 ? [1, 3] : seatCount <= 15 ? [2, 6] : [2, 10];
-    let i = 0;
-    while (i < available.length) {
-      // Find consecutive run
-      let runEnd = i;
-      while (
-        runEnd + 1 < available.length &&
-        available[runEnd + 1]! === available[runEnd]! + 1
-      ) {
-        runEnd++;
-      }
-      let pos = i;
-      while (pos <= runEnd) {
-        const remaining = runEnd - pos + 1;
-        const groupSize = remaining >= minG
-          ? rng.randInt(minG, Math.min(maxG, remaining) + 1)
-          : remaining;
-        const listingId = `listing-${sectionId}-${rowId}-${listingCounter++}`;
-        for (let k = 0; k < groupSize; k++) {
-          const seatIdx = available[pos + k]!;
-          seats[seatIdx]!.listingId = listingId;
-        }
-        pos += groupSize;
-      }
-      i = runEnd + 1;
-    }
+    const seats = buildClusteredRowSeats(
+      sectionId,
+      rowId,
+      seatCount,
+      () => `listing-${sectionId}-${rowId}-${listingCounter++}`,
+      rng,
+    );
 
     return { rowId, seats };
   });
@@ -401,8 +407,6 @@ export function createManifestSeatMapModel(): SeatMapModel {
     return a.localeCompare(b);
   });
 
-  const seatSaverSections = pickSeatSaverSections(sectionIds, 3);
-
   // Sections with zero inventory — deterministically pick a few to be completely sold out
   const soldOutSections = new Set<string>();
   {
@@ -451,7 +455,6 @@ export function createManifestSeatMapModel(): SeatMapModel {
       sectionId,
       rowIds,
       rowSeatCounts,
-      seatSaverSections.has(sectionId),
       soldOutSections.has(sectionId),
       rng,
     );

@@ -55,3 +55,14 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
     expect(rowsWithListings.has(buildRowFeatureId('24', '13'))).toBe(true);
   });
 });
+
+describe('createManifestSeatMapModel listing quantity mix', () => {
+  it('skews mapped listings toward larger ticket quantities over singles', () => {
+    const model = createManifestSeatMapModel();
+    const mappedListings = model.listings.filter((listing) => listing.seatIds.length > 0);
+    const singleTicketListings = mappedListings.filter((listing) => listing.quantityAvailable === 1);
+    const largerGroupListings = mappedListings.filter((listing) => listing.quantityAvailable >= 4);
+
+    expect(largerGroupListings.length).toBeGreaterThan(singleTicketListings.length);
+  });
+});

@@ -164,12 +164,16 @@ export function useSeatMapPrototypeViewState({
     setHoverState(hover);
   }, [layoutMode]);
 
-  const resetViewState = useCallback(() => {
+  const clearSelectionState = useCallback(() => {
     setSelection(EMPTY_SELECTION);
     setHoverState(EMPTY_HOVER);
     setViewMode('listings');
-    setQuantityFilter(2);
   }, []);
+
+  const resetViewState = useCallback(() => {
+    clearSelectionState();
+    setQuantityFilter(2);
+  }, [clearSelectionState]);
 
   return {
     selection,
@@ -185,6 +189,7 @@ export function useSeatMapPrototypeViewState({
     setQuantityFilter,
     setShowControls,
     setSelection,
+    clearSelectionState,
     resetViewState,
     handleSelect,
     handleSelectFromPanel,

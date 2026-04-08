@@ -119,6 +119,12 @@ export function SeatMapRoot() {
     navigateFn,
   });
   const { resetViewState } = viewState;
+  const hasActiveSelection = !!(
+    viewState.selection.sectionId
+    || viewState.selection.rowId
+    || viewState.selection.listingId
+    || viewState.selection.seatIds.length > 0
+  );
 
   const handleResetAll = useCallback(() => {
     resetConfig();
@@ -356,7 +362,7 @@ export function SeatMapRoot() {
                 <button
                   onClick={() => {
                     const map = mapInstanceRef.current;
-                    viewState.setSelection(EMPTY_SELECTION);
+                    viewState.clearSelectionState();
                     // Immediately drop displayMode to sections so pins switch before the animation runs.
                     setCurrentScale(ROW_ZOOM_MIN - 1);
                     if (map) {
@@ -370,8 +376,8 @@ export function SeatMapRoot() {
                   }}
                   className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer transition-opacity duration-200"
                   style={{
-                    opacity: viewState.currentScale >= ROW_ZOOM_MIN ? 1 : 0,
-                    pointerEvents: viewState.currentScale >= ROW_ZOOM_MIN ? 'auto' : 'none',
+                    opacity: hasActiveSelection ? 1 : 0,
+                    pointerEvents: hasActiveSelection ? 'auto' : 'none',
                   }}
                   aria-label="Reset map"
                 >
