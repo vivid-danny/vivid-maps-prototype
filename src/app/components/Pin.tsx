@@ -107,7 +107,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
     seatViewUrl,
     useTransition,
   });
-  const showDealScore = dealScore !== undefined && dealScore > 7;
+  const showDealScore = dealScore !== undefined && dealScore >= 6.5;
 
   return (
     <div
