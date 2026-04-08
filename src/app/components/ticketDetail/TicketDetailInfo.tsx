@@ -1,4 +1,5 @@
 import type { Listing } from '../../seatMap/model/types';
+import { parseSeatFeatureId } from '../../seatMap/model/ids';
 import { formatPrice } from '../../seatMap/behavior/utils';
 
 interface TicketDetailInfoProps {
@@ -18,8 +19,33 @@ function DealScoreBadge({ score }: { score: number }) {
   );
 }
 
+function formatSeatNumbers(seatIds: string[]): string | null {
+  const seatNumbers = seatIds
+    .map((seatId) => parseSeatFeatureId(seatId)?.seatNumber ?? null)
+    .filter((seatNumber): seatNumber is number => seatNumber !== null)
+    .sort((a, b) => a - b);
+
+  if (seatNumbers.length === 0) return null;
+  if (seatNumbers.length === 1) return `Seat ${seatNumbers[0]}`;
+
+  const isContiguous = seatNumbers.every((seatNumber, index) => (
+    index === 0 || seatNumber === seatNumbers[index - 1] + 1
+  ));
+
+  if (isContiguous) {
+    return `Seats ${seatNumbers[0]}-${seatNumbers[seatNumbers.length - 1]}`;
+  }
+
+  return `Seats ${seatNumbers.join(', ')}`;
+}
+
 export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
   const ticketCount = listing.seatIds.length;
+  const formattedSeatNumbers = formatSeatNumbers(listing.seatIds);
+  const ticketSummary = [
+    `${ticketCount} ${ticketCount === 1 ? 'ticket' : 'tickets'}`,
+    formattedSeatNumbers,
+  ].filter(Boolean).join(', ');
 
   return (
     <div className="p-6 space-y-2">
@@ -29,7 +55,7 @@ export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
             Section {listing.sectionLabel}, Row {listing.rowNumber}
           </h3>
           <p className="text-sm text-gray-500">
-            {ticketCount} {ticketCount === 1 ? 'ticket' : 'tickets'}
+            {ticketSummary}
           </p>
         </div>
         <div className="text-right">
@@ -39,7 +65,7 @@ export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
         </div>
       </div>
 
-      {listing.dealScore > 7 && <DealScoreBadge score={listing.dealScore} />}
+      {listing.dealScore >= 5 && <DealScoreBadge score={listing.dealScore} />}
 
     </div>
   );
