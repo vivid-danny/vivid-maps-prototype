@@ -86,9 +86,9 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
           <span className="text-sm text-gray-500">
             {ticketCount} {ticketLabel}
           </span>
-          {(listing.dealScore > 7 || listing.perks.length > 0) && (
+          {(listing.dealScore >= 6 || listing.perks.length > 0) && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {listing.dealScore > 7 && (
+              {listing.dealScore >= 6 && (
                 <span className="text-[12px] leading-tight px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
                   {listing.dealScore.toFixed(1)}
                 </span>
