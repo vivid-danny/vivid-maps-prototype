@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
-import type { ListingCardSize } from '../seatMap/config/types';
 import { ListingCard } from './ListingCard';
 
 interface ListingsPanelProps {
@@ -15,13 +14,12 @@ interface ListingsPanelProps {
   hoverColor?: string;
   pressedColor?: string;
   disableHover?: boolean;
-  listingCardSize?: ListingCardSize;
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
   showEventInfo?: boolean;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, listingCardSize = 'standard', quantityFilter, onQuantityFilterChange, showEventInfo = true }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
 
@@ -56,7 +54,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
   const virtualizer = useVirtualizer({
     count: sortedListings.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => listingCardSize === 'dense' ? 56 : listingCardSize === 'spacious' ? 120 : 80,
+    estimateSize: () => 80,
     gap: 8,
     paddingStart: 12,
     paddingEnd: 12,
@@ -154,7 +152,6 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
                     hoverColor={hoverColor}
                     pressedColor={pressedColor}
                     disableHover={disableHover}
-                    size={listingCardSize}
                   />
                 </div>
               );

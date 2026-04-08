@@ -54,6 +54,10 @@ interface ResolvePinLngLatParams {
   seatCoords: Map<string, [number, number]>;
 }
 
+function isPanelOnlySeatListing(listing: Listing): boolean {
+  return listing.isUnmapped === true && listing.seatIds.length === 0;
+}
+
 function shouldExpandPinsForSelection(selection: SelectionState): boolean {
   return !!selection.sectionId;
 }
@@ -222,6 +226,7 @@ export function useMapPins({
         if (displayMode === 'seats') {
           const sectionPins = sectionItems as PinData[];
           for (const pin of sectionPins) {
+            if (isPanelOnlySeatListing(pin.listing)) continue;
             const lngLat = resolvePinLngLat({
               displayMode,
               listing: pin.listing,
@@ -278,6 +283,7 @@ export function useMapPins({
 
       if (sectionData) {
         for (const listing of sectionListings) {
+          if (expandedPinsDisplayMode === 'seats' && isPanelOnlySeatListing(listing)) continue;
           if (pins.some((pin) => pin.listingId === listing.listingId)) continue;
           const lngLat = resolvePinLngLat({
             displayMode: expandedPinsDisplayMode,
@@ -298,7 +304,11 @@ export function useMapPins({
     }
 
     // If the selected listing has no default pin, add it as a selected overlay
-    if (selectedListing && !pins.some((p) => p.listingId === selectedListing.listingId)) {
+    if (
+      selectedListing
+      && !(displayMode === 'seats' && isPanelOnlySeatListing(selectedListing))
+      && !pins.some((p) => p.listingId === selectedListing.listingId)
+    ) {
       const sectionData = sectionCenters.get(selectedListing.sectionId);
       if (sectionData) {
         const lngLat = resolvePinLngLat({
@@ -509,7 +519,11 @@ export function useMapPins({
           (listing) => listing.listingId === hoverState.listingId,
         );
 
-        if (hoveredListing && !basePinsById.has(hoveredListing.listingId)) {
+        if (
+          hoveredListing
+          && !isPanelOnlySeatListing(hoveredListing)
+          && !basePinsById.has(hoveredListing.listingId)
+        ) {
           const lngLat = resolvePinLngLat({
             displayMode,
             listing: hoveredListing,

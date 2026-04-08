@@ -1,15 +1,10 @@
 import { memo, useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
-import type { ListingCardSize } from '../seatMap/config/types';
 import { useHoverIntent } from './useHoverIntent';
 import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
-const LISTING_CARD_PADDING: Record<ListingCardSize, { top: number; right: number; bottom: number; left: number }> = {
-  dense:    { top: 4,  right: 12, bottom: 4,  left: 4  },
-  standard: { top: 12, right: 20, bottom: 12, left: 12 },
-  spacious: { top: 24, right: 32, bottom: 24, left: 24 },
-};
+const LISTING_CARD_PADDING = { top: 12, right: 20, bottom: 12, left: 12 };
 
 interface ListingCardProps {
   listing: Listing;
@@ -21,16 +16,12 @@ interface ListingCardProps {
   hoverColor?: string;
   pressedColor?: string;
   disableHover?: boolean;
-  size?: ListingCardSize;
 }
 
-function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false, size = 'standard' }: ListingCardProps) {
+function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
-  const ticketCount = listing.seatIds.length;
-  const ticketLabel = ticketCount === 1 ? 'ticket' : 'tickets';
-
   const handleMouseEnter = () => {
     setLocalHover(true);
     hoverIntent.enter(listing);
@@ -44,8 +35,12 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
 
   const cardBase = 'flex items-center justify-between rounded border cursor-pointer transition-colors ';
   let cardClass = cardBase;
-  const pad = LISTING_CARD_PADDING[size];
-  const paddingStyle = { paddingTop: pad.top, paddingRight: pad.right, paddingBottom: pad.bottom, paddingLeft: pad.left };
+  const paddingStyle = {
+    paddingTop: LISTING_CARD_PADDING.top,
+    paddingRight: LISTING_CARD_PADDING.right,
+    paddingBottom: LISTING_CARD_PADDING.bottom,
+    paddingLeft: LISTING_CARD_PADDING.left,
+  };
   let cardStyle: CSSProperties;
 
   const state = resolveInteractionState({
@@ -84,7 +79,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
             Section {listing.sectionLabel}, Row {listing.rowNumber}
           </span>
           <span className="text-sm text-gray-500">
-            {ticketCount} {ticketLabel}
+            {listing.quantityAvailable} {listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}
           </span>
           {(listing.dealScore >= 6 || listing.perks.length > 0) && (
             <div className="flex flex-wrap gap-1 mt-2">

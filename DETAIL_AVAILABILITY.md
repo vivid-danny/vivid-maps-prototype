@@ -101,3 +101,17 @@ If future inventory logic is more complex than listings alone, there are only tw
 2. expand the decoration helpers so they explicitly include that new inventory source when computing `properties.unavailable`
 
 Do not patch row/seat availability through post-load `setFeatureState` writes unless the performance tradeoff is re-evaluated intentionally.
+
+## Mixed Mapped And Unmapped Rows
+
+Current product rule for this prototype:
+
+- rows remain available when they contain any listing, including unmapped listings with no seat numbers
+- seats only become available when an exact seat appears in `listing.seatIds`
+- unmapped listings with empty `seatIds` are panel-only in seats mode
+
+This means:
+
+- row selection can reveal both mapped and unmapped listings in the listings panel
+- seat rendering, seat hover, seat selection, connectors, and seat-mode pins only prioritize mapped inventory
+- the prototype intentionally avoids synthetic seat coverage for unmapped remainder inventory

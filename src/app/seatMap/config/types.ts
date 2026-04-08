@@ -2,7 +2,6 @@ import type { DisplayMode, SeatColors } from '../model/types';
 import type { ThemeId } from './themes';
 
 export type PinDensityConfig = { sections: number; rows: number; seats: number };
-export type ListingCardSize = 'dense' | 'standard' | 'spacious';
 
 export interface LevelOverlays {
   muted: string;
@@ -23,7 +22,6 @@ export interface SeatMapConfig {
   pinDensity: PinDensityConfig;
   theme: ThemeId;
   themeOverrides: Partial<Record<ThemeId, SeatColors>>;
-  listingCardSize: ListingCardSize;
   rowStrokeColor: string;
   rowFillColor: string;
   overlays: {
@@ -37,4 +35,3 @@ export interface SeatMapConfig {
   mapBackground: string;
   sectionBase: string;
 }
-

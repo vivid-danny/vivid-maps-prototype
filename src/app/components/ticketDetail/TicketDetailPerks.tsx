@@ -16,7 +16,7 @@ const PERK_DESCRIPTIONS: Record<Exclude<Perk, 'aisle'>, string> = {
 
 function getPerkDescription(perk: Perk, listing: Listing): string {
   if (perk === 'aisle') {
-    const ticketCount = listing.seatIds.length;
+    const ticketCount = listing.quantityAvailable;
     return `Aisle seats are only guaranteed if you buy all ${ticketCount} ${ticketCount === 1 ? 'seat' : 'seats'} on the map.`;
   }
 

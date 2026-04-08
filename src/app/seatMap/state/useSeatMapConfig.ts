@@ -40,6 +40,9 @@ export function useSeatMapConfig({ initialConfig, resetConfig: resetConfigValue 
       stored.theme = 'branded';
     }
 
+    // Migration: listing card size is now fixed to the standard spec
+    delete (stored as Record<string, unknown>).listingCardSize;
+
     // Migration: flat overlay fields → nested overlays object
     if (!stored.overlays || typeof stored.overlays !== 'object') {
       delete (stored as Record<string, unknown>).mutedOverlay;

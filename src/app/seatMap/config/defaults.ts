@@ -17,7 +17,6 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
     theme: 'zone',
     themeOverrides: {},
-    listingCardSize: 'standard',
     rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill
     rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
     overlays: {
@@ -44,7 +43,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     sectionBase: '#EFEFF6',       // production: neutral[100]
     seatColors: {
       available: '#CE3197',
-      unavailable: '#f5f0f3',
+      unavailable: '#EFEFF6',
       hover: '#7A1D59',
       pressed: '#0d0646',
       selected: '#312784',
@@ -56,7 +55,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
       labelSelected: '#FFFFFF',
       labelUnavailable: '#B0B0B0',
       pinDefault: '#1a1a2e',
-      pinHovered: '#310C24',
+      pinHovered: '#1a1a2e',
       pinPressed: '#FFFFFF',
       pinSelected: '#FFFFFF',
     },
