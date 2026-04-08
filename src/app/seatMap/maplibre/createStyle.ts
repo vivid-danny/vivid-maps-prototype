@@ -70,9 +70,9 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
 
   // Shared zoom-interpolated size expressions — seat radius and connector width scale at the
   // same exponential rate so they stay proportional across zoom levels.
-  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 2, 20, 128];
+  const SEAT_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1.5, 20, 80];
   const SEAT_INTERACTION_RADIUS_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 8, 20, 144];
-  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 20, 88];
+  const CONNECTOR_WIDTH_EXPR: ExpressionSpecification = ['interpolate', ['exponential', 2], ['zoom'], 14, 0.75, 20, 48];
 
   // Base fill expression: hovered > unavailable > base color.
   // Selection is handled by dedicated overlay layers (section-selected-overlay,

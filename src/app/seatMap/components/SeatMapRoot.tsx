@@ -278,6 +278,7 @@ export function SeatMapRoot() {
                         listing={detailListing}
                         eventInfo={model.eventInfo}
                         layoutMode={layoutMode}
+                        initialQuantity={viewState.quantityFilter}
                         onBack={viewState.handleBackToListings}
                       />
                     </div>
@@ -417,6 +418,7 @@ export function SeatMapRoot() {
                   listing={detailListing}
                   eventInfo={model.eventInfo}
                   layoutMode={layoutMode}
+                  initialQuantity={viewState.quantityFilter}
                   onBack={viewState.handleBackToListings}
                 />
               </div>

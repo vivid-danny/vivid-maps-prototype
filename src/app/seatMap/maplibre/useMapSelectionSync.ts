@@ -116,7 +116,7 @@ export function useMapSelectionSync({
             ['!=', ['get', 'sectionId'], sel.sectionId],
             ['all',
               ['!=', ['get', 'rowId'], sel.rowId],
-              ['!', ['boolean', ['feature-state', 'unavailable'], false]],
+              ['!', ['boolean', ['get', 'unavailable'], false]],
             ],
           ]
         : ['!=', ['get', 'sectionId'], sel.sectionId];

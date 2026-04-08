@@ -10,11 +10,12 @@ interface TicketDetailProps {
   listing: Listing;
   eventInfo: EventInfo;
   layoutMode: LayoutMode;
+  initialQuantity: number;
   onBack: () => void;
   className?: string;
 }
 
-export function TicketDetail({ listing, eventInfo, layoutMode, onBack, className = '' }: TicketDetailProps) {
+export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, onBack, className = '' }: TicketDetailProps) {
   const isMobile = layoutMode === 'mobile';
 
   return (
@@ -26,7 +27,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, onBack, className
           onBack={onBack}
         />
         <TicketDetailInfo listing={listing} />
-        {!isMobile && <TicketDetailCheckout quantityAvailable={listing.quantityAvailable} />}
+        {!isMobile && <TicketDetailCheckout quantityAvailable={listing.quantityAvailable} initialQuantity={initialQuantity} />}
         <TicketDetailPerks perks={listing.perks} />
         <TicketDetailDelivery delivery={listing.delivery} />
         <TicketDetailEventInfo eventInfo={eventInfo} />
@@ -34,6 +35,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, onBack, className
       {isMobile && (
         <TicketDetailCheckout
           quantityAvailable={listing.quantityAvailable}
+          initialQuantity={initialQuantity}
           className="border-t border-gray-200 bg-white shrink-0"
         />
       )}
