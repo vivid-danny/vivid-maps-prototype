@@ -8,7 +8,15 @@ import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
 import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { useListingConnectors } from '../seatMap/maplibre/useListingConnectors';
 import { useSeatCoordinates } from '../seatMap/maplibre/useSeatCoordinates';
-import { buildSectionFillExpression, buildConnectorColorExpression } from '../seatMap/maplibre/paintExpressions';
+import {
+  buildSectionFillExpression,
+  buildConnectorColorExpression,
+  buildDetailFillExpression,
+} from '../seatMap/maplibre/paintExpressions';
+import {
+  loadDecoratedRowsGeoJson,
+  loadDecoratedSeatsGeoJson,
+} from '../seatMap/maplibre/loadDecoratedDetailGeoJson';
 import {
   LAYER_ROW,
   LAYER_ROW_HOVER_OVERLAY,
@@ -148,14 +156,12 @@ export function MapLibreVenue({
   // Deferred loading: rows + seats sources start empty in createVenueStyle.
   // Load real data when displayMode first leaves 'sections' (user zoomed in).
   const [detailSourcesLoaded, setDetailSourcesLoaded] = useState(false);
+  const detailLoadRequestRef = useRef(0);
+  const loadedDetailAssetKeyRef = useRef<string | null>(null);
+  const detailAssetKey = `${assets.rowsUrl}|${assets.seatsUrl}`;
   useEffect(() => {
-    if (!ready || !mapRef.current || detailSourcesLoaded) return;
-    if (displayMode === 'sections') return;
-    const map = mapRef.current;
-    (map.getSource(SOURCE_ROWS) as GeoJSONSource).setData(assets.rowsUrl);
-    (map.getSource(SOURCE_SEATS) as GeoJSONSource).setData(assets.seatsUrl);
-    setDetailSourcesLoaded(true);
-  }, [ready, displayMode, assets, detailSourcesLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+    setDetailSourcesLoaded(false);
+  }, [assets.rowsUrl, assets.seatsUrl]);
 
   // Build an effective model that uses filtered listings/pins when provided
   const effectiveModel = useMemo(() => {
@@ -170,8 +176,46 @@ export function MapLibreVenue({
     };
   }, [model, filteredListingsBySection, filteredPinsBySection]);
 
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const detailLoadedForCurrentAssets =
+      detailSourcesLoaded && loadedDetailAssetKeyRef.current === detailAssetKey;
+    if (displayMode === 'sections' && !detailLoadedForCurrentAssets) return;
+
+    const map = mapRef.current;
+    const requestId = ++detailLoadRequestRef.current;
+    let cancelled = false;
+
+    async function loadDetails() {
+      const [rowsData, seatsData] = await Promise.all([
+        loadDecoratedRowsGeoJson(assets.rowsUrl, effectiveModel),
+        loadDecoratedSeatsGeoJson(assets.seatsUrl, effectiveModel),
+      ]);
+
+      if (cancelled || requestId !== detailLoadRequestRef.current || !mapRef.current) return;
+
+      (map.getSource(SOURCE_ROWS) as GeoJSONSource).setData(rowsData);
+      (map.getSource(SOURCE_SEATS) as GeoJSONSource).setData(seatsData);
+      loadedDetailAssetKeyRef.current = detailAssetKey;
+      setDetailSourcesLoaded(true);
+    }
+
+    void loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    ready,
+    displayMode,
+    assets.rowsUrl,
+    assets.seatsUrl,
+    detailAssetKey,
+    effectiveModel.listings,
+    detailSourcesLoaded,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Wire inventory feature states (available/unavailable)
-  useFeatureState({ mapRef, ready, model: effectiveModel, seatableIds, detailSourcesLoaded });
+  useFeatureState({ mapRef, ready, model: effectiveModel, seatableIds });
 
   const listingsBySeatId = useMemo(() => {
     const m = new Map<string, (typeof effectiveModel.listings)[0]>();
@@ -389,6 +433,10 @@ export function MapLibreVenue({
     () => buildSectionFillExpression(theme, model, seatColors),
     [theme, model, seatColors],
   );
+  const detailFillExpr = useMemo(
+    () => buildDetailFillExpression(theme, model, seatColors),
+    [theme, model, seatColors],
+  );
   const connectorColorExpr = useMemo(
     () => buildConnectorColorExpression(theme, model, seatColors),
     [theme, model, seatColors],
@@ -401,10 +449,10 @@ export function MapLibreVenue({
     map.setPaintProperty(LAYER_SECTION, 'fill-color', sectionFillExpr);
     // Rows mode: inherit section zone color so each row matches its section's hue.
     // Seats mode: white background so seat circles stand out against a neutral field.
-    map.setPaintProperty(LAYER_ROW, 'fill-color', displayMode === 'seats' ? rowFillColor : sectionFillExpr);
-    map.setPaintProperty(LAYER_SEAT, 'circle-color', sectionFillExpr);
+    map.setPaintProperty(LAYER_ROW, 'fill-color', displayMode === 'seats' ? rowFillColor : detailFillExpr);
+    map.setPaintProperty(LAYER_SEAT, 'circle-color', detailFillExpr);
     map.setPaintProperty(LAYER_SEAT_CONNECTOR, 'line-color', connectorColorExpr);
-  }, [ready, sectionFillExpr, connectorColorExpr, rowFillColor, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, sectionFillExpr, detailFillExpr, connectorColorExpr, rowFillColor, displayMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Split paint property updates into focused effects ---
   // Each effect only fires when its specific dependencies change, avoiding 25+

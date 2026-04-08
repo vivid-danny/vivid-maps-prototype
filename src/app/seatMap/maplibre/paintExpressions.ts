@@ -4,6 +4,10 @@ import type { ThemeId } from '../config/themes';
 import { getZoneColor, getDealColor } from '../config/themes';
 import type { SeatMapModel } from '../model/types';
 
+function unavailablePropertyExpression(): ExpressionSpecification {
+  return ['boolean', ['get', 'unavailable'], false];
+}
+
 /**
  * Base feature-state expression for a single layer.
  * hovered > unavailable > baseColor
@@ -25,20 +29,27 @@ function featureStateExpression(
   ];
 }
 
-/**
- * Builds a fill-color expression for the section layer.
- * For zone/deal themes: inserts a per-section match expression as the base color.
- * For branded: uses seatColors.available as base.
- */
-export function buildSectionFillExpression(
+function featurePropertyExpression(
+  seatColors: SeatColors,
+  baseColor: ExpressionSpecification | string,
+  hoverColor: ExpressionSpecification | string,
+): ExpressionSpecification {
+  return [
+    'case',
+    ['boolean', ['feature-state', 'hovered'], false], hoverColor,
+    unavailablePropertyExpression(), seatColors.unavailable,
+    baseColor,
+  ];
+}
+
+function buildSectionBaseColorExpression(
   theme: ThemeId,
   model: SeatMapModel,
-  seatColors: SeatColors,
-): ExpressionSpecification {
-  let baseColor: ExpressionSpecification | string = seatColors.available;
+  fallbackColor: string,
+): ExpressionSpecification | string {
+  let baseColor: ExpressionSpecification | string = fallbackColor;
 
   if (theme === 'zone' || theme === 'deal') {
-    // Build ['match', ['get', 'sectionId'], id1, color1, id2, color2, ..., fallback]
     const matchArgs: (ExpressionSpecification | string)[] = [['get', 'sectionId']];
 
     for (const section of model.sections) {
@@ -51,17 +62,32 @@ export function buildSectionFillExpression(
           const cheapest = listings.reduce((a, b) => (a.price <= b.price ? a : b));
           color = getDealColor(cheapest.dealScore);
         } else {
-          color = seatColors.available;
+          color = fallbackColor;
         }
       } else {
-        color = seatColors.available;
+        color = fallbackColor;
       }
       matchArgs.push(section.sectionId, color);
     }
-    matchArgs.push(seatColors.available); // fallback
+    matchArgs.push(fallbackColor);
 
     baseColor = ['match', ...matchArgs] as ExpressionSpecification;
   }
+
+  return baseColor;
+}
+
+/**
+ * Builds a fill-color expression for the section layer.
+ * For zone/deal themes: inserts a per-section match expression as the base color.
+ * For branded: uses seatColors.available as base.
+ */
+export function buildSectionFillExpression(
+  theme: ThemeId,
+  model: SeatMapModel,
+  seatColors: SeatColors,
+): ExpressionSpecification {
+  const baseColor = buildSectionBaseColorExpression(theme, model, seatColors.available);
 
   // For zone/deal: no fill change on hover — overlay layer handles it; zone color stays visible.
   // For branded: fill switches to seatColors.hover.
@@ -69,11 +95,14 @@ export function buildSectionFillExpression(
   return featureStateExpression(seatColors, baseColor, hoverColor);
 }
 
-/**
- * Standard fill-color for rows and seats (no per-section theming at these levels).
- */
-export function buildDefaultFillExpression(seatColors: SeatColors): ExpressionSpecification {
-  return featureStateExpression(seatColors, seatColors.available, seatColors.hover);
+export function buildDetailFillExpression(
+  theme: ThemeId,
+  model: SeatMapModel,
+  seatColors: SeatColors,
+): ExpressionSpecification {
+  const baseColor = buildSectionBaseColorExpression(theme, model, seatColors.available);
+  const hoverColor = (theme === 'zone' || theme === 'deal') ? baseColor : seatColors.hover;
+  return featurePropertyExpression(seatColors, baseColor, hoverColor);
 }
 
 /**

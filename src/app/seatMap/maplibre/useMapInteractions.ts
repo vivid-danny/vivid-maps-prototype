@@ -117,13 +117,12 @@ export function useMapInteractions({
     function handleRowClick(e: MapLayerMouseEvent) {
       if (!e.features?.[0]) return;
       const props = e.features[0].properties;
-      const state = e.features[0].state;
 
       const sectionId = props?.sectionId as string;
       if (!sectionId) return;
 
       // Unavailable row → select the parent section instead (if section has inventory)
-      if (state?.unavailable) {
+      if (props?.unavailable === true) {
         const sectionState = map.getFeatureState({ source: SOURCE_SECTIONS, id: sectionId });
         if (!sectionState?.unavailable) {
           onSelectRef.current(buildSectionSelection(sectionId));
@@ -140,8 +139,7 @@ export function useMapInteractions({
     function handleSeatClick(e: MapLayerMouseEvent) {
       if (!e.features?.[0]) return;
       const props = e.features[0].properties;
-      const state = e.features[0].state;
-      if (state?.unavailable) return;
+      if (props?.unavailable === true) return;
 
       const sectionId = props?.sectionId as string;
       const rowId = props?.rowId as string;
@@ -194,8 +192,7 @@ export function useMapInteractions({
     function handleRowHover(e: MapLayerMouseEvent) {
       if (isMobileRef.current) return;
       if (!e.features?.[0]) return;
-      const state = e.features[0].state;
-      if (state?.unavailable) return;
+      if (e.features[0].properties?.unavailable === true) return;
 
       const sectionId = e.features[0].properties?.sectionId as string;
       const rowId = e.features[0].properties?.rowId as string;
@@ -227,7 +224,7 @@ export function useMapInteractions({
       if (isMobileRef.current) return;
       if (!e.features?.[0]) return;
       const feature = e.features[0];
-      if (feature.state?.unavailable) return;
+      if (feature.properties?.unavailable === true) return;
 
       const seatId = feature.properties?.id as string;
       if (!seatId) return;
