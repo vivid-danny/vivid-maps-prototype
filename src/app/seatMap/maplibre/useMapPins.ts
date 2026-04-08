@@ -5,10 +5,10 @@ import { Marker } from 'maplibre-gl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Pin } from '../../components/Pin';
 import { buildSectionSelection, buildRowSelection, buildListingSelection } from '../behavior/rules';
-import { declutterPins, getBestDealPin, getLowestPricePin, MAPLIBRE_DECLUTTER_BASE_DISTANCE } from '../behavior/pins';
+import { declutterPins, getBestDealListingWithMinScoreFallback, MAPLIBRE_DECLUTTER_BASE_DISTANCE } from '../behavior/pins';
 import type { ResolvedPin } from '../behavior/pins';
 import type { PinDensityConfig } from '../config/types';
-import type { SeatColors, DisplayMode, SelectionState, HoverState, Listing, SeatMapModel } from '../model/types';
+import type { PinData, SeatColors, DisplayMode, SelectionState, HoverState, Listing, SeatMapModel } from '../model/types';
 import type { SectionManifestEntry } from './useVenueManifest';
 
 interface UseMapPinsOptions {
@@ -90,6 +90,16 @@ function resolvePinLngLat({
   if (displayMode === 'sections') return sectionData.center;
   if (displayMode === 'rows') return getRowCenter(listing, sectionData);
   return seatCentroid(listing.seatIds, seatCoords) ?? getRowCenter(listing, sectionData);
+}
+
+function createPinDataForListing(listing: Listing): PinData {
+  return {
+    listing,
+    rowIndex: listing.rowNumber - 1,
+    seatIndex: listing.seatIds.length > 0
+      ? Math.floor(listing.seatIds.length / 2)
+      : 0,
+  };
 }
 
 function markerZIndex(isHovered: boolean, isSelected: boolean): string {
@@ -198,17 +208,19 @@ export function useMapPins({
     if (sectionCenters.size === 0) return [];
 
     const pins: PinRenderData[] = [];
-    const { pinsBySection } = model;
+    const { listingsBySection, pinsBySection } = model;
     const expandSelectedSectionPins = shouldExpandPinsForSelection(selection);
 
     if (displayMode === 'sections' || displayMode === 'rows' || displayMode === 'seats') {
       // Collect candidates across the venue, then declutter them in venue space.
       const allCandidates: ResolvedPin[] = [];
-      for (const [sectionId, sectionPins] of pinsBySection) {
+      const sectionsToRender = displayMode === 'seats' ? pinsBySection : listingsBySection;
+      for (const [sectionId, sectionItems] of sectionsToRender) {
         const sectionData = sectionCenters.get(sectionId);
         if (!sectionData) continue;
 
         if (displayMode === 'seats') {
+          const sectionPins = sectionItems as PinData[];
           for (const pin of sectionPins) {
             const lngLat = resolvePinLngLat({
               displayMode,
@@ -226,8 +238,9 @@ export function useMapPins({
           continue;
         }
 
-        const bestDeal = getBestDealPin(sectionPins);
-        if (!bestDeal) continue;
+        const bestDealListing = getBestDealListingWithMinScoreFallback(sectionItems as Listing[]);
+        if (!bestDealListing) continue;
+        const bestDeal = createPinDataForListing(bestDealListing);
         const lngLat = resolvePinLngLat({
           displayMode,
           listing: bestDeal.listing,
