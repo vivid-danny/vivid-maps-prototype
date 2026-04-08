@@ -1,6 +1,8 @@
 import { hashString, parseSeatId } from './utils';
 import type { DisplayMode, HoverState, Listing, PinData } from '../model/types';
 
+const DEFAULT_MIN_DEAL_SCORE = 5.0;
+
 export interface ResolvedPin {
   pin: PinData;
   x: number;
@@ -190,6 +192,31 @@ export function getBestDealPin(pins: PinData[]): PinData | null {
     if (scoreDiff !== 0) return scoreDiff > 0 ? pin : best;
     return pin.listing.price < best.listing.price ? pin : best;
   }, pins[0]);
+}
+
+function pickBestDealByScoreAndPrice<T extends { dealScore: number; price: number }>(items: T[]): T | null {
+  if (items.length === 0) return null;
+  return items.reduce((best, item) => {
+    const scoreDiff = item.dealScore - best.dealScore;
+    if (scoreDiff !== 0) return scoreDiff > 0 ? item : best;
+    return item.price < best.price ? item : best;
+  }, items[0]);
+}
+
+export function getBestDealListingWithMinScoreFallback(
+  listings: Listing[],
+  minDealScore = DEFAULT_MIN_DEAL_SCORE,
+): Listing | null {
+  const qualifying = listings.filter((listing) => listing.dealScore >= minDealScore);
+  return pickBestDealByScoreAndPrice(qualifying) ?? pickBestDealByScoreAndPrice(listings);
+}
+
+export function getBestDealPinWithMinScoreFallback(
+  pins: PinData[],
+  minDealScore = DEFAULT_MIN_DEAL_SCORE,
+): PinData | null {
+  const qualifying = pins.filter((pin) => pin.listing.dealScore >= minDealScore);
+  return getBestDealPin(qualifying) ?? getBestDealPin(pins);
 }
 
 export function getLowestPricePinsByRow(pins: PinData[]): Array<[number, PinData]> {

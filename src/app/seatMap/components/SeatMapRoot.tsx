@@ -323,6 +323,7 @@ export function SeatMapRoot() {
                   onSelect={viewState.handleSelect}
                   onHover={viewState.handleHoverFromMap}
                   isMobile={isMobile}
+                  zoomedDisplay={config.zoomedDisplay}
                   pinDensity={config.pinDensity}
                   venueFill={config.venueFill}
                   venueStroke={config.venueStroke}
