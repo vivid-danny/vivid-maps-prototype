@@ -497,7 +497,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
           visibility: 'visible',
           'text-field': ['get', 'sectionId'],
           'text-font': ['GTWalsh Bold'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 13, 12, 18, 28],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 18, 28],
           'text-allow-overlap': true,
         },
         paint: {

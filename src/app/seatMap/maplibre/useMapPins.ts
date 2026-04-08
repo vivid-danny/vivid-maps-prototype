@@ -190,46 +190,14 @@ export function useMapPins({
     const pins: PinRenderData[] = [];
     const { pinsBySection } = model;
 
-    if (displayMode === 'sections') {
-      // Collect one candidate per section, then declutter the full set across the venue.
+    if (displayMode === 'sections' || displayMode === 'rows' || displayMode === 'seats') {
+      // Collect candidates across the venue, then declutter them in venue space.
       const allCandidates: ResolvedPin[] = [];
       for (const [sectionId, sectionPins] of pinsBySection) {
         const sectionData = sectionCenters.get(sectionId);
         if (!sectionData) continue;
-        const bestDeal = getBestDealPin(sectionPins);
-        if (!bestDeal) continue;
-        allCandidates.push({
-          pin: bestDeal,
-          x: sectionData.center[0],
-          y: sectionData.center[1],
-          sectionId,
-        });
-      }
-      const decluttered = declutterPins(allCandidates, 'sections', pinDensity.sections, isMobile, MAPLIBRE_DECLUTTER_BASE_DISTANCE);
-      for (const { pin, x, y, sectionId } of decluttered) {
-        const isSelected = selectedListing?.listingId === pin.listing.listingId;
-        pins.push({ listingId: pin.listing.listingId, lngLat: [x, y], sectionId, listing: pin.listing, isHovered: false, isSelected });
-      }
-    } else {
-      for (const [sectionId, sectionPins] of pinsBySection) {
-        const sectionData = sectionCenters.get(sectionId);
-        if (!sectionData) continue;
 
-        let candidates: Array<{ listing: Listing; lngLat: [number, number] }> = [];
-
-        if (displayMode === 'rows') {
-          // One pin per section (best deal) — same pin as sections mode, now at its row center.
-          const bestDeal = getBestDealPin(sectionPins);
-          if (!bestDeal) continue;
-          const lngLat = resolvePinLngLat({
-            displayMode,
-            listing: bestDeal.listing,
-            sectionData,
-            seatCoords,
-          });
-          candidates = [{ listing: bestDeal.listing, lngLat }];
-        } else {
-          // seats mode — show all pins from pinsBySection, positioned at their listing location
+        if (displayMode === 'seats') {
           for (const pin of sectionPins) {
             const lngLat = resolvePinLngLat({
               displayMode,
@@ -237,14 +205,45 @@ export function useMapPins({
               sectionData,
               seatCoords,
             });
-            candidates.push({ listing: pin.listing, lngLat });
+            allCandidates.push({
+              pin,
+              x: lngLat[0],
+              y: lngLat[1],
+              sectionId,
+            });
           }
+          continue;
         }
 
-        for (const { listing, lngLat } of candidates) {
-          const isSelected = selectedListing?.listingId === listing.listingId;
-          pins.push({ listingId: listing.listingId, lngLat, sectionId, listing, isHovered: false, isSelected });
-        }
+        const bestDeal = getBestDealPin(sectionPins);
+        if (!bestDeal) continue;
+        const lngLat = resolvePinLngLat({
+          displayMode,
+          listing: bestDeal.listing,
+          sectionData,
+          seatCoords,
+        });
+        allCandidates.push({
+          pin: bestDeal,
+          x: lngLat[0],
+          y: lngLat[1],
+          sectionId,
+        });
+      }
+      const decluttered = declutterPins(
+        allCandidates,
+        displayMode,
+        displayMode === 'sections'
+          ? pinDensity.sections
+          : displayMode === 'rows'
+            ? pinDensity.rows
+            : pinDensity.seats,
+        isMobile,
+        MAPLIBRE_DECLUTTER_BASE_DISTANCE,
+      );
+      for (const { pin, x, y, sectionId } of decluttered) {
+        const isSelected = selectedListing?.listingId === pin.listing.listingId;
+        pins.push({ listingId: pin.listing.listingId, lngLat: [x, y], sectionId, listing: pin.listing, isHovered: false, isSelected });
       }
     }
 

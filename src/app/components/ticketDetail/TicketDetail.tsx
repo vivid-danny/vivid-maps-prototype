@@ -28,7 +28,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
         />
         <TicketDetailInfo listing={listing} />
         {!isMobile && <TicketDetailCheckout quantityAvailable={listing.quantityAvailable} initialQuantity={initialQuantity} />}
-        <TicketDetailPerks perks={listing.perks} />
+        <TicketDetailPerks listing={listing} perks={listing.perks} />
         <TicketDetailDelivery delivery={listing.delivery} />
         <TicketDetailEventInfo eventInfo={eventInfo} />
       </div>

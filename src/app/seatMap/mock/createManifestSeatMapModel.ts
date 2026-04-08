@@ -2,6 +2,7 @@ import seatCountsRaw from './venueSeatCounts.json';
 import { createSeededRandom } from './seededRandom';
 import { hashString } from '../behavior/utils';
 import { buildSeatFeatureId } from '../model/ids';
+import { isAisleListing } from '../model/perks';
 import seatViewImg from '../../../assets/seatView.png';
 import type {
   SeatMapModel,
@@ -20,6 +21,7 @@ import type {
 const seatCounts = seatCountsRaw as Record<string, Record<string, number>>;
 
 const SEED = 54321;
+const DEAL_SCORE_BIAS = 0.8;
 
 const DELIVERY_OPTIONS: DeliveryInfo[] = [
   {
@@ -222,6 +224,7 @@ function extractListings(
   sectionData: SectionData,
   sectionId: string,
   numRows: number,
+  rowSeatCounts: Record<string, number>,
   priceRange: [number, number],
   unmappedListingIds: Set<string>,
   rng: ReturnType<typeof createSeededRandom>,
@@ -252,13 +255,16 @@ function extractListings(
 
     const perks: Perk[] = [];
     if (group.rowNumber === 1) perks.push('front_of_section');
-    if (rng.random() < 0.15) perks.push('aisle');
+    if (isAisleListing({
+      seatIds: group.seatIds,
+      rowSeatCount: rowSeatCounts[group.rowId] ?? 0,
+    })) perks.push('aisle');
     if (rng.random() < 0.10) perks.push('food_and_drink');
 
     const posScore = numRows > 1 ? (1 - (group.rowNumber - 1) / (numRows - 1)) * 5 : 2.5;
     const priceScore = (1 - (price - priceRange[0]) / (priceRange[1] - priceRange[0])) * 4;
     const dealScore =
-      Math.round(Math.max(0, Math.min(10, posScore + priceScore + (rng.random() - 0.5))) * 10) / 10;
+      Math.round(Math.max(0, Math.min(10, posScore + priceScore + DEAL_SCORE_BIAS + (rng.random() - 0.5))) * 10) / 10;
 
     const isUnmapped = unmappedListingIds.has(listingId);
 
@@ -355,6 +361,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
       sectionData,
       sectionId,
       numRows,
+      rowSeatCounts,
       priceRange,
       unmappedListingIds,
       priceRng,

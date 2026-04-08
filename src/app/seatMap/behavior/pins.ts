@@ -28,7 +28,9 @@ const MOBILE_DECLUTTER_MULTIPLIER: Record<DisplayMode, number> = {
 // At sections density 0.15, minDistance = 0.0015 / 0.15 = 0.010 → ~15–20 sections shown.
 export const MAPLIBRE_DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
   sections: 0.0015,
-  rows: 0.0005,
+  // Row centers are materially tighter than section centers when zoomed out, so
+  // rows need a comparable venue-space collision radius to avoid visible bunching.
+  rows: 0.0015,
   seats: 0.0001,
 };
 
