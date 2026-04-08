@@ -2,6 +2,7 @@ import seatCountsRaw from './venueSeatCounts.json';
 import { createSeededRandom } from './seededRandom';
 import { hashString } from '../behavior/utils';
 import { buildSeatFeatureId } from '../model/ids';
+import { isAisleListing } from '../model/perks';
 import seatViewImg from '../../../assets/seatView.png';
 import type {
   SeatMapModel,
@@ -222,6 +223,7 @@ function extractListings(
   sectionData: SectionData,
   sectionId: string,
   numRows: number,
+  rowSeatCounts: Record<string, number>,
   priceRange: [number, number],
   unmappedListingIds: Set<string>,
   rng: ReturnType<typeof createSeededRandom>,
@@ -252,7 +254,10 @@ function extractListings(
 
     const perks: Perk[] = [];
     if (group.rowNumber === 1) perks.push('front_of_section');
-    if (rng.random() < 0.15) perks.push('aisle');
+    if (isAisleListing({
+      seatIds: group.seatIds,
+      rowSeatCount: rowSeatCounts[group.rowId] ?? 0,
+    })) perks.push('aisle');
     if (rng.random() < 0.10) perks.push('food_and_drink');
 
     const posScore = numRows > 1 ? (1 - (group.rowNumber - 1) / (numRows - 1)) * 5 : 2.5;
@@ -355,6 +360,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
       sectionData,
       sectionId,
       numRows,
+      rowSeatCounts,
       priceRange,
       unmappedListingIds,
       priceRng,

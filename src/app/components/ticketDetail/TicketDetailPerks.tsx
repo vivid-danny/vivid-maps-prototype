@@ -1,12 +1,12 @@
-import type { Perk } from '../../seatMap/model/types';
+import type { Listing, Perk } from '../../seatMap/model/types';
 import { PERK_LABELS } from '../../seatMap/behavior/utils';
 
 interface TicketDetailPerksProps {
+  listing: Listing;
   perks: Perk[];
 }
 
-const PERK_DESCRIPTIONS: Record<Perk, string> = {
-  aisle: 'Seats are located on the aisle for easy access.',
+const PERK_DESCRIPTIONS: Record<Exclude<Perk, 'aisle'>, string> = {
   front_of_section: 'Front row of the section with unobstructed views.',
   ada_accessible: 'ADA accessible seating with companion seats available.',
   food_and_drink: 'Includes complimentary food and beverages.',
@@ -14,7 +14,16 @@ const PERK_DESCRIPTIONS: Record<Perk, string> = {
   vip: 'VIP experience with premium amenities and exclusive access.',
 };
 
-export function TicketDetailPerks({ perks }: TicketDetailPerksProps) {
+function getPerkDescription(perk: Perk, listing: Listing): string {
+  if (perk === 'aisle') {
+    const ticketCount = listing.seatIds.length;
+    return `Aisle seats are only guaranteed if you buy all ${ticketCount} ${ticketCount === 1 ? 'seat' : 'seats'} on the map.`;
+  }
+
+  return PERK_DESCRIPTIONS[perk];
+}
+
+export function TicketDetailPerks({ listing, perks }: TicketDetailPerksProps) {
   if (perks.length === 0) return null;
 
   return (
@@ -26,7 +35,7 @@ export function TicketDetailPerks({ perks }: TicketDetailPerksProps) {
         {perks.map((perk) => (
           <div key={perk}>
             <p className="text-sm font-medium text-gray-900">{PERK_LABELS[perk]}</p>
-            <p className="text-xs text-gray-500">{PERK_DESCRIPTIONS[perk]}</p>
+            <p className="text-xs text-gray-500">{getPerkDescription(perk, listing)}</p>
           </div>
         ))}
       </div>
