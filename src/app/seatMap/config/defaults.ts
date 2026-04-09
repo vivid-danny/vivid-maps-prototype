@@ -14,7 +14,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     connectorWidth: 3,
     sectionStrokeWidth: 16,
     venueStrokeWidth: 2,
-    pinDensity: { sections: 0.15, rows: 0.20, seats: 0.10 },
+    pinDensity: { sections: 0.15, rows: 0.20, seatsBackground: 0.06 },
     theme: 'zone',
     themeOverrides: {},
     rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill

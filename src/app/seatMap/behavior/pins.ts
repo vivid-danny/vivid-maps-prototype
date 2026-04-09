@@ -33,7 +33,7 @@ export const MAPLIBRE_DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
   // Row centers are materially tighter than section centers when zoomed out, so
   // rows need a comparable venue-space collision radius to avoid visible bunching.
   rows: 0.0015,
-  seats: 0.0001,
+  seats: 0.00018,
 };
 
 export function declutterPins<T extends ResolvedPin>(
@@ -93,6 +93,31 @@ export function declutterPins<T extends ResolvedPin>(
   }
 
   return placed;
+}
+
+export function splitSeatModePins<T extends ResolvedPin>(
+  resolvedPins: T[],
+  selectedSectionId: string | null,
+  backgroundDensity: number,
+  isMobile = false,
+  baseDistance: Record<DisplayMode, number> = DECLUTTER_BASE_DISTANCE,
+): T[] {
+  if (resolvedPins.length === 0) return [];
+  if (!selectedSectionId) {
+    return declutterPins(resolvedPins, 'seats', backgroundDensity, isMobile, baseDistance);
+  }
+
+  const activeSectionPins = resolvedPins.filter((pin) => pin.sectionId === selectedSectionId);
+  const backgroundPins = resolvedPins.filter((pin) => pin.sectionId !== selectedSectionId);
+  const declutteredBackgroundPins = declutterPins(
+    backgroundPins,
+    'seats',
+    backgroundDensity,
+    isMobile,
+    baseDistance,
+  );
+
+  return [...declutteredBackgroundPins, ...activeSectionPins];
 }
 
 export type PinVisualState = 'default' | 'hover' | 'selected' | 'hidden';

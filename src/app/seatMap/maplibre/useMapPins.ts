@@ -5,7 +5,12 @@ import { Marker } from 'maplibre-gl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Pin } from '../../components/Pin';
 import { buildSectionSelection, buildRowSelection, buildListingSelection } from '../behavior/rules';
-import { declutterPins, getBestDealListingWithMinScoreFallback, MAPLIBRE_DECLUTTER_BASE_DISTANCE } from '../behavior/pins';
+import {
+  declutterPins,
+  getBestDealListingWithMinScoreFallback,
+  MAPLIBRE_DECLUTTER_BASE_DISTANCE,
+  splitSeatModePins,
+} from '../behavior/pins';
 import type { ResolvedPin } from '../behavior/pins';
 import type { PinDensityConfig } from '../config/types';
 import type { PinData, SeatColors, DisplayMode, SelectionState, HoverState, Listing, SeatMapModel } from '../model/types';
@@ -369,17 +374,21 @@ export function useMapPins({
           sectionId,
         });
       }
-      const decluttered = declutterPins(
-        allCandidates,
-        displayMode,
-        displayMode === 'sections'
-          ? pinDensity.sections
-          : displayMode === 'rows'
-            ? pinDensity.rows
-            : pinDensity.seats,
-        isMobile,
-        MAPLIBRE_DECLUTTER_BASE_DISTANCE,
-      );
+      const decluttered = displayMode === 'seats'
+        ? splitSeatModePins(
+          allCandidates,
+          selection.sectionId,
+          pinDensity.seatsBackground,
+          isMobile,
+          MAPLIBRE_DECLUTTER_BASE_DISTANCE,
+        )
+        : declutterPins(
+          allCandidates,
+          displayMode,
+          displayMode === 'sections' ? pinDensity.sections : pinDensity.rows,
+          isMobile,
+          MAPLIBRE_DECLUTTER_BASE_DISTANCE,
+        );
       for (const { pin, x, y, sectionId } of decluttered) {
         const isSelected = selectedListing?.listingId === pin.listing.listingId;
         pins.push({ listingId: pin.listing.listingId, lngLat: [x, y], sectionId, listing: pin.listing, isHovered: false, isSelected });

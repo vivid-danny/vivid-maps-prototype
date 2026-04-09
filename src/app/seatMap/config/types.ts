@@ -1,7 +1,11 @@
 import type { DisplayMode, SeatColors } from '../model/types';
 import type { ThemeId } from './themes';
 
-export type PinDensityConfig = { sections: number; rows: number; seats: number };
+export type PinDensityConfig = {
+  sections: number;
+  rows: number;
+  seatsBackground: number;
+};
 
 export interface LevelOverlays {
   muted: string;

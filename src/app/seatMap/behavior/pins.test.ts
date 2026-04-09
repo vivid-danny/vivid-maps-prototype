@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Listing, PinData } from '../model/types';
-import { getBestDealPinWithMinScoreFallback } from './pins';
+import {
+  declutterPins,
+  getBestDealPinWithMinScoreFallback,
+  splitSeatModePins,
+} from './pins';
 
 function createListing(overrides: Partial<Listing> = {}): Listing {
   return {
@@ -33,6 +37,20 @@ function createPinData(listing: Listing): PinData {
   };
 }
 
+function createResolvedPin(
+  listing: Listing,
+  x: number,
+  y: number,
+  sectionId = listing.sectionId,
+) {
+  return {
+    pin: createPinData(listing),
+    x,
+    y,
+    sectionId,
+  };
+}
+
 describe('getBestDealPinWithMinScoreFallback', () => {
   it('returns the highest scoring qualifying pin when one exists', () => {
     const low = createPinData(createListing({ listingId: 'low', dealScore: 4.8, price: 9000 }));
@@ -54,5 +72,66 @@ describe('getBestDealPinWithMinScoreFallback', () => {
     const cheaper = createPinData(createListing({ listingId: 'cheaper', dealScore: 6.1, price: 12000 }));
 
     expect(getBestDealPinWithMinScoreFallback([pricier, cheaper])?.listing.listingId).toBe('cheaper');
+  });
+});
+
+describe('declutterPins', () => {
+  it('removes nearby lower-priority seat pins when density is tightened', () => {
+    const best = createResolvedPin(createListing({ listingId: 'best', dealScore: 7.8, price: 12000 }), 0, 0);
+    const nearby = createResolvedPin(createListing({ listingId: 'nearby', dealScore: 5.6, price: 9000 }), 0.00005, 0);
+    const far = createResolvedPin(createListing({ listingId: 'far', dealScore: 6.9, price: 11000 }), 0.004, 0);
+
+    const placed = declutterPins([nearby, far, best], 'seats', 0.06, false, {
+      sections: 0.0015,
+      rows: 0.0015,
+      seats: 0.00018,
+    });
+
+    expect(placed.map((pin) => pin.pin.listing.listingId)).toEqual(['best', 'far']);
+  });
+
+  it('keeps the best-deal listing when nearby seat pins compete', () => {
+    const bestDeal = createResolvedPin(createListing({ listingId: 'best-deal', dealScore: 8.1, price: 13000 }), 0, 0);
+    const cheaper = createResolvedPin(createListing({ listingId: 'cheaper', dealScore: 6.2, price: 9000 }), 0.00003, 0);
+
+    const placed = declutterPins([cheaper, bestDeal], 'seats', 0.06, false, {
+      sections: 0.0015,
+      rows: 0.0015,
+      seats: 0.00018,
+    });
+
+    expect(placed.map((pin) => pin.pin.listing.listingId)).toEqual(['best-deal']);
+  });
+});
+
+describe('splitSeatModePins', () => {
+  it('uses sparse venue-wide seat pins when there is no selected section', () => {
+    const a = createResolvedPin(createListing({ listingId: 'a', sectionId: '101', dealScore: 7.2 }), 0, 0);
+    const b = createResolvedPin(createListing({ listingId: 'b', sectionId: '102', dealScore: 6.1 }), 0.00003, 0);
+    const c = createResolvedPin(createListing({ listingId: 'c', sectionId: '103', dealScore: 5.4 }), 0.004, 0);
+
+    const placed = splitSeatModePins([a, b, c], null, 0.06, false, {
+      sections: 0.0015,
+      rows: 0.0015,
+      seats: 0.00018,
+    });
+
+    expect(placed.map((pin) => pin.pin.listing.listingId)).toEqual(['a', 'c']);
+  });
+
+  it('keeps all active-section pins while thinning background sections', () => {
+    const activeA = createResolvedPin(createListing({ listingId: 'active-a', sectionId: '101', dealScore: 7.0 }), 0, 0, '101');
+    const activeB = createResolvedPin(createListing({ listingId: 'active-b', sectionId: '101', dealScore: 6.4 }), 0.00003, 0, '101');
+    const bgA = createResolvedPin(createListing({ listingId: 'bg-a', sectionId: '201', dealScore: 7.5 }), 0.01, 0, '201');
+    const bgB = createResolvedPin(createListing({ listingId: 'bg-b', sectionId: '202', dealScore: 5.7 }), 0.01003, 0, '202');
+    const bgFar = createResolvedPin(createListing({ listingId: 'bg-far', sectionId: '203', dealScore: 6.2 }), 0.02, 0, '203');
+
+    const placed = splitSeatModePins([activeA, activeB, bgA, bgB, bgFar], '101', 0.06, false, {
+      sections: 0.0015,
+      rows: 0.0015,
+      seats: 0.00018,
+    });
+
+    expect(placed.map((pin) => pin.pin.listing.listingId)).toEqual(['bg-a', 'bg-far', 'active-a', 'active-b']);
   });
 });
