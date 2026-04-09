@@ -33,7 +33,7 @@ export const MAPLIBRE_DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
   // Row centers are materially tighter than section centers when zoomed out, so
   // rows need a comparable venue-space collision radius to avoid visible bunching.
   rows: 0.0015,
-  seats: 0.0001,
+  seats: 0.00018,
 };
 
 export function declutterPins<T extends ResolvedPin>(
@@ -95,6 +95,31 @@ export function declutterPins<T extends ResolvedPin>(
   return placed;
 }
 
+export function splitSeatModePins<T extends ResolvedPin>(
+  resolvedPins: T[],
+  selectedSectionId: string | null,
+  backgroundDensity: number,
+  isMobile = false,
+  baseDistance: Record<DisplayMode, number> = DECLUTTER_BASE_DISTANCE,
+): T[] {
+  if (resolvedPins.length === 0) return [];
+  if (!selectedSectionId) {
+    return declutterPins(resolvedPins, 'seats', backgroundDensity, isMobile, baseDistance);
+  }
+
+  const activeSectionPins = resolvedPins.filter((pin) => pin.sectionId === selectedSectionId);
+  const backgroundPins = resolvedPins.filter((pin) => pin.sectionId !== selectedSectionId);
+  const declutteredBackgroundPins = declutterPins(
+    backgroundPins,
+    'seats',
+    backgroundDensity,
+    isMobile,
+    baseDistance,
+  );
+
+  return [...declutteredBackgroundPins, ...activeSectionPins];
+}
+
 export type PinVisualState = 'default' | 'hover' | 'selected' | 'hidden';
 
 export interface PinVisibilityContext {
@@ -152,8 +177,13 @@ export function getHoverPinTarget({
     const cheapestInRow = findCheapestListing(sectionListings, (listing) => listing.rowId === hoverState.rowId);
     if (!cheapestInRow) return null;
 
-    const rowIndex = cheapestInRow.rowNumber - 1;
-    if (selectedListing && selectedListing.sectionId === sectionId && selectedListing.rowNumber - 1 === rowIndex) return null;
+    const rowIndex = (cheapestInRow.rowNumber ?? 1) - 1;
+    if (
+      selectedListing
+      && selectedListing.sectionId === sectionId
+      && selectedListing.rowNumber !== null
+      && selectedListing.rowNumber - 1 === rowIndex
+    ) return null;
 
     return { kind: 'row', listing: cheapestInRow, rowIndex };
   }
@@ -164,7 +194,7 @@ export function getHoverPinTarget({
     const listing = sectionListings.find((item) => item.listingId === hoverState.listingId);
     if (!listing) return null;
 
-    const rowIndex = listing.rowNumber - 1;
+    const rowIndex = (listing.rowNumber ?? 1) - 1;
 
     // Unmapped listings (zone rows): position at row center
     if (listing.isUnmapped) {
@@ -242,7 +272,7 @@ export function isPinVisible(pin: PinData, context: PinVisibilityContext): boole
   }
 
   if (displayMode === 'rows') {
-    if (isSelectedInSection && selectedListing.rowNumber - 1 === pin.rowIndex) return false;
+    if (isSelectedInSection && selectedListing.rowNumber !== null && selectedListing.rowNumber - 1 === pin.rowIndex) return false;
     if (hoverTarget?.kind === 'row' && hoverTarget.rowIndex === pin.rowIndex) return false;
     return true;
   }

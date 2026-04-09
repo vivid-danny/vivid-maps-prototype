@@ -33,6 +33,19 @@ export function useSeatMapConfig({ initialConfig, resetConfig: resetConfigValue 
     // Migration: discard pinDensity if it's not the current object shape
     if (stored.pinDensity !== undefined && typeof stored.pinDensity !== 'object') {
       delete stored.pinDensity;
+    } else if (stored.pinDensity) {
+      const pinDensity = stored.pinDensity as Partial<SeatMapConfig['pinDensity']> & { seats?: number };
+      if (typeof pinDensity.sections !== 'number' || typeof pinDensity.rows !== 'number') {
+        delete stored.pinDensity;
+      } else if (typeof pinDensity.seatsBackground !== 'number') {
+        stored.pinDensity = {
+          sections: pinDensity.sections,
+          rows: pinDensity.rows,
+          seatsBackground: typeof pinDensity.seats === 'number'
+            ? pinDensity.seats
+            : initialConfig.pinDensity.seatsBackground,
+        };
+      }
     }
 
     // Theme migration

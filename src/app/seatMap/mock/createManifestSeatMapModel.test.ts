@@ -4,6 +4,10 @@ import { createManifestSeatMapModel } from './createManifestSeatMapModel';
 import { isAisleListing } from '../model/perks';
 import { buildRowFeatureId } from '../model/ids';
 
+function sortRowIds(rowSeatCounts: Record<string, number>): string[] {
+  return Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+}
+
 describe('createManifestSeatMapModel aisle perks', () => {
   it('derives aisle perks from row-edge seats', () => {
     const model = createManifestSeatMapModel();
@@ -18,7 +22,7 @@ describe('createManifestSeatMapModel aisle perks', () => {
     for (const listing of model.listings) {
       const expected = isAisleListing({
         seatIds: listing.seatIds,
-        rowSeatCount: rowSeatCounts[listing.sectionId]?.[listing.rowId] ?? 0,
+        rowSeatCount: listing.rowId ? (rowSeatCounts[listing.sectionId]?.[listing.rowId] ?? 0) : 0,
       });
       expect(listing.perks.includes('aisle')).toBe(expected);
     }
@@ -26,33 +30,103 @@ describe('createManifestSeatMapModel aisle perks', () => {
 });
 
 describe('createManifestSeatMapModel mixed row scenarios', () => {
-  it('includes deterministic mixed mapped and unmapped demo rows', () => {
+  it('includes deterministic mapped, row-unmapped, and section-unmapped scenarios', () => {
     const model = createManifestSeatMapModel();
+    const rowSeatCounts = venueSeatCounts as Record<string, Record<string, number>>;
+    const scenarioSections = [
+      { sectionId: '214', mixedRowId: '5' },
+      { sectionId: '316', mixedRowId: '12' },
+      { sectionId: '24', mixedRowId: '13' },
+    ] as const;
 
-    const mixedMiddleMapped = model.listings.find((listing) => listing.listingId === 'listing-214-5-mapped-demo');
-    const mixedMiddleUnmapped = model.listings.find((listing) => listing.listingId === 'listing-214-5-unmapped-demo');
-    const mixedEdgeMapped = model.listings.find((listing) => listing.listingId === 'listing-316-12-mapped-demo');
-    const mixedEdgeUnmapped = model.listings.find((listing) => listing.listingId === 'listing-316-12-unmapped-demo');
-    const unmappedOnly = model.listings.find((listing) => listing.listingId === 'listing-24-13-unmapped-demo');
+    const rowsWithListings = new Set(
+      model.listings
+        .filter((listing) => listing.rowId !== null)
+        .map((listing) => buildRowFeatureId(listing.sectionId, listing.rowId!)),
+    );
 
-    expect(mixedMiddleMapped?.seatIds).toEqual(['214:5:s4', '214:5:s5']);
-    expect(mixedMiddleMapped?.isUnmapped).toBeUndefined();
-    expect(mixedMiddleUnmapped?.seatIds).toEqual([]);
-    expect(mixedMiddleUnmapped?.isUnmapped).toBe(true);
-    expect(mixedMiddleUnmapped?.quantityAvailable).toBe(2);
+    for (const { sectionId, mixedRowId } of scenarioSections) {
+      const rowIds = sortRowIds(rowSeatCounts[sectionId]!);
+      const backRowId = rowIds[rowIds.length - 1]!;
+      const mappedFullRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== backRowId)!;
+      const mixedMappedRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== mappedFullRowId && rowId !== backRowId)!;
+      const deterministicListings = model.listings.filter((listing) =>
+        listing.sectionId === sectionId
+        && (
+          listing.listingId.includes('-row-unmapped-')
+          || listing.listingId.includes('-mapped-full-row')
+          || listing.listingId.includes('-mapped-priority-demo')
+          || listing.listingId.includes('-unmapped-full-row')
+          || listing.listingId.includes('-section-unmapped-')
+        ),
+      );
+      const mappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mappedFullRowId}-mapped-full-row`);
+      const mappedPriorityRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedMappedRowId}-mapped-priority-demo`);
+      const mappedPriorityOverflow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedMappedRowId}-mapped-row-unmapped-1`);
+      const unmappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${backRowId}-unmapped-full-row`);
+      const rowUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-1`);
+      const rowUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-2`);
+      const sectionUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-1`);
+      const sectionUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-2`);
 
-    expect(mixedEdgeMapped?.seatIds).toEqual(['316:12:s1', '316:12:s2']);
-    expect(mixedEdgeUnmapped?.seatIds).toEqual([]);
-    expect(mixedEdgeUnmapped?.isUnmapped).toBe(true);
+      expect(deterministicListings).toHaveLength(8);
 
-    expect(unmappedOnly?.seatIds).toEqual([]);
-    expect(unmappedOnly?.isUnmapped).toBe(true);
-    expect(unmappedOnly?.quantityAvailable).toBe(4);
+      expect(rowUnmapped1?.seatIds).toEqual([]);
+      expect(rowUnmapped1?.rowId).toBe(mixedRowId);
+      expect(rowUnmapped1?.isUnmapped).toBe(true);
+      expect(rowUnmapped1?.quantityAvailable).toBe(2);
+      expect(rowUnmapped2?.seatIds).toEqual([]);
+      expect(rowUnmapped2?.rowId).toBe(mixedRowId);
+      expect(rowUnmapped2?.isUnmapped).toBe(true);
+      expect(rowUnmapped2?.quantityAvailable).toBe(2);
 
-    const rowsWithListings = new Set(model.listings.map((listing) => buildRowFeatureId(listing.sectionId, listing.rowId)));
-    expect(rowsWithListings.has(buildRowFeatureId('214', '5'))).toBe(true);
-    expect(rowsWithListings.has(buildRowFeatureId('316', '12'))).toBe(true);
-    expect(rowsWithListings.has(buildRowFeatureId('24', '13'))).toBe(true);
+      expect(sectionUnmapped1?.seatIds).toEqual([]);
+      expect(sectionUnmapped1?.rowId).toBeNull();
+      expect(sectionUnmapped1?.rowNumber).toBeNull();
+      expect(sectionUnmapped1?.isUnmapped).toBe(true);
+      expect(sectionUnmapped2?.seatIds).toEqual([]);
+      expect(sectionUnmapped2?.rowId).toBeNull();
+      expect(sectionUnmapped2?.rowNumber).toBeNull();
+      expect(sectionUnmapped2?.isUnmapped).toBe(true);
+
+      expect(unmappedFullRow?.seatIds).toEqual([]);
+      expect(unmappedFullRow?.rowId).toBe(backRowId);
+      expect(unmappedFullRow?.isUnmapped).toBe(true);
+      expect(unmappedFullRow?.quantityAvailable).toBe(rowSeatCounts[sectionId]?.[backRowId]);
+
+      expect(mappedFullRow?.rowId).toBe(mappedFullRowId);
+      expect(mappedFullRow?.rowNumber).not.toBeNull();
+      expect(mappedFullRow?.isUnmapped).toBeUndefined();
+      expect(mappedFullRow?.seatIds).toEqual(
+        Array.from(
+          { length: rowSeatCounts[sectionId]?.[mappedFullRowId] ?? 0 },
+          (_, seatIndex) => `${sectionId}:${mappedFullRowId}:s${seatIndex + 1}`,
+        ),
+      );
+
+      expect(mappedPriorityRow?.rowId).toBe(mixedMappedRowId);
+      expect(mappedPriorityRow?.rowNumber).not.toBeNull();
+      expect(mappedPriorityRow?.isUnmapped).toBeUndefined();
+      expect(mappedPriorityRow?.seatIds).toEqual(
+        Array.from(
+          { length: Math.min(2, rowSeatCounts[sectionId]?.[mixedMappedRowId] ?? 0) },
+          (_, seatIndex) => `${sectionId}:${mixedMappedRowId}:s${seatIndex + 1}`,
+        ),
+      );
+
+      expect(mappedPriorityOverflow?.seatIds).toEqual([]);
+      expect(mappedPriorityOverflow?.rowId).toBe(mixedMappedRowId);
+      expect(mappedPriorityOverflow?.rowNumber).toBe(mappedPriorityRow?.rowNumber);
+      expect(mappedPriorityOverflow?.isUnmapped).toBe(true);
+      expect(mappedPriorityOverflow?.quantityAvailable).toBe(2);
+
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedRowId))).toBe(true);
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, mappedFullRowId))).toBe(true);
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedMappedRowId))).toBe(true);
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, backRowId))).toBe(true);
+      const pinListings = model.pinsBySection.get(sectionId) ?? [];
+      expect(pinListings.some((pin) => pin.listing.rowId === null)).toBe(false);
+    }
   });
 });
 

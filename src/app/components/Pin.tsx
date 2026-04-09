@@ -108,6 +108,9 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
     useTransition,
   });
   const showDealScore = dealScore !== undefined && dealScore >= 6.0;
+  const seatViewLabel = rowNumber === undefined
+    ? `Section ${sectionLabel}`
+    : `Section ${sectionLabel}, Row ${rowNumber}`;
 
   return (
     <div
@@ -130,7 +133,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
           <div className="relative">
             <img src={appearance.showSeatView} className="w-full block aspect-[16/10] object-cover" />
             <div className="absolute top-1.5 left-1.5 bg-white rounded-sm px-1.5 py-0.5 text-[8px] leading-tight font-medium text-[#1a1a2e]">
-              Section {sectionLabel}, Row {rowNumber}
+              {seatViewLabel}
             </div>
           </div>
         </div>

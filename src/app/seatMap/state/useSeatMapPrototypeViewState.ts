@@ -5,6 +5,7 @@ import { EMPTY_HOVER, EMPTY_SELECTION } from '../model/types';
 import type { SeatMapController } from './useSeatMapController';
 import { clearHover, getToggledSelection } from '../behavior/rules';
 import { ROW_ZOOM_MIN } from '../maplibre/constants';
+import { deriveVisualSeatAssignments } from '../maplibre/deriveVisualSeatAssignments';
 
 interface UseSeatMapPrototypeViewStateParams {
   model: SeatMapModel;
@@ -32,6 +33,25 @@ export function useSeatMapPrototypeViewState({
   const listings = useMemo(() => {
     return model.listings.filter(l => l.quantityAvailable >= quantityFilter);
   }, [model.listings, quantityFilter]);
+
+  const visualSeatAssignments = useMemo(() => {
+    const filteredListings = model.listings.filter((listing) => listing.quantityAvailable >= quantityFilter);
+    const filteredListingsBySection = new Map<string, Listing[]>();
+    for (const listing of filteredListings) {
+      const existing = filteredListingsBySection.get(listing.sectionId);
+      if (existing) {
+        existing.push(listing);
+      } else {
+        filteredListingsBySection.set(listing.sectionId, [listing]);
+      }
+    }
+
+    return deriveVisualSeatAssignments({
+      ...model,
+      listings: filteredListings,
+      listingsBySection: filteredListingsBySection,
+    });
+  }, [model, quantityFilter]);
 
   const selectedListing = useMemo(() => {
     if (!selection.listingId) return null;
@@ -88,11 +108,21 @@ export function useSeatMapPrototypeViewState({
     } else {
       // Resolve listingId from seatIds when the map click doesn't know it
       if (!nextSelection.listingId && nextSelection.seatIds.length > 0) {
-        const match = listings.find((l) =>
-          nextSelection.seatIds.some((id) => l.seatIds.includes(id))
+        const matchSeatId = nextSelection.seatIds.find((seatId) =>
+          visualSeatAssignments.visualSeatListingBySeatId.has(seatId),
         );
+        const match = matchSeatId
+          ? visualSeatAssignments.visualSeatListingBySeatId.get(matchSeatId) ?? null
+          : listings.find((l) =>
+            nextSelection.seatIds.some((id) => l.seatIds.includes(id))
+          ) ?? null;
         if (match) {
-          nextSelection = { ...nextSelection, listingId: match.listingId, rowId: match.rowId, seatIds: match.seatIds };
+          nextSelection = {
+            ...nextSelection,
+            listingId: match.listingId,
+            rowId: visualSeatAssignments.visualRowIdByListingId.get(match.listingId) ?? match.rowId,
+            seatIds: visualSeatAssignments.visualSeatIdsByListingId.get(match.listingId) ?? match.seatIds,
+          };
         }
       }
       setSelection(nextSelection);
@@ -107,7 +137,7 @@ export function useSeatMapPrototypeViewState({
       setViewMode('listings');
       // Check if this listing is in a zone row — return to zone row selection
       const sectionData = model.sectionDataById.get(listing.sectionId);
-      const row = sectionData?.rows.find(r => r.rowId === listing.rowId);
+      const row = listing.rowId ? sectionData?.rows.find(r => r.rowId === listing.rowId) : undefined;
       if (row?.isZoneRow) {
         setSelection({ sectionId: listing.sectionId, rowId: listing.rowId, listingId: null, seatIds: [] });
       } else {
@@ -118,9 +148,9 @@ export function useSeatMapPrototypeViewState({
 
     const newSelection: SelectionState = {
       sectionId: listing.sectionId,
-      rowId: listing.rowId,
+      rowId: visualSeatAssignments.visualRowIdByListingId.get(listing.listingId) ?? listing.rowId,
       listingId: listing.listingId,
-      seatIds: listing.seatIds,
+      seatIds: visualSeatAssignments.visualSeatIdsByListingId.get(listing.listingId) ?? listing.seatIds,
     };
 
     setSelection(newSelection);
@@ -128,7 +158,7 @@ export function useSeatMapPrototypeViewState({
     if (layoutMode !== 'mobile') {
       navigateToSelection(newSelection);
     }
-  }, [viewMode, selection, model.sectionDataById, layoutMode, navigateToSelection]);
+  }, [viewMode, selection, model.sectionDataById, layoutMode, navigateToSelection, visualSeatAssignments]);
 
   const handleBackToListings = useCallback(() => {
     setViewMode('listings');
@@ -152,7 +182,7 @@ export function useSeatMapPrototypeViewState({
       setHoverState({
         listingId: listing.listingId,
         sectionId: listing.sectionId,
-        rowId: listing.rowId,
+        rowId: listing.rowId ?? null,
       });
     } else {
       setHoverState(clearHover());

@@ -110,6 +110,12 @@ Current product rule for this prototype:
 - seats only become available when an exact seat appears in `listing.seatIds`
 - unmapped listings with empty `seatIds` are panel-only in seats mode
 
+Expanded unmapped inventory taxonomy:
+
+- row-only unmapped: row is known, seats are unknown, so the row stays available while seats remain unavailable
+- section-only unmapped: row and seats are unknown, so the listing is panel/detail only and does not create row availability
+- mapped full-row: every seat in the row is explicitly assigned to a single listing
+
 This means:
 
 - row selection can reveal both mapped and unmapped listings in the listings panel

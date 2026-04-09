@@ -8,6 +8,7 @@ import { useMapSelectionSync } from '../seatMap/maplibre/useMapSelectionSync';
 import { useMapPins } from '../seatMap/maplibre/useMapPins';
 import { useListingConnectors } from '../seatMap/maplibre/useListingConnectors';
 import { useSeatCoordinates } from '../seatMap/maplibre/useSeatCoordinates';
+import { deriveVisualSeatAssignments } from '../seatMap/maplibre/deriveVisualSeatAssignments';
 import {
   buildSectionFillExpression,
   buildConnectorColorExpression,
@@ -181,6 +182,11 @@ export function MapLibreVenue({
     };
   }, [model, filteredListingsBySection, filteredPinsBySection]);
 
+  const visualSeatAssignments = useMemo(
+    () => deriveVisualSeatAssignments(effectiveModel),
+    [effectiveModel],
+  );
+
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const detailLoadedForCurrentAssets =
@@ -224,19 +230,27 @@ export function MapLibreVenue({
 
   const listingsBySeatId = useMemo(() => {
     const m = new Map<string, (typeof effectiveModel.listings)[0]>();
-    for (const listing of effectiveModel.listings) {
-      for (const seatId of listing.seatIds) {
-        m.set(seatId, listing);
-      }
+    for (const [seatId, listing] of visualSeatAssignments.visualSeatListingBySeatId) {
+      m.set(seatId, listing);
     }
     return m;
-  }, [effectiveModel.listings]);
+  }, [visualSeatAssignments]);
 
   // Sync React selection/hover state → MapLibre feature state + paint expressions
   const { syncHoverFromMap } = useMapSelectionSync({ mapRef, ready, selection, hoverState, displayMode, overlays: { row: effectiveOverlays.row } });
 
   // Wire click/hover event handlers on map layers
-  useMapInteractions({ mapRef, ready, onSelect, onHover, syncHoverFromMap, isMobile, listingsBySeatId });
+  useMapInteractions({
+    mapRef,
+    ready,
+    onSelect,
+    onHover,
+    syncHoverFromMap,
+    isMobile,
+    listingsBySeatId,
+    visualSeatIdsByListingId: visualSeatAssignments.visualSeatIdsByListingId,
+    visualRowIdByListingId: visualSeatAssignments.visualRowIdByListingId,
+  });
 
   // Pin overlays — MapLibre Markers wrapping React <Pin> components
   useMapPins({
@@ -254,6 +268,9 @@ export function MapLibreVenue({
     isMobile,
     pinDensity,
     onSelect,
+    visualSeatIdsByListingId: visualSeatAssignments.visualSeatIdsByListingId,
+    visualRowIdByListingId: visualSeatAssignments.visualRowIdByListingId,
+    visualRowNumberByListingId: visualSeatAssignments.visualRowNumberByListingId,
   });
 
   // Cached seat coordinates — fetched once, reused for all connector rebuilds
