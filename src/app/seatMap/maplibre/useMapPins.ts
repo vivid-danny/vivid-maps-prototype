@@ -83,7 +83,7 @@ function getRowCenter(
   listing: Listing,
   sectionData: SectionManifestEntry,
 ): [number, number] {
-  return sectionData.rows[listing.rowId]?.center ?? sectionData.center;
+  return listing.rowId ? (sectionData.rows[listing.rowId]?.center ?? sectionData.center) : sectionData.center;
 }
 
 function resolvePinLngLat({
@@ -100,7 +100,7 @@ function resolvePinLngLat({
 function createPinDataForListing(listing: Listing): PinData {
   return {
     listing,
-    rowIndex: listing.rowNumber - 1,
+    rowIndex: Math.max(0, (listing.rowNumber ?? 1) - 1),
     seatIndex: listing.seatIds.length > 0
       ? Math.floor(listing.seatIds.length / 2)
       : 0,
@@ -116,7 +116,9 @@ function buildPinSelection(pin: PinRenderData, mode: DisplayMode): SelectionStat
     case 'sections':
       return buildSectionSelection(pin.sectionId);
     case 'rows':
-      return buildRowSelection(pin.sectionId, pin.listing.rowId);
+      return pin.listing.rowId
+        ? buildRowSelection(pin.sectionId, pin.listing.rowId)
+        : buildSectionSelection(pin.sectionId);
     case 'seats':
       return buildListingSelection(
         pin.sectionId, pin.listing.listingId, pin.listing.seatIds, pin.listing.rowId,
@@ -303,7 +305,7 @@ export function useMapPins({
         }
 
         const bestDealListing = getBestDealListingWithMinScoreFallback(sectionItems as Listing[]);
-        if (!bestDealListing) continue;
+        if (!bestDealListing || (displayMode !== 'sections' && bestDealListing.rowId === null)) continue;
         const bestDeal = createPinDataForListing(bestDealListing);
         const lngLat = resolvePinLngLat({
           displayMode,
@@ -342,6 +344,7 @@ export function useMapPins({
 
       if (sectionData) {
         for (const listing of sectionListings) {
+          if (expandedPinsDisplayMode !== 'sections' && listing.rowId === null) continue;
           if (expandedPinsDisplayMode === 'seats' && isPanelOnlySeatListing(listing)) continue;
           if (pins.some((pin) => pin.listingId === listing.listingId)) continue;
           const lngLat = resolvePinLngLat({
@@ -365,6 +368,7 @@ export function useMapPins({
     // If the selected listing has no default pin, add it as a selected overlay
     if (
       selectedListing
+      && (displayMode === 'sections' || selectedListing.rowId !== null)
       && !(displayMode === 'seats' && isPanelOnlySeatListing(selectedListing))
       && !pins.some((p) => p.listingId === selectedListing.listingId)
     ) {
@@ -477,7 +481,9 @@ export function useMapPins({
         displayMode === 'sections'
           ? hoverState.sectionId === pin.sectionId
           : displayMode === 'rows'
-            ? hoverState.sectionId === pin.sectionId && hoverState.rowId === pin.listing.rowId
+            ? pin.listing.rowId !== null
+              && hoverState.sectionId === pin.sectionId
+              && hoverState.rowId === pin.listing.rowId
             : hoverState.listingId === pin.listingId;
       if (entry.isHovered !== isHovered) {
         renderPin(entry.root, pin.listing, isHovered, entry.isSelected, seatColorsRef.current);

@@ -107,7 +107,7 @@ export function useSeatMapPrototypeViewState({
       setViewMode('listings');
       // Check if this listing is in a zone row — return to zone row selection
       const sectionData = model.sectionDataById.get(listing.sectionId);
-      const row = sectionData?.rows.find(r => r.rowId === listing.rowId);
+      const row = listing.rowId ? sectionData?.rows.find(r => r.rowId === listing.rowId) : undefined;
       if (row?.isZoneRow) {
         setSelection({ sectionId: listing.sectionId, rowId: listing.rowId, listingId: null, seatIds: [] });
       } else {
@@ -152,7 +152,7 @@ export function useSeatMapPrototypeViewState({
       setHoverState({
         listingId: listing.listingId,
         sectionId: listing.sectionId,
-        rowId: listing.rowId,
+        rowId: listing.rowId ?? null,
       });
     } else {
       setHoverState(clearHover());

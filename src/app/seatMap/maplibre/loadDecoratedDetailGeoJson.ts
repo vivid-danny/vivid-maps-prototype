@@ -46,6 +46,7 @@ export async function loadDecoratedRowsGeoJson(
 ): Promise<GeoJSON.FeatureCollection> {
   const rowsWithListings = new Set<string>();
   for (const listing of model.listings) {
+    if (!listing.rowId) continue;
     rowsWithListings.add(buildRowFeatureId(listing.sectionId, listing.rowId));
   }
 

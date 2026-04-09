@@ -152,8 +152,13 @@ export function getHoverPinTarget({
     const cheapestInRow = findCheapestListing(sectionListings, (listing) => listing.rowId === hoverState.rowId);
     if (!cheapestInRow) return null;
 
-    const rowIndex = cheapestInRow.rowNumber - 1;
-    if (selectedListing && selectedListing.sectionId === sectionId && selectedListing.rowNumber - 1 === rowIndex) return null;
+    const rowIndex = (cheapestInRow.rowNumber ?? 1) - 1;
+    if (
+      selectedListing
+      && selectedListing.sectionId === sectionId
+      && selectedListing.rowNumber !== null
+      && selectedListing.rowNumber - 1 === rowIndex
+    ) return null;
 
     return { kind: 'row', listing: cheapestInRow, rowIndex };
   }
@@ -164,7 +169,7 @@ export function getHoverPinTarget({
     const listing = sectionListings.find((item) => item.listingId === hoverState.listingId);
     if (!listing) return null;
 
-    const rowIndex = listing.rowNumber - 1;
+    const rowIndex = (listing.rowNumber ?? 1) - 1;
 
     // Unmapped listings (zone rows): position at row center
     if (listing.isUnmapped) {
@@ -242,7 +247,7 @@ export function isPinVisible(pin: PinData, context: PinVisibilityContext): boole
   }
 
   if (displayMode === 'rows') {
-    if (isSelectedInSection && selectedListing.rowNumber - 1 === pin.rowIndex) return false;
+    if (isSelectedInSection && selectedListing.rowNumber !== null && selectedListing.rowNumber - 1 === pin.rowIndex) return false;
     if (hoverTarget?.kind === 'row' && hoverTarget.rowIndex === pin.rowIndex) return false;
     return true;
   }

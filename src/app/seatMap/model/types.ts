@@ -154,8 +154,8 @@ export interface Listing {
   listingId: string;
   sectionId: string;
   sectionLabel: string;
-  rowId: string;
-  rowNumber: number;
+  rowId: string | null;
+  rowNumber: number | null;
   seatIds: string[];
   price: number; // in cents for precision
   seatViewUrl: string;

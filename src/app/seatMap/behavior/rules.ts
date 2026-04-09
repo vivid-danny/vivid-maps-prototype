@@ -20,7 +20,7 @@ export function buildRowSelection(sectionId: string, rowId: string): SelectionSt
   };
 }
 
-export function buildListingSelection(sectionId: string, listingId: string, seatIds: string[], rowId?: string): SelectionState {
+export function buildListingSelection(sectionId: string, listingId: string, seatIds: string[], rowId?: string | null): SelectionState {
   const derivedRowId = rowId ?? (seatIds.length > 0 ? (parseSeatFeatureId(seatIds[0])?.rowId ?? null) : null);
 
   return {

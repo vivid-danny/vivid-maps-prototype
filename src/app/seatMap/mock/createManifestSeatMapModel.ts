@@ -81,25 +81,53 @@ interface RowInventory {
   unmappedListingIds: Set<string>;
 }
 
-interface MixedRowScenario {
+interface DeterministicSectionScenarioConfig {
   sectionId: string;
-  rowId: string;
-  mappedSeatNumbers: number[];
-  unmappedQuantity: number;
+  mixedRowId: string;
 }
 
-interface UnmappedListingSpec {
+interface DeterministicSectionScenario extends DeterministicSectionScenarioConfig {
+  backRowId: string;
+  mappedFullRowId: string;
+}
+
+interface ListingGroupSpec {
   listingId: string;
-  rowId: string;
-  rowNumber: number;
+  rowId: string | null;
+  rowNumber: number | null;
   quantityAvailable: number;
+  seatIds: string[];
+  isUnmapped?: boolean;
+  bucketRowId?: string;
 }
 
-const MIXED_ROW_SCENARIOS: MixedRowScenario[] = [
-  { sectionId: '214', rowId: '5', mappedSeatNumbers: [4, 5], unmappedQuantity: 2 },
-  { sectionId: '316', rowId: '12', mappedSeatNumbers: [1, 2], unmappedQuantity: 2 },
-  { sectionId: '24', rowId: '13', mappedSeatNumbers: [], unmappedQuantity: 4 },
+const DETERMINISTIC_SECTION_SCENARIOS: DeterministicSectionScenarioConfig[] = [
+  { sectionId: '214', mixedRowId: '5' },
+  { sectionId: '316', mixedRowId: '12' },
+  { sectionId: '24', mixedRowId: '13' },
 ];
+
+function sortRowIds(rowSeatCounts: Record<string, number>): string[] {
+  return Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+}
+
+function resolveDeterministicSectionScenario(
+  sectionId: string,
+  rowIds: string[],
+): DeterministicSectionScenario | null {
+  const config = DETERMINISTIC_SECTION_SCENARIOS.find((scenario) => scenario.sectionId === sectionId);
+  if (!config || rowIds.length === 0) return null;
+
+  const backRowId = rowIds[rowIds.length - 1]!;
+  const mappedFullRowId = rowIds.find((rowId) => rowId !== config.mixedRowId && rowId !== backRowId) ?? null;
+  if (!mappedFullRowId) return null;
+
+  return {
+    ...config,
+    backRowId,
+    mappedFullRowId,
+  };
+}
 
 function buildClusteredRowSeats(
   sectionId: string,
@@ -246,59 +274,109 @@ function buildSectionInventory(
   };
 }
 
-function applyMixedRowScenarios(
-  sectionId: string,
+function applyDeterministicSectionScenario(
+  scenario: DeterministicSectionScenario,
   sectionData: SectionData,
   rowSeatCounts: Record<string, number>,
-): UnmappedListingSpec[] {
-  const scenarios = MIXED_ROW_SCENARIOS.filter((scenario) => scenario.sectionId === sectionId);
-  if (scenarios.length === 0) return [];
+): ListingGroupSpec[] {
+  const sectionId = scenario.sectionId;
+  const listingGroups: ListingGroupSpec[] = [];
 
-  const unmappedListings: UnmappedListingSpec[] = [];
+  const replaceRowSeats = (rowId: string, listingId: string | null) => {
+    const rowIndex = sectionData.rows.findIndex((row) => row.rowId === rowId);
+    if (rowIndex < 0) return null;
 
-  for (const scenario of scenarios) {
-    const rowIndex = sectionData.rows.findIndex((row) => row.rowId === scenario.rowId);
-    if (rowIndex < 0) continue;
-
-    const seatCount = rowSeatCounts[scenario.rowId] ?? 0;
-    if (seatCount === 0) continue;
-
+    const seatCount = rowSeatCounts[rowId] ?? 0;
     const row = sectionData.rows[rowIndex]!;
-    const mappedSeatNumbers = new Set(scenario.mappedSeatNumbers);
-    const mappedListingId = `listing-${sectionId}-${scenario.rowId}-mapped-demo`;
-
     row.isZoneRow = false;
     row.seats = Array.from({ length: seatCount }, (_, seatIndex) => {
-      const seatNumber = seatIndex + 1;
-      const seatId = buildSeatFeatureId(sectionId, scenario.rowId, seatNumber);
-      if (mappedSeatNumbers.has(seatNumber)) {
-        return {
-          seatId,
-          status: 'available' as const,
-          listingId: mappedListingId,
-        };
+      const seatId = buildSeatFeatureId(sectionId, rowId, seatIndex + 1);
+      if (!listingId) {
+        return { seatId, status: 'unavailable' as const };
       }
-
       return {
         seatId,
-        status: 'unavailable' as const,
+        status: 'available' as const,
+        listingId,
       };
     });
 
-    unmappedListings.push({
-      listingId: `listing-${sectionId}-${scenario.rowId}-unmapped-demo`,
-      rowId: scenario.rowId,
+    return {
+      rowIndex,
       rowNumber: rowIndex + 1,
-      quantityAvailable: scenario.unmappedQuantity,
+      seatIds: row.seats.map((seat) => seat.seatId),
+    };
+  };
+
+  const mixedRow = replaceRowSeats(scenario.mixedRowId, null);
+  if (mixedRow) {
+    listingGroups.push({
+      listingId: `listing-${sectionId}-${scenario.mixedRowId}-row-unmapped-1`,
+      rowId: scenario.mixedRowId,
+      rowNumber: mixedRow.rowNumber,
+      quantityAvailable: 2,
+      seatIds: [],
+      isUnmapped: true,
+    });
+    listingGroups.push({
+      listingId: `listing-${sectionId}-${scenario.mixedRowId}-row-unmapped-2`,
+      rowId: scenario.mixedRowId,
+      rowNumber: mixedRow.rowNumber,
+      quantityAvailable: 2,
+      seatIds: [],
+      isUnmapped: true,
     });
   }
 
-  return unmappedListings;
+  const mappedFullRowListingId = `listing-${sectionId}-${scenario.mappedFullRowId}-mapped-full-row`;
+  const mappedRow = replaceRowSeats(scenario.mappedFullRowId, mappedFullRowListingId);
+  if (mappedRow) {
+    listingGroups.push({
+      listingId: mappedFullRowListingId,
+      rowId: scenario.mappedFullRowId,
+      rowNumber: mappedRow.rowNumber,
+      quantityAvailable: mappedRow.seatIds.length,
+      seatIds: mappedRow.seatIds,
+      isUnmapped: false,
+    });
+  }
+
+  const backRow = replaceRowSeats(scenario.backRowId, null);
+  if (backRow) {
+    listingGroups.push({
+      listingId: `listing-${sectionId}-${scenario.backRowId}-unmapped-full-row`,
+      rowId: scenario.backRowId,
+      rowNumber: backRow.rowNumber,
+      quantityAvailable: backRow.seatIds.length,
+      seatIds: [],
+      isUnmapped: true,
+    });
+    listingGroups.push({
+      listingId: `listing-${sectionId}-section-unmapped-1`,
+      rowId: null,
+      rowNumber: null,
+      quantityAvailable: 2,
+      seatIds: [],
+      isUnmapped: true,
+      bucketRowId: scenario.backRowId,
+    });
+    listingGroups.push({
+      listingId: `listing-${sectionId}-section-unmapped-2`,
+      rowId: null,
+      rowNumber: null,
+      quantityAvailable: 2,
+      seatIds: [],
+      isUnmapped: true,
+      bucketRowId: scenario.backRowId,
+    });
+  }
+
+  return listingGroups;
 }
 
 function createListingFromGroup(
   listingId: string,
-  group: { rowId: string; rowNumber: number; seatIds: string[]; quantityAvailable: number },
+  group: { rowId: string | null; rowNumber: number | null; seatIds: string[]; quantityAvailable: number },
   sectionId: string,
   numRows: number,
   rowSeatCounts: Record<string, number>,
@@ -312,13 +390,14 @@ function createListingFromGroup(
 
   const perks: Perk[] = [];
   if (group.rowNumber === 1) perks.push('front_of_section');
-  if (isAisleListing({
+  if (group.rowId && isAisleListing({
     seatIds: group.seatIds,
     rowSeatCount: rowSeatCounts[group.rowId] ?? 0,
   })) perks.push('aisle');
   if (rng.random() < 0.10) perks.push('food_and_drink');
 
-  const posScore = numRows > 1 ? (1 - (group.rowNumber - 1) / (numRows - 1)) * 5 : 2.5;
+  const effectiveRowNumber = group.rowNumber ?? numRows;
+  const posScore = numRows > 1 ? (1 - (effectiveRowNumber - 1) / (numRows - 1)) * 5 : 2.5;
   const priceScore = (1 - (price - priceRange[0]) / (priceRange[1] - priceRange[0])) * 4;
   const dealScore =
     Math.round(Math.max(0, Math.min(10, posScore + priceScore + DEAL_SCORE_BIAS + (rng.random() - 0.5))) * 10) / 10;
@@ -349,10 +428,10 @@ function extractListings(
   rowSeatCounts: Record<string, number>,
   priceRange: [number, number],
   unmappedListingIds: Set<string>,
-  unmappedListingSpecs: UnmappedListingSpec[],
+  listingGroupSpecs: ListingGroupSpec[],
   rng: ReturnType<typeof createSeededRandom>,
 ): Listing[] {
-  const groups = new Map<string, { rowId: string; rowNumber: number; seatIds: string[]; quantityAvailable: number }>();
+  const groups = new Map<string, { rowId: string | null; rowNumber: number | null; seatIds: string[]; quantityAvailable: number }>();
 
   sectionData.rows.forEach((row, rowIndex) => {
     row.seats.forEach((seat) => {
@@ -372,14 +451,14 @@ function extractListings(
     });
   });
 
-  for (const listing of unmappedListingSpecs) {
+  for (const listing of listingGroupSpecs) {
     groups.set(listing.listingId, {
       rowId: listing.rowId,
       rowNumber: listing.rowNumber,
-      seatIds: [],
+      seatIds: listing.seatIds,
       quantityAvailable: listing.quantityAvailable,
     });
-    unmappedListingIds.add(listing.listingId);
+    if (listing.isUnmapped) unmappedListingIds.add(listing.listingId);
   }
 
   const listings: Listing[] = [];
@@ -431,7 +510,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
     // Preserve original row ID casing to match GeoJSON feature IDs
     const rowSeatCounts = rawRowSeatCounts;
     // Sort row IDs numerically
-    const rowIds = Object.keys(rowSeatCounts).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    const rowIds = sortRowIds(rowSeatCounts);
     if (rowIds.length === 0) continue;
 
     const numRows = rowIds.length;
@@ -458,7 +537,10 @@ export function createManifestSeatMapModel(): SeatMapModel {
       soldOutSections.has(sectionId),
       rng,
     );
-    const unmappedListingSpecs = applyMixedRowScenarios(sectionId, sectionData, rowSeatCounts);
+    const deterministicScenario = resolveDeterministicSectionScenario(sectionId, rowIds);
+    const listingGroupSpecs = deterministicScenario
+      ? applyDeterministicSectionScenario(deterministicScenario, sectionData, rowSeatCounts)
+      : [];
     sectionDataById.set(sectionId, sectionData);
 
     // Extract listings
@@ -472,7 +554,7 @@ export function createManifestSeatMapModel(): SeatMapModel {
       rowSeatCounts,
       priceRange,
       unmappedListingIds,
-      unmappedListingSpecs,
+      listingGroupSpecs,
       priceRng,
     );
     allListings.push(...sectionListings);
@@ -481,13 +563,15 @@ export function createManifestSeatMapModel(): SeatMapModel {
     if (sectionListings.length > 0) {
       const pinSeed = hashString(`${SEED}-pins-${sectionId}`);
       const pinRng = createSeededRandom(pinSeed);
-      const candidates: PinData[] = sectionListings.map((listing) => ({
-        listing,
-        rowIndex: listing.rowNumber - 1,
-        seatIndex: listing.seatIds.length > 0
-          ? Math.floor(listing.seatIds.length / 2)
-          : 0,
-      }));
+      const candidates: PinData[] = sectionListings
+        .filter((listing) => listing.rowNumber !== null)
+        .map((listing) => ({
+          listing,
+          rowIndex: listing.rowNumber! - 1,
+          seatIndex: listing.seatIds.length > 0
+            ? Math.floor(listing.seatIds.length / 2)
+            : 0,
+        }));
       pinRng.shuffle(candidates);
 
       const selected: PinData[] = [];

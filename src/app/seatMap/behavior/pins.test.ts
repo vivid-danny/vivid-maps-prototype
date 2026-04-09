@@ -28,7 +28,7 @@ function createListing(overrides: Partial<Listing> = {}): Listing {
 function createPinData(listing: Listing): PinData {
   return {
     listing,
-    rowIndex: listing.rowNumber - 1,
+    rowIndex: (listing.rowNumber ?? 1) - 1,
     seatIndex: Math.floor(listing.seatIds.length / 2),
   };
 }

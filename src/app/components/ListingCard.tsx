@@ -56,6 +56,9 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
   cardStyle = resolvedColor
     ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80), borderColor: resolvedColor }
     : { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
+  const locationLabel = listing.rowNumber === null
+    ? `Section ${listing.sectionLabel}`
+    : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;
 
   return (
     <div
@@ -76,7 +79,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
         />
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="text-sm font-medium text-gray-900">
-            Section {listing.sectionLabel}, Row {listing.rowNumber}
+            {locationLabel}
           </span>
           <span className="text-sm text-gray-500">
             {listing.quantityAvailable} {listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}

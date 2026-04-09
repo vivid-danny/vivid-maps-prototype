@@ -45,13 +45,16 @@ export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
     `${listing.quantityAvailable} ${listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}`,
     listing.isUnmapped ? null : formattedSeatNumbers,
   ].filter(Boolean).join(', ');
+  const locationLabel = listing.rowNumber === null
+    ? `Section ${listing.sectionLabel}`
+    : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;
 
   return (
     <div className="p-6 space-y-2">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-gray-900">
-            Section {listing.sectionLabel}, Row {listing.rowNumber}
+            {locationLabel}
           </h3>
           <p className="text-sm text-gray-500">
             {ticketSummary}
