@@ -19,6 +19,8 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
+const MOBILE_MAP_HEIGHT = 240;
+
 const LazyMapLibreVenue = lazy(async () => {
   const mod = await import('../../components/MapLibreVenue');
   return { default: mod.MapLibreVenue };
@@ -310,7 +312,7 @@ export function SeatMapRoot() {
           {/* Map area */}
           <div
             className={`flex items-center justify-center ${!isMobile ? 'flex-1 min-w-0 h-full' : 'shrink-0'}`}
-            style={isMobile ? { height: 200 } : undefined}
+            style={isMobile ? { height: MOBILE_MAP_HEIGHT } : undefined}
           >
             <div className="relative w-full h-full">
               <Suspense fallback={mapFallback}>
@@ -344,7 +346,13 @@ export function SeatMapRoot() {
                   filteredPinsBySection={viewState.pinsBySection}
                 />
               </Suspense>
-              <div className="absolute top-4 left-4 z-[40] flex gap-2">
+              <div
+                className="absolute top-4 left-4 z-[40] flex gap-2"
+                style={{
+                  opacity: isMobile && showDetailOverlay ? 0 : 1,
+                  pointerEvents: isMobile && showDetailOverlay ? 'none' : 'auto',
+                }}
+              >
                 <button
                   onClick={() => mapInstanceRef.current?.zoomIn()}
                   className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
@@ -411,7 +419,7 @@ export function SeatMapRoot() {
           {/* Mobile: detail overlay — covers full viewport (map + listings) */}
           {isMobile && showDetailOverlay && detailListing && (
             <div
-              className={`absolute inset-0 z-10 detail-panel--${detailPhase}`}
+              className={`absolute inset-0 z-[60] detail-panel--${detailPhase}`}
               onAnimationEnd={handleDetailAnimationEnd}
             >
               <div
