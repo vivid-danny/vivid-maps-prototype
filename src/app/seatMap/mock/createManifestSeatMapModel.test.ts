@@ -49,23 +49,27 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       const rowIds = sortRowIds(rowSeatCounts[sectionId]!);
       const backRowId = rowIds[rowIds.length - 1]!;
       const mappedFullRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== backRowId)!;
+      const mixedMappedRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== mappedFullRowId && rowId !== backRowId)!;
       const deterministicListings = model.listings.filter((listing) =>
         listing.sectionId === sectionId
         && (
           listing.listingId.includes('-row-unmapped-')
           || listing.listingId.includes('-mapped-full-row')
+          || listing.listingId.includes('-mapped-priority-demo')
           || listing.listingId.includes('-unmapped-full-row')
           || listing.listingId.includes('-section-unmapped-')
         ),
       );
       const mappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mappedFullRowId}-mapped-full-row`);
+      const mappedPriorityRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedMappedRowId}-mapped-priority-demo`);
+      const mappedPriorityOverflow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedMappedRowId}-mapped-row-unmapped-1`);
       const unmappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${backRowId}-unmapped-full-row`);
       const rowUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-1`);
       const rowUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-2`);
       const sectionUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-1`);
       const sectionUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-2`);
 
-      expect(deterministicListings).toHaveLength(6);
+      expect(deterministicListings).toHaveLength(8);
 
       expect(rowUnmapped1?.seatIds).toEqual([]);
       expect(rowUnmapped1?.rowId).toBe(mixedRowId);
@@ -100,8 +104,25 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
         ),
       );
 
+      expect(mappedPriorityRow?.rowId).toBe(mixedMappedRowId);
+      expect(mappedPriorityRow?.rowNumber).not.toBeNull();
+      expect(mappedPriorityRow?.isUnmapped).toBeUndefined();
+      expect(mappedPriorityRow?.seatIds).toEqual(
+        Array.from(
+          { length: Math.min(2, rowSeatCounts[sectionId]?.[mixedMappedRowId] ?? 0) },
+          (_, seatIndex) => `${sectionId}:${mixedMappedRowId}:s${seatIndex + 1}`,
+        ),
+      );
+
+      expect(mappedPriorityOverflow?.seatIds).toEqual([]);
+      expect(mappedPriorityOverflow?.rowId).toBe(mixedMappedRowId);
+      expect(mappedPriorityOverflow?.rowNumber).toBe(mappedPriorityRow?.rowNumber);
+      expect(mappedPriorityOverflow?.isUnmapped).toBe(true);
+      expect(mappedPriorityOverflow?.quantityAvailable).toBe(2);
+
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedRowId))).toBe(true);
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, mappedFullRowId))).toBe(true);
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedMappedRowId))).toBe(true);
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, backRowId))).toBe(true);
       const pinListings = model.pinsBySection.get(sectionId) ?? [];
       expect(pinListings.some((pin) => pin.listing.rowId === null)).toBe(false);

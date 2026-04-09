@@ -1,5 +1,6 @@
 import { buildRowFeatureId } from '../model/ids';
 import type { SeatMapModel } from '../model/types';
+import { deriveVisualSeatAssignments } from './deriveVisualSeatAssignments';
 
 function isFeatureCollection(value: unknown): value is GeoJSON.FeatureCollection {
   return !!value
@@ -45,9 +46,13 @@ export async function loadDecoratedRowsGeoJson(
   model: SeatMapModel,
 ): Promise<GeoJSON.FeatureCollection> {
   const rowsWithListings = new Set<string>();
+  const { visuallyCoveredRows } = deriveVisualSeatAssignments(model);
   for (const listing of model.listings) {
     if (!listing.rowId) continue;
     rowsWithListings.add(buildRowFeatureId(listing.sectionId, listing.rowId));
+  }
+  for (const rowId of visuallyCoveredRows) {
+    rowsWithListings.add(rowId);
   }
 
   const source = await fetchFeatureCollection(rowsUrl);
@@ -63,12 +68,8 @@ export async function loadDecoratedSeatsGeoJson(
   seatsUrl: string,
   model: SeatMapModel,
 ): Promise<GeoJSON.FeatureCollection> {
-  const seatsWithListings = new Set<string>();
-  for (const listing of model.listings) {
-    for (const seatId of listing.seatIds) {
-      seatsWithListings.add(seatId);
-    }
-  }
+  const { visualSeatListingBySeatId } = deriveVisualSeatAssignments(model);
+  const seatsWithListings = new Set(visualSeatListingBySeatId.keys());
 
   const source = await fetchFeatureCollection(seatsUrl);
   return decorateFeatures(source, (feature) => {

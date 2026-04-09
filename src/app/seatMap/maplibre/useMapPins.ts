@@ -26,6 +26,9 @@ interface UseMapPinsOptions {
   isMobile: boolean;
   pinDensity: PinDensityConfig;
   onSelect: (selection: SelectionState) => void;
+  visualSeatIdsByListingId: Map<string, string[]>;
+  visualRowIdByListingId: Map<string, string | null>;
+  visualRowNumberByListingId: Map<string, number | null>;
 }
 
 interface PinRenderData {
@@ -53,10 +56,27 @@ interface ResolvePinLngLatParams {
   listing: Listing;
   sectionData: SectionManifestEntry;
   seatCoords: Map<string, [number, number]>;
+  visualSeatIdsByListingId: Map<string, string[]>;
+  visualRowIdByListingId: Map<string, string | null>;
 }
 
-function isPanelOnlySeatListing(listing: Listing): boolean {
-  return listing.isUnmapped === true && listing.seatIds.length === 0;
+function getVisualSeatIds(listing: Listing, visualSeatIdsByListingId: Map<string, string[]>): string[] {
+  return visualSeatIdsByListingId.get(listing.listingId) ?? listing.seatIds;
+}
+
+function getVisualRowId(listing: Listing, visualRowIdByListingId: Map<string, string | null>): string | null {
+  return visualRowIdByListingId.get(listing.listingId) ?? listing.rowId;
+}
+
+function getVisualRowNumber(listing: Listing, visualRowNumberByListingId: Map<string, number | null>): number | null {
+  return visualRowNumberByListingId.get(listing.listingId) ?? listing.rowNumber;
+}
+
+function isPanelOnlySeatListing(
+  listing: Listing,
+  visualSeatIdsByListingId: Map<string, string[]>,
+): boolean {
+  return listing.isUnmapped === true && getVisualSeatIds(listing, visualSeatIdsByListingId).length === 0;
 }
 
 function shouldExpandPinsForSelection(selection: SelectionState): boolean {
@@ -82,8 +102,10 @@ function seatCentroid(
 function getRowCenter(
   listing: Listing,
   sectionData: SectionManifestEntry,
+  visualRowIdByListingId: Map<string, string | null>,
 ): [number, number] {
-  return listing.rowId ? (sectionData.rows[listing.rowId]?.center ?? sectionData.center) : sectionData.center;
+  const rowId = getVisualRowId(listing, visualRowIdByListingId);
+  return rowId ? (sectionData.rows[rowId]?.center ?? sectionData.center) : sectionData.center;
 }
 
 function resolvePinLngLat({
@@ -91,18 +113,26 @@ function resolvePinLngLat({
   listing,
   sectionData,
   seatCoords,
+  visualSeatIdsByListingId,
+  visualRowIdByListingId,
 }: ResolvePinLngLatParams): [number, number] {
   if (displayMode === 'sections') return sectionData.center;
-  if (displayMode === 'rows') return getRowCenter(listing, sectionData);
-  return seatCentroid(listing.seatIds, seatCoords) ?? getRowCenter(listing, sectionData);
+  if (displayMode === 'rows') return getRowCenter(listing, sectionData, visualRowIdByListingId);
+  return seatCentroid(getVisualSeatIds(listing, visualSeatIdsByListingId), seatCoords)
+    ?? getRowCenter(listing, sectionData, visualRowIdByListingId);
 }
 
-function createPinDataForListing(listing: Listing): PinData {
+function createPinDataForListing(
+  listing: Listing,
+  visualSeatIdsByListingId: Map<string, string[]>,
+  visualRowNumberByListingId: Map<string, number | null>,
+): PinData {
+  const visualSeatIds = getVisualSeatIds(listing, visualSeatIdsByListingId);
   return {
     listing,
-    rowIndex: Math.max(0, (listing.rowNumber ?? 1) - 1),
-    seatIndex: listing.seatIds.length > 0
-      ? Math.floor(listing.seatIds.length / 2)
+    rowIndex: Math.max(0, (getVisualRowNumber(listing, visualRowNumberByListingId) ?? 1) - 1),
+    seatIndex: visualSeatIds.length > 0
+      ? Math.floor(visualSeatIds.length / 2)
       : 0,
   };
 }
@@ -111,17 +141,24 @@ function markerZIndex(isHovered: boolean, isSelected: boolean): string {
   return isHovered ? '30' : isSelected ? '20' : '10';
 }
 
-function buildPinSelection(pin: PinRenderData, mode: DisplayMode): SelectionState {
+function buildPinSelection(
+  pin: PinRenderData,
+  mode: DisplayMode,
+  visualSeatIdsByListingId: Map<string, string[]>,
+  visualRowIdByListingId: Map<string, string | null>,
+): SelectionState {
+  const rowId = getVisualRowId(pin.listing, visualRowIdByListingId);
+  const seatIds = getVisualSeatIds(pin.listing, visualSeatIdsByListingId);
   switch (mode) {
     case 'sections':
       return buildSectionSelection(pin.sectionId);
     case 'rows':
-      return pin.listing.rowId
-        ? buildRowSelection(pin.sectionId, pin.listing.rowId)
+      return rowId
+        ? buildRowSelection(pin.sectionId, rowId)
         : buildSectionSelection(pin.sectionId);
     case 'seats':
       return buildListingSelection(
-        pin.sectionId, pin.listing.listingId, pin.listing.seatIds, pin.listing.rowId,
+        pin.sectionId, pin.listing.listingId, seatIds, rowId,
       );
   }
 }
@@ -154,6 +191,8 @@ function upsertHoverPinMarker({
   onSelect,
   displayMode,
   seatColors,
+  visualSeatIdsByListingId,
+  visualRowIdByListingId,
 }: {
   current: Map<string, MarkerEntry>;
   map: MapLibreMap;
@@ -162,6 +201,8 @@ function upsertHoverPinMarker({
   onSelect: (selection: SelectionState) => void;
   displayMode: DisplayMode;
   seatColors: SeatColors;
+  visualSeatIdsByListingId: Map<string, string[]>;
+  visualRowIdByListingId: Map<string, string | null>;
 }) {
   const existing = current.get(HOVER_PIN_ID);
   if (existing && existing.interactive !== interactive) {
@@ -184,7 +225,7 @@ function upsertHoverPinMarker({
     interactive,
     onClick: (e) => {
       e.stopPropagation();
-      onSelect(buildPinSelection(pinData, displayMode));
+      onSelect(buildPinSelection(pinData, displayMode, visualSeatIdsByListingId, visualRowIdByListingId));
     },
   });
   const root = createRoot(inner);
@@ -237,6 +278,9 @@ export function useMapPins({
   isMobile,
   pinDensity,
   onSelect,
+  visualSeatIdsByListingId,
+  visualRowIdByListingId,
+  visualRowNumberByListingId,
 }: UseMapPinsOptions): void {
   const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
 
@@ -273,26 +317,29 @@ export function useMapPins({
     if (sectionCenters.size === 0) return [];
 
     const pins: PinRenderData[] = [];
-    const { listingsBySection, pinsBySection } = model;
+    const { listingsBySection } = model;
     const expandSelectedSectionPins = shouldExpandPinsForSelection(selection);
 
     if (displayMode === 'sections' || displayMode === 'rows' || displayMode === 'seats') {
       // Collect candidates across the venue, then declutter them in venue space.
       const allCandidates: ResolvedPin[] = [];
-      const sectionsToRender = displayMode === 'seats' ? pinsBySection : listingsBySection;
+      const sectionsToRender = listingsBySection;
       for (const [sectionId, sectionItems] of sectionsToRender) {
         const sectionData = sectionCenters.get(sectionId);
         if (!sectionData) continue;
 
         if (displayMode === 'seats') {
-          const sectionPins = sectionItems as PinData[];
-          for (const pin of sectionPins) {
-            if (isPanelOnlySeatListing(pin.listing)) continue;
+          const sectionListings = sectionItems as Listing[];
+          for (const listing of sectionListings) {
+            if (isPanelOnlySeatListing(listing, visualSeatIdsByListingId)) continue;
+            const pin = createPinDataForListing(listing, visualSeatIdsByListingId, visualRowNumberByListingId);
             const lngLat = resolvePinLngLat({
               displayMode,
-              listing: pin.listing,
+              listing,
               sectionData,
               seatCoords,
+              visualSeatIdsByListingId,
+              visualRowIdByListingId,
             });
             allCandidates.push({
               pin,
@@ -305,13 +352,15 @@ export function useMapPins({
         }
 
         const bestDealListing = getBestDealListingWithMinScoreFallback(sectionItems as Listing[]);
-        if (!bestDealListing || (displayMode !== 'sections' && bestDealListing.rowId === null)) continue;
-        const bestDeal = createPinDataForListing(bestDealListing);
+        if (!bestDealListing || (displayMode !== 'sections' && getVisualRowId(bestDealListing, visualRowIdByListingId) === null)) continue;
+        const bestDeal = createPinDataForListing(bestDealListing, visualSeatIdsByListingId, visualRowNumberByListingId);
         const lngLat = resolvePinLngLat({
           displayMode,
           listing: bestDeal.listing,
           sectionData,
           seatCoords,
+          visualSeatIdsByListingId,
+          visualRowIdByListingId,
         });
         allCandidates.push({
           pin: bestDeal,
@@ -344,14 +393,16 @@ export function useMapPins({
 
       if (sectionData) {
         for (const listing of sectionListings) {
-          if (expandedPinsDisplayMode !== 'sections' && listing.rowId === null) continue;
-          if (expandedPinsDisplayMode === 'seats' && isPanelOnlySeatListing(listing)) continue;
+          if (expandedPinsDisplayMode !== 'sections' && getVisualRowId(listing, visualRowIdByListingId) === null) continue;
+          if (expandedPinsDisplayMode === 'seats' && isPanelOnlySeatListing(listing, visualSeatIdsByListingId)) continue;
           if (pins.some((pin) => pin.listingId === listing.listingId)) continue;
           const lngLat = resolvePinLngLat({
             displayMode: expandedPinsDisplayMode,
             listing,
             sectionData,
             seatCoords,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           pins.push({
             listingId: listing.listingId,
@@ -368,8 +419,8 @@ export function useMapPins({
     // If the selected listing has no default pin, add it as a selected overlay
     if (
       selectedListing
-      && (displayMode === 'sections' || selectedListing.rowId !== null)
-      && !(displayMode === 'seats' && isPanelOnlySeatListing(selectedListing))
+      && (displayMode === 'sections' || getVisualRowId(selectedListing, visualRowIdByListingId) !== null)
+      && !(displayMode === 'seats' && isPanelOnlySeatListing(selectedListing, visualSeatIdsByListingId))
       && !pins.some((p) => p.listingId === selectedListing.listingId)
     ) {
       const sectionData = sectionCenters.get(selectedListing.sectionId);
@@ -379,6 +430,8 @@ export function useMapPins({
           listing: selectedListing,
           sectionData,
           seatCoords,
+          visualSeatIdsByListingId,
+          visualRowIdByListingId,
         });
         pins.push({
           listingId: selectedListing.listingId,
@@ -441,7 +494,12 @@ export function useMapPins({
           e.stopPropagation();
           const data = pinDataRef.current.get(pinId);
           if (!data) return;
-          onSelectRef.current(buildPinSelection(data, displayModeRef.current));
+          onSelectRef.current(buildPinSelection(
+            data,
+            displayModeRef.current,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
+          ));
         });
         const root = createRoot(inner);
         renderPin(root, pin.listing, false, pin.isSelected, seatColorsRef.current);
@@ -481,9 +539,9 @@ export function useMapPins({
         displayMode === 'sections'
           ? hoverState.sectionId === pin.sectionId
           : displayMode === 'rows'
-            ? pin.listing.rowId !== null
+            ? getVisualRowId(pin.listing, visualRowIdByListingId) !== null
               && hoverState.sectionId === pin.sectionId
-              && hoverState.rowId === pin.listing.rowId
+              && hoverState.rowId === getVisualRowId(pin.listing, visualRowIdByListingId)
             : hoverState.listingId === pin.listingId;
       if (entry.isHovered !== isHovered) {
         renderPin(entry.root, pin.listing, isHovered, entry.isSelected, seatColorsRef.current);
@@ -500,7 +558,7 @@ export function useMapPins({
           (listing) => listing.listingId === hoverState.listingId,
         ) ?? null
         : null;
-      const hoveredPanelOnlyListing = hoveredListing && isPanelOnlySeatListing(hoveredListing)
+      const hoveredPanelOnlyListing = hoveredListing && isPanelOnlySeatListing(hoveredListing, visualSeatIdsByListingId)
         ? hoveredListing
         : null;
 
@@ -525,6 +583,8 @@ export function useMapPins({
               onSelect: onSelectRef.current,
               displayMode: displayModeRef.current,
               seatColors: seatColorsRef.current,
+              visualSeatIdsByListingId,
+              visualRowIdByListingId,
             });
             return;
           }
@@ -538,6 +598,8 @@ export function useMapPins({
             listing: hoveredPanelOnlyListing,
             sectionData,
             seatCoords,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           const hoverPinData: PinRenderData = {
             listingId: HOVER_PIN_ID,
@@ -556,17 +618,20 @@ export function useMapPins({
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           return;
         }
 
         const alreadyHasPin = basePins.some(
-          (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
+          (p) => p.sectionId === hoverState.sectionId
+            && getVisualRowId(p.listing, visualRowIdByListingId) === hoverState.rowId,
         );
 
         if (!alreadyHasPin && sectionData) {
           const rowListings = (model.listingsBySection.get(hoverState.sectionId) ?? []).filter(
-            (l) => l.rowId === hoverState.rowId,
+            (l) => getVisualRowId(l, visualRowIdByListingId) === hoverState.rowId,
           );
           if (rowListings.length > 0) {
             const cheapest = rowListings.reduce((a, b) => (a.price < b.price ? a : b));
@@ -575,6 +640,8 @@ export function useMapPins({
               listing: cheapest,
               sectionData,
               seatCoords,
+              visualSeatIdsByListingId,
+              visualRowIdByListingId,
             });
             const hoverPinData: PinRenderData = {
               listingId: HOVER_PIN_ID, lngLat, sectionId: hoverState.sectionId!,
@@ -589,6 +656,8 @@ export function useMapPins({
               onSelect: onSelectRef.current,
               displayMode: displayModeRef.current,
               seatColors: seatColorsRef.current,
+              visualSeatIdsByListingId,
+              visualRowIdByListingId,
             });
             return;
           }
@@ -602,6 +671,8 @@ export function useMapPins({
             listing: hoveredPanelOnlyListing,
             sectionData,
             seatCoords,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           const hoverPinData: PinRenderData = {
             listingId: HOVER_PIN_ID,
@@ -620,13 +691,15 @@ export function useMapPins({
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           return;
         }
 
         if (
           hoveredListing
-          && !isPanelOnlySeatListing(hoveredListing)
+          && !isPanelOnlySeatListing(hoveredListing, visualSeatIdsByListingId)
           && !basePinsById.has(hoveredListing.listingId)
         ) {
           const lngLat = resolvePinLngLat({
@@ -634,6 +707,8 @@ export function useMapPins({
             listing: hoveredListing,
             sectionData,
             seatCoords,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           const hoverPinData: PinRenderData = {
             listingId: HOVER_PIN_ID,
@@ -652,6 +727,8 @@ export function useMapPins({
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
+            visualSeatIdsByListingId,
+            visualRowIdByListingId,
           });
           return;
         }

@@ -29,6 +29,8 @@ interface UseMapInteractionsOptions {
   syncHoverFromMap: (hover: HoverState) => void;
   isMobile: boolean;
   listingsBySeatId: Map<string, Listing>;
+  visualSeatIdsByListingId: Map<string, string[]>;
+  visualRowIdByListingId: Map<string, string | null>;
 }
 
 /**
@@ -45,6 +47,8 @@ export function useMapInteractions({
   syncHoverFromMap,
   isMobile,
   listingsBySeatId,
+  visualSeatIdsByListingId,
+  visualRowIdByListingId,
 }: UseMapInteractionsOptions) {
   const HOVER_EXIT_GRACE_MS = 60;
 
@@ -61,6 +65,10 @@ export function useMapInteractions({
 
   const listingsBySeatIdRef = useRef(listingsBySeatId);
   listingsBySeatIdRef.current = listingsBySeatId;
+  const visualSeatIdsByListingIdRef = useRef(visualSeatIdsByListingId);
+  visualSeatIdsByListingIdRef.current = visualSeatIdsByListingId;
+  const visualRowIdByListingIdRef = useRef(visualRowIdByListingId);
+  visualRowIdByListingIdRef.current = visualRowIdByListingId;
 
   useEffect(() => {
     if (!ready || !mapRef.current) return;
@@ -145,6 +153,17 @@ export function useMapInteractions({
       const rowId = props?.rowId as string;
       const seatId = props?.id as string;
       if (!sectionId || !seatId) return;
+
+      const listing = listingsBySeatIdRef.current.get(seatId);
+      if (listing) {
+        onSelectRef.current({
+          sectionId: listing.sectionId,
+          rowId: visualRowIdByListingIdRef.current.get(listing.listingId) ?? listing.rowId ?? rowId ?? null,
+          listingId: listing.listingId,
+          seatIds: visualSeatIdsByListingIdRef.current.get(listing.listingId) ?? listing.seatIds,
+        });
+        return;
+      }
 
       // Build a selection with the seat. The listing lookup happens in the
       // existing handleSelect → viewState pipeline.

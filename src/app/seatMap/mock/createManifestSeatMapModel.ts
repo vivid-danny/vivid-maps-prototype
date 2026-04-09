@@ -89,6 +89,7 @@ interface DeterministicSectionScenarioConfig {
 interface DeterministicSectionScenario extends DeterministicSectionScenarioConfig {
   backRowId: string;
   mappedFullRowId: string;
+  mixedMappedRowId: string;
 }
 
 interface ListingGroupSpec {
@@ -120,12 +121,16 @@ function resolveDeterministicSectionScenario(
 
   const backRowId = rowIds[rowIds.length - 1]!;
   const mappedFullRowId = rowIds.find((rowId) => rowId !== config.mixedRowId && rowId !== backRowId) ?? null;
-  if (!mappedFullRowId) return null;
+  const mixedMappedRowId = rowIds.find(
+    (rowId) => rowId !== config.mixedRowId && rowId !== backRowId && rowId !== mappedFullRowId,
+  ) ?? null;
+  if (!mappedFullRowId || !mixedMappedRowId) return null;
 
   return {
     ...config,
     backRowId,
     mappedFullRowId,
+    mixedMappedRowId,
   };
 }
 
@@ -338,6 +343,51 @@ function applyDeterministicSectionScenario(
       quantityAvailable: mappedRow.seatIds.length,
       seatIds: mappedRow.seatIds,
       isUnmapped: false,
+    });
+  }
+
+  const mixedMappedRowIndex = sectionData.rows.findIndex((row) => row.rowId === scenario.mixedMappedRowId);
+  if (mixedMappedRowIndex >= 0) {
+    const mixedMappedSeatCount = rowSeatCounts[scenario.mixedMappedRowId] ?? 0;
+    const mixedMappedRow = sectionData.rows[mixedMappedRowIndex]!;
+    const mappedSeatNumbers = mixedMappedSeatCount >= 2 ? [1, 2] : [1];
+    const mappedPriorityListingId = `listing-${sectionId}-${scenario.mixedMappedRowId}-mapped-priority-demo`;
+
+    mixedMappedRow.isZoneRow = false;
+    mixedMappedRow.seats = Array.from({ length: mixedMappedSeatCount }, (_, seatIndex) => {
+      const seatNumber = seatIndex + 1;
+      const seatId = buildSeatFeatureId(sectionId, scenario.mixedMappedRowId, seatNumber);
+      if (mappedSeatNumbers.includes(seatNumber)) {
+        return {
+          seatId,
+          status: 'available' as const,
+          listingId: mappedPriorityListingId,
+        };
+      }
+
+      return {
+        seatId,
+        status: 'unavailable' as const,
+      };
+    });
+
+    listingGroups.push({
+      listingId: mappedPriorityListingId,
+      rowId: scenario.mixedMappedRowId,
+      rowNumber: mixedMappedRowIndex + 1,
+      quantityAvailable: mappedSeatNumbers.length,
+      seatIds: mappedSeatNumbers.map((seatNumber) =>
+        buildSeatFeatureId(sectionId, scenario.mixedMappedRowId, seatNumber),
+      ),
+      isUnmapped: false,
+    });
+    listingGroups.push({
+      listingId: `listing-${sectionId}-${scenario.mixedMappedRowId}-mapped-row-unmapped-1`,
+      rowId: scenario.mixedMappedRowId,
+      rowNumber: mixedMappedRowIndex + 1,
+      quantityAvailable: 2,
+      seatIds: [],
+      isUnmapped: true,
     });
   }
 
