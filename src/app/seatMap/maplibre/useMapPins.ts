@@ -42,6 +42,7 @@ interface MarkerEntry {
   root: Root;
   isHovered: boolean;
   isSelected: boolean;
+  interactive: boolean;
 }
 
 // Sentinel ID for the on-the-fly hover pin (a row with no pre-existing pin candidate).
@@ -123,14 +124,72 @@ function buildPinSelection(pin: PinRenderData, mode: DisplayMode): SelectionStat
   }
 }
 
-function createMarkerEl(onClick: (e: MouseEvent) => void): { wrapper: HTMLDivElement; inner: HTMLDivElement } {
+function createMarkerEl({
+  interactive,
+  onClick,
+}: {
+  interactive: boolean;
+  onClick?: (e: MouseEvent) => void;
+}): { wrapper: HTMLDivElement; inner: HTMLDivElement } {
   const wrapper = document.createElement('div');
   // 0x0 anchor div — Pin's own translate(-50%, -100%) positions the arrow tip at the coordinate
-  wrapper.style.cssText = 'position: relative; width: 0; height: 0; cursor: pointer;';
-  wrapper.addEventListener('click', onClick);
+  wrapper.style.cssText = `position: relative; width: 0; height: 0; cursor: ${interactive ? 'pointer' : 'default'};`;
+  if (interactive && onClick) {
+    wrapper.addEventListener('click', onClick);
+  } else {
+    wrapper.style.pointerEvents = 'none';
+  }
   const inner = document.createElement('div');
   wrapper.appendChild(inner);
   return { wrapper, inner };
+}
+
+function upsertHoverPinMarker({
+  current,
+  map,
+  pinData,
+  interactive,
+  onSelect,
+  displayMode,
+  seatColors,
+}: {
+  current: Map<string, MarkerEntry>;
+  map: MapLibreMap;
+  pinData: PinRenderData;
+  interactive: boolean;
+  onSelect: (selection: SelectionState) => void;
+  displayMode: DisplayMode;
+  seatColors: SeatColors;
+}) {
+  const existing = current.get(HOVER_PIN_ID);
+  if (existing && existing.interactive !== interactive) {
+    existing.marker.remove();
+    setTimeout(() => existing.root.unmount(), 0);
+    current.delete(HOVER_PIN_ID);
+  }
+
+  const reusable = current.get(HOVER_PIN_ID);
+  if (reusable) {
+    reusable.marker.setLngLat(pinData.lngLat);
+    reusable.marker.getElement().style.display = '';
+    renderPin(reusable.root, pinData.listing, true, false, seatColors);
+    reusable.marker.getElement().style.zIndex = markerZIndex(true, false);
+    reusable.isHovered = true;
+    return;
+  }
+
+  const { wrapper, inner } = createMarkerEl({
+    interactive,
+    onClick: (e) => {
+      e.stopPropagation();
+      onSelect(buildPinSelection(pinData, displayMode));
+    },
+  });
+  const root = createRoot(inner);
+  renderPin(root, pinData.listing, true, false, seatColors);
+  const marker = new Marker({ element: wrapper }).setLngLat(pinData.lngLat).addTo(map);
+  marker.getElement().style.zIndex = markerZIndex(true, false);
+  current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false, interactive });
 }
 
 function renderPin(
@@ -384,7 +443,7 @@ export function useMapPins({
         renderPin(root, pin.listing, false, pin.isSelected, seatColorsRef.current);
         const marker = new Marker({ element: wrapper }).setLngLat(pin.lngLat).addTo(map);
         marker.getElement().style.zIndex = markerZIndex(false, pin.isSelected);
-        current.set(pin.listingId, { marker, root, isHovered: false, isSelected: pin.isSelected });
+        current.set(pin.listingId, { marker, root, isHovered: false, isSelected: pin.isSelected, interactive: true });
       }
     }
 
@@ -430,6 +489,14 @@ export function useMapPins({
     // On-the-fly hover pin: show cheapest listing for a hovered section/row that has no static pin
     if (hoverState.sectionId !== null && mapRef.current) {
       const sectionData = sectionCenters.get(hoverState.sectionId);
+      const hoveredListing = hoverState.listingId
+        ? (model.listingsBySection.get(hoverState.sectionId) ?? []).find(
+          (listing) => listing.listingId === hoverState.listingId,
+        ) ?? null
+        : null;
+      const hoveredPanelOnlyListing = hoveredListing && isPanelOnlySeatListing(hoveredListing)
+        ? hoveredListing
+        : null;
 
       if (displayMode === 'sections') {
         const alreadyHasPin = basePins.some((p) => p.sectionId === hoverState.sectionId);
@@ -444,31 +511,49 @@ export function useMapPins({
               listing: cheapest, isHovered: true, isSelected: false,
             };
             pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
-            const existing = current.get(HOVER_PIN_ID);
-            if (existing) {
-              existing.marker.setLngLat(lngLat);
-              existing.marker.getElement().style.display = '';
-              renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
-              existing.isHovered = true;
-            } else {
-              const { wrapper, inner } = createMarkerEl((e) => {
-                e.stopPropagation();
-                const data = pinDataRef.current.get(HOVER_PIN_ID);
-                if (!data) return;
-                onSelectRef.current(buildPinSelection(data, displayModeRef.current));
-              });
-              const root = createRoot(inner);
-              renderPin(root, cheapest, true, false, seatColorsRef.current);
-              const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
-              marker.getElement().style.zIndex = markerZIndex(true, false);
-              current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
-            }
+            upsertHoverPinMarker({
+              current,
+              map: mapRef.current!,
+              pinData: hoverPinData,
+              interactive: true,
+              onSelect: onSelectRef.current,
+              displayMode: displayModeRef.current,
+              seatColors: seatColorsRef.current,
+            });
             return;
           }
         }
       }
 
       if (displayMode === 'rows' && hoverState.rowId !== null) {
+        if (hoveredPanelOnlyListing && sectionData) {
+          const lngLat = resolvePinLngLat({
+            displayMode,
+            listing: hoveredPanelOnlyListing,
+            sectionData,
+            seatCoords,
+          });
+          const hoverPinData: PinRenderData = {
+            listingId: HOVER_PIN_ID,
+            lngLat,
+            sectionId: hoverState.sectionId,
+            listing: hoveredPanelOnlyListing,
+            isHovered: true,
+            isSelected: false,
+          };
+          pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
+          upsertHoverPinMarker({
+            current,
+            map: mapRef.current!,
+            pinData: hoverPinData,
+            interactive: false,
+            onSelect: onSelectRef.current,
+            displayMode: displayModeRef.current,
+            seatColors: seatColorsRef.current,
+          });
+          return;
+        }
+
         const alreadyHasPin = basePins.some(
           (p) => p.sectionId === hoverState.sectionId && p.listing.rowId === hoverState.rowId,
         );
@@ -490,34 +575,48 @@ export function useMapPins({
               listing: cheapest, isHovered: true, isSelected: false,
             };
             pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
-            const existing = current.get(HOVER_PIN_ID);
-            if (existing) {
-              existing.marker.setLngLat(lngLat);
-              existing.marker.getElement().style.display = '';
-              renderPin(existing.root, cheapest, true, false, seatColorsRef.current);
-              existing.isHovered = true;
-            } else {
-              const { wrapper, inner } = createMarkerEl((e) => {
-                e.stopPropagation();
-                const data = pinDataRef.current.get(HOVER_PIN_ID);
-                if (!data) return;
-                onSelectRef.current(buildPinSelection(data, displayModeRef.current));
-              });
-              const root = createRoot(inner);
-              renderPin(root, cheapest, true, false, seatColorsRef.current);
-              const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
-              marker.getElement().style.zIndex = markerZIndex(true, false);
-              current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
-            }
+            upsertHoverPinMarker({
+              current,
+              map: mapRef.current!,
+              pinData: hoverPinData,
+              interactive: true,
+              onSelect: onSelectRef.current,
+              displayMode: displayModeRef.current,
+              seatColors: seatColorsRef.current,
+            });
             return;
           }
         }
       }
 
       if (displayMode === 'seats' && hoverState.listingId !== null && sectionData) {
-        const hoveredListing = (model.listingsBySection.get(hoverState.sectionId) ?? []).find(
-          (listing) => listing.listingId === hoverState.listingId,
-        );
+        if (hoveredPanelOnlyListing) {
+          const lngLat = resolvePinLngLat({
+            displayMode,
+            listing: hoveredPanelOnlyListing,
+            sectionData,
+            seatCoords,
+          });
+          const hoverPinData: PinRenderData = {
+            listingId: HOVER_PIN_ID,
+            lngLat,
+            sectionId: hoverState.sectionId,
+            listing: hoveredPanelOnlyListing,
+            isHovered: true,
+            isSelected: false,
+          };
+          pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
+          upsertHoverPinMarker({
+            current,
+            map: mapRef.current!,
+            pinData: hoverPinData,
+            interactive: false,
+            onSelect: onSelectRef.current,
+            displayMode: displayModeRef.current,
+            seatColors: seatColorsRef.current,
+          });
+          return;
+        }
 
         if (
           hoveredListing
@@ -539,25 +638,15 @@ export function useMapPins({
             isSelected: false,
           };
           pinDataRef.current.set(HOVER_PIN_ID, hoverPinData);
-          const existing = current.get(HOVER_PIN_ID);
-          if (existing) {
-            existing.marker.setLngLat(lngLat);
-            existing.marker.getElement().style.display = '';
-            renderPin(existing.root, hoveredListing, true, false, seatColorsRef.current);
-            existing.isHovered = true;
-          } else {
-            const { wrapper, inner } = createMarkerEl((e) => {
-              e.stopPropagation();
-              const data = pinDataRef.current.get(HOVER_PIN_ID);
-              if (!data) return;
-              onSelectRef.current(buildPinSelection(data, displayModeRef.current));
-            });
-            const root = createRoot(inner);
-            renderPin(root, hoveredListing, true, false, seatColorsRef.current);
-            const marker = new Marker({ element: wrapper }).setLngLat(lngLat).addTo(mapRef.current!);
-            marker.getElement().style.zIndex = markerZIndex(true, false);
-            current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false });
-          }
+          upsertHoverPinMarker({
+            current,
+            map: mapRef.current!,
+            pinData: hoverPinData,
+            interactive: true,
+            onSelect: onSelectRef.current,
+            displayMode: displayModeRef.current,
+            seatColors: seatColorsRef.current,
+          });
           return;
         }
       }

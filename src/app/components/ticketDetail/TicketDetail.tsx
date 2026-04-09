@@ -31,6 +31,14 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
         <TicketDetailPerks listing={listing} perks={listing.perks} />
         <TicketDetailDelivery delivery={listing.delivery} />
         <TicketDetailEventInfo eventInfo={eventInfo} />
+        {listing.isUnmapped && (
+          <div className="p-6 border-t border-gray-100">
+            <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
+            <p className="text-xs text-gray-500">
+              The seller has guaranteed seats in this row but has not provided the exact seats.
+            </p>
+          </div>
+        )}
       </div>
       {isMobile && (
         <TicketDetailCheckout
