@@ -35,7 +35,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
               Seated Together
             </h4>
             <p className="text-xs text-gray-500">
-              {listing.rowNumber !== null
+              {listing.rowNumber !== null && !listing.isSectionUnmapped
                 ? `Experience it live – together in Row ${listing.rowNumber}`
                 : 'Experience it live – together'}
             </p>
