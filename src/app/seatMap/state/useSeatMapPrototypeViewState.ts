@@ -172,8 +172,8 @@ export function useSeatMapPrototypeViewState({
         return;
       }
     }
-    setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId });
-    navigateFn({ sectionId: selection.sectionId, rowId: null, listingId: null, seatIds: [] }, 16);
+    setSelection({ ...EMPTY_SELECTION, sectionId: selection.sectionId, rowId: selection.rowId });
+    navigateFn({ sectionId: selection.sectionId, rowId: selection.rowId, listingId: null, seatIds: [] }, 16);
   }, [selection, model.sectionDataById, navigateFn]);
 
   const handleHoverFromPanel = useCallback((listing: Listing | null) => {
