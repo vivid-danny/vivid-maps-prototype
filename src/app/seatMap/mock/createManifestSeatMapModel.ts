@@ -607,6 +607,17 @@ export function createManifestSeatMapModel(): SeatMapModel {
       listingGroupSpecs,
       priceRng,
     );
+    // Assign section-unmapped listings (rowId === null) to the back row
+    const backRowId = rowIds[rowIds.length - 1]!;
+    const backRowNumber = rowIds.length;
+    for (const listing of sectionListings) {
+      if (listing.rowId === null) {
+        listing.rowId = backRowId;
+        listing.rowNumber = backRowNumber;
+        listing.isSectionUnmapped = true;
+      }
+    }
+
     allListings.push(...sectionListings);
 
     // Pins: pick up to 3 per section from first-row listings

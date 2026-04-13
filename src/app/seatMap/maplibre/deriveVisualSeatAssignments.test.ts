@@ -33,6 +33,7 @@ function createListing(overrides: Partial<Listing> & Pick<Listing, 'listingId' |
     feePerTicket: overrides.feePerTicket ?? 1000,
     delivery: overrides.delivery ?? DELIVERY,
     isUnmapped: overrides.isUnmapped,
+    isSectionUnmapped: overrides.isSectionUnmapped,
   };
 }
 
@@ -88,13 +89,23 @@ describe('deriveVisualSeatAssignments', () => {
     expect(assignments.visualSeatListingBySeatId.get(fullRowSeatIds[0])?.listingId).toBe(winner.listingId);
   });
 
-  it('keeps back-row section-only listings panel-only when a row-scoped back-row listing exists', () => {
+  it('assigns exactly one back-row unmapped listing as winner, keeps others panel-only', () => {
     const model = createManifestSeatMapModel();
     const assignments = deriveVisualSeatAssignments(model);
 
-    expect(assignments.visualCoverageKindByListingId.get('listing-214-9-unmapped-full-row')).toBe('row_unmapped');
-    expect(assignments.visualSeatIdsByListingId.get('listing-214-section-unmapped-1')).toEqual([]);
-    expect(assignments.visualSeatIdsByListingId.get('listing-214-section-unmapped-2')).toEqual([]);
+    const backRowListingIds = [
+      'listing-214-9-unmapped-full-row',
+      'listing-214-section-unmapped-1',
+      'listing-214-section-unmapped-2',
+    ];
+    const coverageKinds = backRowListingIds.map((id) => assignments.visualCoverageKindByListingId.get(id));
+    const withCoverage = coverageKinds.filter((kind) => kind === 'row_unmapped');
+    const withoutCoverage = backRowListingIds.filter((id) =>
+      (assignments.visualSeatIdsByListingId.get(id) ?? []).length === 0,
+    );
+
+    expect(withCoverage).toHaveLength(1);
+    expect(withoutCoverage).toHaveLength(2);
   });
 
   it('keeps same-row unmapped overflow panel-only when a mapped listing exists in that row', () => {
@@ -123,6 +134,7 @@ describe('deriveVisualSeatAssignments', () => {
       sectionLabel: '214',
       price: 9000,
       isUnmapped: true,
+      isSectionUnmapped: true,
     });
     const model = createModel('214', ['1', '2'], [sectionOnly]);
     const assignments = deriveVisualSeatAssignments(model);

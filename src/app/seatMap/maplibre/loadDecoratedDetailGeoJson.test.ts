@@ -32,6 +32,7 @@ function createListing(overrides: Partial<Listing> & Pick<Listing, 'listingId' |
     feePerTicket: overrides.feePerTicket ?? 1000,
     delivery: overrides.delivery ?? DELIVERY,
     isUnmapped: overrides.isUnmapped,
+    isSectionUnmapped: overrides.isSectionUnmapped,
   };
 }
 
@@ -122,6 +123,7 @@ describe('loadDecoratedDetailGeoJson', () => {
         sectionId: '214',
         sectionLabel: '214',
         isUnmapped: true,
+        isSectionUnmapped: true,
       }),
     ]);
 

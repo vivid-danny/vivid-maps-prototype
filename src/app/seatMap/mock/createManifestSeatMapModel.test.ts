@@ -81,13 +81,15 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       expect(rowUnmapped2?.quantityAvailable).toBe(2);
 
       expect(sectionUnmapped1?.seatIds).toEqual([]);
-      expect(sectionUnmapped1?.rowId).toBeNull();
-      expect(sectionUnmapped1?.rowNumber).toBeNull();
+      expect(sectionUnmapped1?.rowId).toBe(backRowId);
+      expect(sectionUnmapped1?.rowNumber).toBe(rowIds.length);
       expect(sectionUnmapped1?.isUnmapped).toBe(true);
+      expect(sectionUnmapped1?.isSectionUnmapped).toBe(true);
       expect(sectionUnmapped2?.seatIds).toEqual([]);
-      expect(sectionUnmapped2?.rowId).toBeNull();
-      expect(sectionUnmapped2?.rowNumber).toBeNull();
+      expect(sectionUnmapped2?.rowId).toBe(backRowId);
+      expect(sectionUnmapped2?.rowNumber).toBe(rowIds.length);
       expect(sectionUnmapped2?.isUnmapped).toBe(true);
+      expect(sectionUnmapped2?.isSectionUnmapped).toBe(true);
 
       expect(unmappedFullRow?.seatIds).toEqual([]);
       expect(unmappedFullRow?.rowId).toBe(backRowId);
