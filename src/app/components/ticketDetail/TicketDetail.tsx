@@ -51,16 +51,6 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
             </p>
           </div>
         )}
-        {listing.isUnmapped && !listing.isSectionUnmapped && (
-          <div className="p-6 border-t border-gray-100">
-            <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
-            <p className="text-xs text-gray-500">
-              {listing.rowNumber === null
-                ? 'The seller has guaranteed seats in this section but has not provided the exact row or seats.'
-                : 'The seller has guaranteed seats in this row but has not provided the exact seats.'}
-            </p>
-          </div>
-        )}
       </div>
       {isMobile && (
         <TicketDetailCheckout
