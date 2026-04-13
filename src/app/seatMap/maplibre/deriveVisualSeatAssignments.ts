@@ -29,7 +29,7 @@ function isRowScopedUnmappedListing(listing: Listing): boolean {
 }
 
 function isSectionScopedUnmappedListing(listing: Listing): boolean {
-  return listing.rowId === null && listing.seatIds.length === 0;
+  return listing.isSectionUnmapped === true;
 }
 
 export function deriveVisualSeatAssignments(model: SeatMapModel): VisualSeatAssignments {

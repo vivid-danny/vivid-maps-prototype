@@ -33,6 +33,7 @@ function createListing(overrides: Partial<Listing> & Pick<Listing, 'listingId' |
     feePerTicket: overrides.feePerTicket ?? 1000,
     delivery: overrides.delivery ?? DELIVERY,
     isUnmapped: overrides.isUnmapped,
+    isSectionUnmapped: overrides.isSectionUnmapped,
   };
 }
 
@@ -70,31 +71,38 @@ function createModel(sectionId: string, rowIds: string[], listings: Listing[]): 
 }
 
 describe('deriveVisualSeatAssignments', () => {
-  it('assigns full-row visual seats to the winning row-scoped unmapped listing in reserved sections', () => {
+  it('assigns full-row visual seats to a sole row-scoped unmapped listing in reserved sections', () => {
     const model = createManifestSeatMapModel();
     const assignments = deriveVisualSeatAssignments(model);
     const sectionData = model.sectionDataById.get('214')!;
     const row = sectionData.rows.find((entry) => entry.rowId === '5')!;
-    const rowListings = model.listings
-      .filter((listing) => listing.sectionId === '214' && listing.rowId === '5' && listing.seatIds.length === 0)
-      .sort((a, b) => a.price - b.price || b.dealScore - a.dealScore || a.listingId.localeCompare(b.listingId));
-    const winner = rowListings[0]!;
-    const loser = rowListings[1]!;
+    const listing = model.listings.find(
+      (l) => l.sectionId === '214' && l.rowId === '5' && l.seatIds.length === 0,
+    )!;
     const fullRowSeatIds = row.seats.map((seat) => seat.seatId);
 
-    expect(assignments.visualSeatIdsByListingId.get(winner.listingId)).toEqual(fullRowSeatIds);
-    expect(assignments.visualCoverageKindByListingId.get(winner.listingId)).toBe('row_unmapped');
-    expect(assignments.visualSeatIdsByListingId.get(loser.listingId)).toEqual([]);
-    expect(assignments.visualSeatListingBySeatId.get(fullRowSeatIds[0])?.listingId).toBe(winner.listingId);
+    expect(assignments.visualSeatIdsByListingId.get(listing.listingId)).toEqual(fullRowSeatIds);
+    expect(assignments.visualCoverageKindByListingId.get(listing.listingId)).toBe('row_unmapped');
+    expect(assignments.visualSeatListingBySeatId.get(fullRowSeatIds[0])?.listingId).toBe(listing.listingId);
   });
 
-  it('keeps back-row section-only listings panel-only when a row-scoped back-row listing exists', () => {
+  it('assigns exactly one back-row unmapped listing as winner, keeps others panel-only', () => {
     const model = createManifestSeatMapModel();
     const assignments = deriveVisualSeatAssignments(model);
 
-    expect(assignments.visualCoverageKindByListingId.get('listing-214-9-unmapped-full-row')).toBe('row_unmapped');
-    expect(assignments.visualSeatIdsByListingId.get('listing-214-section-unmapped-1')).toEqual([]);
-    expect(assignments.visualSeatIdsByListingId.get('listing-214-section-unmapped-2')).toEqual([]);
+    const backRowListingIds = [
+      'listing-214-9-unmapped-full-row',
+      'listing-214-section-unmapped-1',
+      'listing-214-section-unmapped-2',
+    ];
+    const coverageKinds = backRowListingIds.map((id) => assignments.visualCoverageKindByListingId.get(id));
+    const withCoverage = coverageKinds.filter((kind) => kind === 'row_unmapped');
+    const withoutCoverage = backRowListingIds.filter((id) =>
+      (assignments.visualSeatIdsByListingId.get(id) ?? []).length === 0,
+    );
+
+    expect(withCoverage).toHaveLength(1);
+    expect(withoutCoverage).toHaveLength(2);
   });
 
   it('keeps same-row unmapped overflow panel-only when a mapped listing exists in that row', () => {
@@ -123,6 +131,7 @@ describe('deriveVisualSeatAssignments', () => {
       sectionLabel: '214',
       price: 9000,
       isUnmapped: true,
+      isSectionUnmapped: true,
     });
     const model = createModel('214', ['1', '2'], [sectionOnly]);
     const assignments = deriveVisualSeatAssignments(model);

@@ -250,6 +250,7 @@ export function MapLibreVenue({
     listingsBySeatId,
     visualSeatIdsByListingId: visualSeatAssignments.visualSeatIdsByListingId,
     visualRowIdByListingId: visualSeatAssignments.visualRowIdByListingId,
+    listingsBySection: effectiveModel.listingsBySection,
   });
 
   // Pin overlays — MapLibre Markers wrapping React <Pin> components

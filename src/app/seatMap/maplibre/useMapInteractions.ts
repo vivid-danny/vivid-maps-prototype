@@ -31,6 +31,7 @@ interface UseMapInteractionsOptions {
   listingsBySeatId: Map<string, Listing>;
   visualSeatIdsByListingId: Map<string, string[]>;
   visualRowIdByListingId: Map<string, string | null>;
+  listingsBySection: Map<string, Listing[]>;
 }
 
 /**
@@ -49,6 +50,7 @@ export function useMapInteractions({
   listingsBySeatId,
   visualSeatIdsByListingId,
   visualRowIdByListingId,
+  listingsBySection,
 }: UseMapInteractionsOptions) {
   const HOVER_EXIT_GRACE_MS = 60;
 
@@ -69,6 +71,8 @@ export function useMapInteractions({
   visualSeatIdsByListingIdRef.current = visualSeatIdsByListingId;
   const visualRowIdByListingIdRef = useRef(visualRowIdByListingId);
   visualRowIdByListingIdRef.current = visualRowIdByListingId;
+  const listingsBySectionRef = useRef(listingsBySection);
+  listingsBySectionRef.current = listingsBySection;
 
   useEffect(() => {
     if (!ready || !mapRef.current) return;
@@ -85,6 +89,19 @@ export function useMapInteractions({
     for (const listing of listingsBySeatIdRef.current.values()) {
       if (!listingsById.has(listing.listingId)) {
         listingsById.set(listing.listingId, listing);
+      }
+    }
+
+    // Build a set of row keys that have multiple listings (for seat click → row selection)
+    const multiListingRowKeys = new Set<string>();
+    const rowListingCounts = new Map<string, number>();
+    for (const sectionListings of listingsBySectionRef.current.values()) {
+      for (const listing of sectionListings) {
+        if (!listing.rowId) continue;
+        const key = `${listing.sectionId}:${listing.rowId}`;
+        const count = (rowListingCounts.get(key) ?? 0) + 1;
+        rowListingCounts.set(key, count);
+        if (count > 1) multiListingRowKeys.add(key);
       }
     }
 
@@ -156,12 +173,18 @@ export function useMapInteractions({
 
       const listing = listingsBySeatIdRef.current.get(seatId);
       if (listing) {
-        onSelectRef.current({
-          sectionId: listing.sectionId,
-          rowId: visualRowIdByListingIdRef.current.get(listing.listingId) ?? listing.rowId ?? rowId ?? null,
-          listingId: listing.listingId,
-          seatIds: visualSeatIdsByListingIdRef.current.get(listing.listingId) ?? listing.seatIds,
-        });
+        const isMapped = listing.seatIds.length > 0;
+        const rowKey = listing.rowId ? `${listing.sectionId}:${listing.rowId}` : null;
+        if (!isMapped && rowKey && multiListingRowKeys.has(rowKey)) {
+          onSelectRef.current(buildRowSelection(listing.sectionId, listing.rowId!));
+        } else {
+          onSelectRef.current({
+            sectionId: listing.sectionId,
+            rowId: visualRowIdByListingIdRef.current.get(listing.listingId) ?? listing.rowId ?? rowId ?? null,
+            listingId: listing.listingId,
+            seatIds: visualSeatIdsByListingIdRef.current.get(listing.listingId) ?? listing.seatIds,
+          });
+        }
         return;
       }
 

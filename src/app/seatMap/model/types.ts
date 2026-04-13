@@ -165,4 +165,5 @@ export interface Listing {
   feePerTicket: number; // in cents
   delivery: DeliveryInfo;
   isUnmapped?: boolean;
+  isSectionUnmapped?: boolean;
 }

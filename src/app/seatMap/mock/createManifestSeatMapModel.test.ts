@@ -65,29 +65,26 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       const mappedPriorityOverflow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedMappedRowId}-mapped-row-unmapped-1`);
       const unmappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${backRowId}-unmapped-full-row`);
       const rowUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-1`);
-      const rowUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mixedRowId}-row-unmapped-2`);
       const sectionUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-1`);
       const sectionUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-2`);
 
-      expect(deterministicListings).toHaveLength(8);
+      expect(deterministicListings).toHaveLength(7);
 
       expect(rowUnmapped1?.seatIds).toEqual([]);
       expect(rowUnmapped1?.rowId).toBe(mixedRowId);
       expect(rowUnmapped1?.isUnmapped).toBe(true);
       expect(rowUnmapped1?.quantityAvailable).toBe(2);
-      expect(rowUnmapped2?.seatIds).toEqual([]);
-      expect(rowUnmapped2?.rowId).toBe(mixedRowId);
-      expect(rowUnmapped2?.isUnmapped).toBe(true);
-      expect(rowUnmapped2?.quantityAvailable).toBe(2);
 
       expect(sectionUnmapped1?.seatIds).toEqual([]);
-      expect(sectionUnmapped1?.rowId).toBeNull();
-      expect(sectionUnmapped1?.rowNumber).toBeNull();
+      expect(sectionUnmapped1?.rowId).toBe(backRowId);
+      expect(sectionUnmapped1?.rowNumber).toBe(rowIds.length);
       expect(sectionUnmapped1?.isUnmapped).toBe(true);
+      expect(sectionUnmapped1?.isSectionUnmapped).toBe(true);
       expect(sectionUnmapped2?.seatIds).toEqual([]);
-      expect(sectionUnmapped2?.rowId).toBeNull();
-      expect(sectionUnmapped2?.rowNumber).toBeNull();
+      expect(sectionUnmapped2?.rowId).toBe(backRowId);
+      expect(sectionUnmapped2?.rowNumber).toBe(rowIds.length);
       expect(sectionUnmapped2?.isUnmapped).toBe(true);
+      expect(sectionUnmapped2?.isSectionUnmapped).toBe(true);
 
       expect(unmappedFullRow?.seatIds).toEqual([]);
       expect(unmappedFullRow?.rowId).toBe(backRowId);
