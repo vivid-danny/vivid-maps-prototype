@@ -64,7 +64,7 @@ describe('rowless listing copy', () => {
 
     expect(infoMarkup).toContain('Section 214');
     expect(infoMarkup).not.toContain('Row');
-    expect(detailMarkup).toContain('has not provided the exact row or seats');
+    expect(detailMarkup).not.toContain('has not provided the exact row or seats');
     expect(detailMarkup).not.toContain('guaranteed seats in this row');
   });
 });

@@ -87,6 +87,16 @@ An unmapped listing that does not win visual coverage:
 - When a row is selected: only listings assigned to that row appear
 - Section-unmapped listings are assigned to the last row, so they appear when the last row is selected
 
+## Seat Tap Rules
+
+When a user taps a seat on the map:
+
+- **Mapped listing:** Always opens the listing's ticket detail directly, regardless of how many other listings share the row.
+- **Unmapped listing, single listing in row:** Opens the listing's ticket detail directly.
+- **Unmapped listing, multiple listings in row:** Selects the row and shows all listings in the panel. Does not auto-select a listing, since the user's preference is unknown.
+
+Tapping a listing card in the panel always opens its ticket detail.
+
 ## Navigation Rules
 
 ### Dismiss Ticket Detail
@@ -101,7 +111,7 @@ The prototype exercises these rules in sections 214, 316, and 24. Each section c
 
 ### Row Layout Per Section
 
-**Row A -- Unmapped-only row.** All seats are unavailable on the map. Contains two row-unmapped listings (quantity 2 each). They compete for visual coverage; the cheaper one wins.
+**Row A -- Unmapped-only row.** All seats are unavailable on the map. Contains one row-unmapped listing (quantity 2). It wins visual coverage for the row unopposed.
 
 **Row B -- Fully mapped row.** One listing owns every seat. All seats render as available. Selecting the listing highlights all seats and draws connectors.
 
@@ -113,7 +123,7 @@ The prototype exercises these rules in sections 214, 316, and 24. Each section c
 
 | Row | Listing type(s) | Visual coverage winner | Panel-only listings |
 |---|---|---|---|
-| A | 2x row-unmapped | Cheapest of the two | The other |
+| A | 1x row-unmapped | The row-unmapped listing | None |
 | B | 1x mapped (full row) | The mapped listing | None |
 | C | 1x mapped + 1x row-unmapped | The mapped listing | The row-unmapped listing |
 | D | 1x row-unmapped + 2x section-unmapped | Cheapest of the three | The other two |

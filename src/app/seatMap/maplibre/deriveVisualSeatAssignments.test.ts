@@ -71,22 +71,19 @@ function createModel(sectionId: string, rowIds: string[], listings: Listing[]): 
 }
 
 describe('deriveVisualSeatAssignments', () => {
-  it('assigns full-row visual seats to the winning row-scoped unmapped listing in reserved sections', () => {
+  it('assigns full-row visual seats to a sole row-scoped unmapped listing in reserved sections', () => {
     const model = createManifestSeatMapModel();
     const assignments = deriveVisualSeatAssignments(model);
     const sectionData = model.sectionDataById.get('214')!;
     const row = sectionData.rows.find((entry) => entry.rowId === '5')!;
-    const rowListings = model.listings
-      .filter((listing) => listing.sectionId === '214' && listing.rowId === '5' && listing.seatIds.length === 0)
-      .sort((a, b) => a.price - b.price || b.dealScore - a.dealScore || a.listingId.localeCompare(b.listingId));
-    const winner = rowListings[0]!;
-    const loser = rowListings[1]!;
+    const listing = model.listings.find(
+      (l) => l.sectionId === '214' && l.rowId === '5' && l.seatIds.length === 0,
+    )!;
     const fullRowSeatIds = row.seats.map((seat) => seat.seatId);
 
-    expect(assignments.visualSeatIdsByListingId.get(winner.listingId)).toEqual(fullRowSeatIds);
-    expect(assignments.visualCoverageKindByListingId.get(winner.listingId)).toBe('row_unmapped');
-    expect(assignments.visualSeatIdsByListingId.get(loser.listingId)).toEqual([]);
-    expect(assignments.visualSeatListingBySeatId.get(fullRowSeatIds[0])?.listingId).toBe(winner.listingId);
+    expect(assignments.visualSeatIdsByListingId.get(listing.listingId)).toEqual(fullRowSeatIds);
+    expect(assignments.visualCoverageKindByListingId.get(listing.listingId)).toBe('row_unmapped');
+    expect(assignments.visualSeatListingBySeatId.get(fullRowSeatIds[0])?.listingId).toBe(listing.listingId);
   });
 
   it('assigns exactly one back-row unmapped listing as winner, keeps others panel-only', () => {

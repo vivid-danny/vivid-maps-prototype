@@ -323,14 +323,6 @@ function applyDeterministicSectionScenario(
       seatIds: [],
       isUnmapped: true,
     });
-    listingGroups.push({
-      listingId: `listing-${sectionId}-${scenario.mixedRowId}-row-unmapped-2`,
-      rowId: scenario.mixedRowId,
-      rowNumber: mixedRow.rowNumber,
-      quantityAvailable: 2,
-      seatIds: [],
-      isUnmapped: true,
-    });
   }
 
   const mappedFullRowListingId = `listing-${sectionId}-${scenario.mappedFullRowId}-mapped-full-row`;
