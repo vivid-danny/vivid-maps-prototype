@@ -33,6 +33,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
         selectedOutline: 'rgba(4, 9, 44, 0.2)',
         hoverInSeats: 'rgba(4, 9, 44, 0.025)',
         selectedInSeats: 'rgba(4, 9, 44, 0.05)',
+        selectedOutlineInSeats: 'rgba(4, 9, 44, 0.75)',
       },
       seat: { ...SHARED_OVERLAYS },
     },

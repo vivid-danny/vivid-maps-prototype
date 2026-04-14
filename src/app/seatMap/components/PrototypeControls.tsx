@@ -425,6 +425,13 @@ export function PrototypeControls({
                     overlays: { ...config.overlays, row: { ...config.overlays.row, selectedInSeats: value } },
                   })}
                 />
+                <ColorControl
+                  label="Row Outline Selected"
+                  value={config.overlays.row.selectedOutlineInSeats ?? config.overlays.row.selectedOutline}
+                  onChange={(value) => onConfigChange({
+                    overlays: { ...config.overlays, row: { ...config.overlays.row, selectedOutlineInSeats: value } },
+                  })}
+                />
               </div>
             </div>
           </div>

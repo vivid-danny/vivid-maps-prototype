@@ -521,9 +521,12 @@ export function MapLibreVenue({
     // Row selected overlay fill-color is managed by useMapSelectionSync (expression-driven muting)
 
     // Row selected outline
+    const rowSelectedOutline = (displayMode === 'seats' && effectiveOverlays.row.selectedOutlineInSeats)
+      ? effectiveOverlays.row.selectedOutlineInSeats
+      : effectiveOverlays.row.selectedOutline;
     map.setPaintProperty(LAYER_ROW_SELECTED_OUTLINE, 'line-color', [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], effectiveOverlays.row.selectedOutline,
+      ['boolean', ['feature-state', 'selected'], false], rowSelectedOutline,
       'rgba(0,0,0,0)',
     ]);
 

@@ -287,7 +287,7 @@ export function createVenueStyle(options: StyleOptions): StyleSpecification {
             ['boolean', ['feature-state', 'selected'], false], overlays.row.selectedOutline,
             'rgba(0,0,0,0)',
           ],
-          'line-width': 1.5,
+          'line-width': 2,
         },
       },
 

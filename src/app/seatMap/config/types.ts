@@ -12,8 +12,9 @@ export interface LevelOverlays {
   selected: string;
   hover: string;
   selectedOutline: string;
-  hoverInSeats?: string;     // row hover override when displayMode === 'seats'
-  selectedInSeats?: string;  // row selected overlay override when displayMode === 'seats'
+  hoverInSeats?: string;              // row hover override when displayMode === 'seats'
+  selectedInSeats?: string;           // row selected overlay override when displayMode === 'seats'
+  selectedOutlineInSeats?: string;    // row selected outline override when displayMode === 'seats'
 }
 
 export interface SeatMapConfig {
