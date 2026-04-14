@@ -11,6 +11,8 @@ import {
   MAPLIBRE_DECLUTTER_BASE_DISTANCE,
   splitSeatModePins,
 } from '../behavior/pins';
+import { computeCollisionHiddenPins, DEFAULT_MIN_PIXEL_DISTANCE } from '../behavior/pinCollision';
+import type { ScreenPin } from '../behavior/pinCollision';
 import type { ResolvedPin } from '../behavior/pins';
 import type { PinDensityConfig } from '../config/types';
 import type { PinData, SeatColors, DisplayMode, SelectionState, HoverState, Listing, SeatMapModel } from '../model/types';
@@ -315,6 +317,7 @@ export function useMapPins({
   const displayModeRef = useRef(displayMode);
   displayModeRef.current = displayMode;
   const pinDataRef = useRef(new Map<string, PinRenderData>());
+  const collisionHiddenRef = useRef<Set<string>>(new Set());
 
   // basePins: computes the static set of pins (no hover state).
   // Rebuilds only when model/displayMode/selection changes — NOT on hover transitions.
@@ -753,6 +756,58 @@ export function useMapPins({
       pinDataRef.current.delete(HOVER_PIN_ID);
     }
   }, [hoverState, ready, basePinsById, displayMode, sectionCenters, model, seatCoords]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Collision pass: hide pins whose screen-pixel positions overlap a higher-priority pin.
+  // Runs after marker sync + hover effects so it reads final marker/hover state.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    function runCollisionPass() {
+      const markers = markersRef.current;
+      const pinData = pinDataRef.current;
+      const screenPins: ScreenPin[] = [];
+
+      for (const [id, entry] of markers) {
+        const data = pinData.get(id);
+        if (!data) continue;
+        const projected = map!.project(data.lngLat);
+        screenPins.push({
+          id,
+          screenX: projected.x,
+          screenY: projected.y,
+          isSelected: data.isSelected,
+          isHovered: entry.isHovered || id === HOVER_PIN_ID,
+          dealScore: data.listing.dealScore,
+          price: data.listing.price,
+        });
+      }
+
+      const hiddenIds = computeCollisionHiddenPins(screenPins, DEFAULT_MIN_PIXEL_DISTANCE);
+      const previouslyHidden = collisionHiddenRef.current;
+
+      for (const [id, entry] of markers) {
+        const el = entry.marker.getElement();
+        if (hiddenIds.has(id)) {
+          el.style.display = 'none';
+        } else if (previouslyHidden.has(id)) {
+          // Only restore display if we were the ones who hid it
+          el.style.display = '';
+        }
+      }
+
+      collisionHiddenRef.current = hiddenIds;
+    }
+
+    runCollisionPass();
+    map.on('moveend', runCollisionPass);
+    map.on('zoom', runCollisionPass);
+
+    return () => {
+      map.off('moveend', runCollisionPass);
+      map.off('zoom', runCollisionPass);
+    };
+  }, [ready, basePins, hoverState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Remove all markers on unmount
   useEffect(() => {
