@@ -17,7 +17,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     pinDensity: { sections: 0.15, rows: 0.20, seatsBackground: 0.06 },
     theme: 'zone',
     themeOverrides: {},
-    rowStrokeColor: '#d5d5dd',  // production: sectionNoInventoryFill
+    rowStrokeColor: 'rgba(4, 9, 44, 0.15)',  // production: sectionNoInventoryFill
     rowFillColor: '#FFFFFF',    // neutral background so seat circles stand out
     overlays: {
       section: {
@@ -32,8 +32,8 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
         hover: 'rgba(4, 9, 44, 0.5)',
         selectedOutline: 'rgba(4, 9, 44, 0.2)',
         hoverInSeats: 'rgba(4, 9, 44, 0.025)',
-        selectedInSeats: 'rgba(4, 9, 44, 0.05)',
-        selectedOutlineInSeats: 'rgba(4, 9, 44, 0.75)',
+        selectedInSeats: 'rgba(4, 9, 44, 0.025)',
+        selectedOutlineInSeats: 'rgba(4, 9, 44, 1)',
       },
       seat: { ...SHARED_OVERLAYS },
     },
