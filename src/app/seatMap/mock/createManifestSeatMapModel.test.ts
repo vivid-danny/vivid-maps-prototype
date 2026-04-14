@@ -50,6 +50,7 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       const backRowId = rowIds[rowIds.length - 1]!;
       const mappedFullRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== backRowId)!;
       const mixedMappedRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== mappedFullRowId && rowId !== backRowId)!;
+      const multiMappedRowId = rowIds.find((rowId) => rowId !== mixedRowId && rowId !== mappedFullRowId && rowId !== mixedMappedRowId && rowId !== backRowId)!;
       const deterministicListings = model.listings.filter((listing) =>
         listing.sectionId === sectionId
         && (
@@ -58,6 +59,7 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
           || listing.listingId.includes('-mapped-priority-demo')
           || listing.listingId.includes('-unmapped-full-row')
           || listing.listingId.includes('-section-unmapped-')
+          || listing.listingId.includes('-multi-mapped-')
         ),
       );
       const mappedFullRow = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${mappedFullRowId}-mapped-full-row`);
@@ -68,7 +70,7 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       const sectionUnmapped1 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-1`);
       const sectionUnmapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-section-unmapped-2`);
 
-      expect(deterministicListings).toHaveLength(7);
+      expect(deterministicListings).toHaveLength(9);
 
       expect(rowUnmapped1?.seatIds).toEqual([]);
       expect(rowUnmapped1?.rowId).toBe(mixedRowId);
@@ -117,9 +119,25 @@ describe('createManifestSeatMapModel mixed row scenarios', () => {
       expect(mappedPriorityOverflow?.isUnmapped).toBe(true);
       expect(mappedPriorityOverflow?.quantityAvailable).toBe(2);
 
+      const multiMapped2 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${multiMappedRowId}-multi-mapped-2`);
+      const multiMapped4 = model.listings.find((listing) => listing.listingId === `listing-${sectionId}-${multiMappedRowId}-multi-mapped-4`);
+
+      expect(multiMapped2?.rowId).toBe(multiMappedRowId);
+      expect(multiMapped2?.rowNumber).not.toBeNull();
+      expect(multiMapped2?.isUnmapped).toBeUndefined();
+      expect(multiMapped2?.quantityAvailable).toBe(2);
+      expect(multiMapped2?.seatIds).toEqual([1, 2].map((n) => `${sectionId}:${multiMappedRowId}:s${n}`));
+
+      expect(multiMapped4?.rowId).toBe(multiMappedRowId);
+      expect(multiMapped4?.rowNumber).toBe(multiMapped2?.rowNumber);
+      expect(multiMapped4?.isUnmapped).toBeUndefined();
+      expect(multiMapped4?.quantityAvailable).toBe(4);
+      expect(multiMapped4?.seatIds).toEqual([3, 4, 5, 6].map((n) => `${sectionId}:${multiMappedRowId}:s${n}`));
+
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedRowId))).toBe(true);
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, mappedFullRowId))).toBe(true);
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, mixedMappedRowId))).toBe(true);
+      expect(rowsWithListings.has(buildRowFeatureId(sectionId, multiMappedRowId))).toBe(true);
       expect(rowsWithListings.has(buildRowFeatureId(sectionId, backRowId))).toBe(true);
       const pinListings = model.pinsBySection.get(sectionId) ?? [];
       expect(pinListings.some((pin) => pin.listing.rowId === null)).toBe(false);
