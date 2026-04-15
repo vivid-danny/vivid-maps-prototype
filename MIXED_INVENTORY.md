@@ -107,7 +107,7 @@ Closing the ticket detail view returns to the listing panel and recenters the ma
 
 ## Prototype Test Scenarios
 
-The prototype exercises these rules in sections 214, 316, and 24. Each section contains eight deterministic listings across four rows that cover every combination above.
+The prototype exercises these rules in sections 214, 316, and 24. Each section contains nine deterministic listings across five rows that cover every combination above.
 
 ### Row Layout Per Section
 
@@ -119,6 +119,8 @@ The prototype exercises these rules in sections 214, 316, and 24. Each section c
 
 **Row D -- Back row with section-unmapped bucket.** Three listings share this row: one row-unmapped listing (quantity equals the row's full seat count) and two section-unmapped listings (quantity 2 each, assigned here because they had no row). All three compete for visual coverage.
 
+**Row E -- Multi-mapped row.** Two mapped listings share the row: one owns seats 1-2 (quantity 2) and the other owns seats 3-6 (quantity 4). Remaining seats are unavailable. Tapping a seat opens the listing that owns it directly.
+
 ### Coverage Matrix
 
 | Row | Listing type(s) | Visual coverage winner | Panel-only listings |
@@ -127,3 +129,4 @@ The prototype exercises these rules in sections 214, 316, and 24. Each section c
 | B | 1x mapped (full row) | The mapped listing | None |
 | C | 1x mapped + 1x row-unmapped | The mapped listing | The row-unmapped listing |
 | D | 1x row-unmapped + 2x section-unmapped | Cheapest of the three | The other two |
+| E | 2x mapped (2 tickets + 4 tickets) | Both (each owns its seats) | None |
