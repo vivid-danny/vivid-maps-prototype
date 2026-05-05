@@ -3,6 +3,8 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
 import { ListingCard } from './ListingCard';
 
+const TABS = ['Tickets', 'Parking', 'Event Details', 'Disclosures'] as const;
+
 interface ListingsPanelProps {
   className?: string;
   listings: Listing[];
@@ -16,28 +18,21 @@ interface ListingsPanelProps {
   disableHover?: boolean;
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
-  showEventInfo?: boolean;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
 
-  // Filter listings based on selection
   const filteredListings = useMemo(() => {
     if (!selection.sectionId) {
-      // No selection - show all listings
       return listings;
     }
-
     if (selection.rowId) {
-      // Row selected - show only listings in that row
       return listings.filter(
         (l) => l.sectionId === selection.sectionId && l.rowId === selection.rowId
       );
     }
-
-    // Section selected - show only listings in that section
     return listings.filter((l) => l.sectionId === selection.sectionId);
   }, [listings, selection.sectionId, selection.rowId]);
 
@@ -54,48 +49,85 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
   const virtualizer = useVirtualizer({
     count: sortedListings.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => 80,
-    gap: 8,
-    paddingStart: 12,
-    paddingEnd: 12,
+    estimateSize: () => 88,
+    gap: 16,
     overscan: 5,
   });
 
+  const qty = quantityFilter ?? 2;
+
   return (
-    <div className={`flex flex-col min-h-0 bg-gray-50 ${className}`}>
-      {/* Event info */}
-      {showEventInfo && (
-        <div className="px-4 py-3 flex items-center gap-3 bg-white">
-          <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs Baltimore Orioles</div>
-            <div className="text-xs text-gray-500 mt-0.5">Oriole Park at Camden Yards in Baltimore, MD</div>
-            <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
-          </div>
+    <div className={`flex flex-col min-h-0 mt-4 min-[801px]:mt-6 bg-white gap-6 ${className}`}>
+      {/* Tab strip */}
+      <div className="bg-white shrink-0 px-4 min-[801px]:px-6">
+        <div className="flex border-b border-[#efeff6]">
+          {TABS.map((tab) => (
+            <div
+              key={tab}
+              className="relative flex flex-col items-center justify-center shrink-0 cursor-default"
+            >
+              <div className="px-4 py-2 flex items-center justify-center">
+                <span className={`text-[14px] leading-[21px] whitespace-nowrap ${
+                  tab === 'Tickets'
+                    ? 'font-bold text-[#04092c]'
+                    : 'font-normal text-[#717488]'
+                }`}>
+                  {tab}
+                </span>
+              </div>
+              {tab === 'Tickets' && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ce3197] rounded-[1px]" />
+              )}
+            </div>
+          ))}
         </div>
-      )}
-      {/* Quantity filter */}
-      {onQuantityFilterChange && (
-        <div className="px-4 h-12 flex items-center bg-white">
-          <select
-            value={quantityFilter ?? 2}
-            onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-            className="w-full text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
-            ))}
-          </select>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex items-center gap-2 px-4 min-[801px]:px-6 bg-white shrink-0">
+        {/* Price chip — static */}
+        <div className="flex items-center justify-center gap-1 px-3 py-1 rounded-[4px] border border-[#d3d3dc] bg-white text-sm text-[#04092c] whitespace-nowrap cursor-default flex-1">
+          $28 – $1,350
         </div>
-      )}
-      {/* Header */}
-      <div className="px-4 h-12 flex items-center pb-2 bg-white">
-        <h2 className="text-base font-semibold text-gray-900">
+
+        {/* Tickets chip — functional */}
+        {onQuantityFilterChange ? (
+          <div className="relative flex items-center justify-center gap-1 px-3 py-1 rounded-[4px] border border-[#d3d3dc] bg-white text-sm text-[#04092c] whitespace-nowrap flex-1">
+            {qty} {qty === 1 ? 'Ticket' : 'Tickets'}
+            <select
+              value={qty}
+              onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full"
+              aria-label="Number of tickets"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <option key={n} value={n}>{n} {n === 1 ? 'Ticket' : 'Tickets'}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1 px-3 py-1 rounded-[4px] border border-[#d3d3dc] bg-white text-sm text-[#04092c] whitespace-nowrap cursor-default flex-1">
+            {qty} {qty === 1 ? 'Ticket' : 'Tickets'}
+          </div>
+        )}
+
+        {/* Zones chip — static */}
+        <div className="flex items-center justify-center gap-1 px-3 py-1 rounded-[4px] border border-[#d3d3dc] bg-white text-sm text-[#04092c] whitespace-nowrap cursor-default flex-1">
+          Zones
+        </div>
+
+        {/* Perks chip — static */}
+        <div className="flex items-center justify-center gap-1 px-3 py-1 rounded-[4px] border border-[#d3d3dc] bg-white text-sm text-[#04092c] whitespace-nowrap cursor-default flex-1">
+          Perks
+        </div>
+      </div>
+
+      {/* Count + sort header */}
+      <div className="px-4 min-[801px]:px-6 flex items-center bg-white shrink-0">
+        <h2 className="text-sm font-bold text-[#04092c]">
           {sortedListings.length} {sortedListings.length === 1 ? 'listing' : 'listings'}
           {selection.sectionId && (
-            <span className="font-normal text-gray-500">
+            <span className="font-normal text-[#717488]">
               {' '}in {selection.rowId ? `Row ${selection.rowId.replace(/^[A-Z]+/, '')}` : `Section ${listings.find(l => l.sectionId === selection.sectionId)?.sectionLabel || selection.sectionId}`}
             </span>
           )}
@@ -103,9 +135,9 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'price' | 'dealScore')}
-          className="ml-auto text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
+          className="ml-auto text-sm text-[#04092c] bg-transparent rounded px-2 cursor-pointer outline-none"
         >
-          <option value="price">Lowest price</option>
+          <option value="price">Lowest Price</option>
           <option value="dealScore">Deal score</option>
         </select>
       </div>
@@ -113,10 +145,10 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
       {/* Scrollable virtualized list */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-3 no-scrollbar"
+        className="flex-1 overflow-y-auto px-4 min-[801px]:px-6 no-scrollbar"
       >
         {sortedListings.length === 0 ? (
-          <div className="text-center text-gray-400 text-sm py-8">
+          <div className="text-center text-[#717488] text-sm py-8">
             No listings available
           </div>
         ) : (

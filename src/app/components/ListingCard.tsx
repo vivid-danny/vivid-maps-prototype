@@ -4,7 +4,7 @@ import { useHoverIntent } from './useHoverIntent';
 import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
-const LISTING_CARD_PADDING = { top: 12, right: 20, bottom: 12, left: 12 };
+const LISTING_CARD_PADDING = { top: 12, right: 16, bottom: 12, left: 0 };
 
 interface ListingCardProps {
   listing: Listing;
@@ -33,7 +33,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     hoverIntent.leave();
   };
 
-  const cardBase = 'flex items-center justify-between rounded border cursor-pointer transition-colors ';
+  const cardBase = 'flex items-center justify-between rounded overflow-hidden cursor-pointer transition-colors ';
   let cardClass = cardBase;
   const paddingStyle = {
     paddingTop: LISTING_CARD_PADDING.top,
@@ -54,8 +54,8 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     state === 'pressed'  ? pressedColor  :
     state === 'hover'    ? hoverColor    : null;
   cardStyle = resolvedColor
-    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80), borderColor: resolvedColor }
-    : { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
+    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80) }
+    : { ...paddingStyle, backgroundColor: '#fff' };
   const locationLabel = listing.rowNumber === null
     ? `Section ${listing.sectionLabel}`
     : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;
@@ -75,7 +75,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
         <img
           src={listing.seatViewUrl}
           alt={`View from Section ${listing.sectionLabel}`}
-          className="w-18 h-18 rounded object-cover flex-shrink-0"
+          className="w-[107px] h-[80px] rounded-[2px] object-cover flex-shrink-0"
         />
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="text-sm font-medium text-gray-900">

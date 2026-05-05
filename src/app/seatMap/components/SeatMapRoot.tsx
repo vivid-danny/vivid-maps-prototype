@@ -14,12 +14,14 @@ import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN, VENUE_BOUNDS } from '../maplibre/constants
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
+import { NavBar } from '../../components/NavBar';
+import { EventHeader } from '../../components/EventHeader';
 import { EMPTY_SELECTION } from '../model/types';
 import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
-const MOBILE_MAP_HEIGHT = 240;
+const MOBILE_MAP_HEIGHT = 280;
 
 const LazyMapLibreVenue = lazy(async () => {
   const mod = await import('../../components/MapLibreVenue');
@@ -242,21 +244,22 @@ export function SeatMapRoot() {
         onResetConfig={handleResetAll}
       />
 
-      <div
-        className="flex-1 min-w-0 flex"
-        style={{ backgroundColor: config.mapBackground }}
-      >
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Desktop nav bar */}
+        {!isMobile && <NavBar eventInfo={model.eventInfo} />}
+
         <div
-          className={`flex ${
+          className={`flex flex-1 min-h-0 ${
             isMobile
-              ? 'flex-col bg-white w-full h-full overflow-hidden relative'
-              : 'flex-row w-full h-full overflow-hidden'
+              ? 'flex-col bg-white w-full overflow-hidden relative'
+              : 'flex-row w-full overflow-hidden'
           }`}
+          style={!isMobile ? { backgroundColor: config.mapBackground } : undefined}
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="h-full shrink-0 p-4" style={{ width: 482 }}>
-              <div className="w-full h-full rounded-xl overflow-hidden shadow-sm relative">
+            <div className="h-full shrink-0 border-r border-gray-200 bg-white" style={{ width: 492 }}>
+              <div className="w-full h-full overflow-hidden relative">
                 <ListingsPanel
                   className="w-full h-full"
                   listings={viewState.listings}
@@ -295,19 +298,8 @@ export function SeatMapRoot() {
             </div>
           )}
 
-          {/* Mobile: event info header */}
-          {isMobile && (
-            <div className="px-4 py-3 flex items-center gap-3 bg-white border-b border-gray-200 shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-lg">C</span>
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs St. Louis Cardinals</div>
-                <div className="text-xs text-gray-500 mt-0.5">Wrigley Field · Chicago, IL</div>
-                <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
-              </div>
-            </div>
-          )}
+          {/* Mobile: event header */}
+          {isMobile && <EventHeader eventInfo={model.eventInfo} />}
 
           {/* Map area */}
           <div
@@ -411,7 +403,6 @@ export function SeatMapRoot() {
                 disableHover={isMobile}
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
-                showEventInfo={false}
               />
             </div>
           )}
