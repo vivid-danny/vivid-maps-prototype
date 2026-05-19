@@ -153,7 +153,9 @@ export function MapLibreVenue({
     containerRef,
     style,
     bounds: VENUE_BOUNDS,
-    fitBoundsPadding: isMobile ? 20 : 40,
+    fitBoundsPadding: isMobile
+      ? { top: -20, bottom: -20, left: 0, right: 0 }
+      : 40,
     minZoom: isMobile ? 10 : 12,
     maxZoom: isMobile ? 17 : 18,
     onZoomChange,
@@ -294,6 +296,7 @@ export function MapLibreVenue({
     if (!ready || !mapRef.current || !isMobile) return;
     mapRef.current.setLayoutProperty(LAYER_SECTION_LABEL, 'text-size',
       ['interpolate', ['linear'], ['zoom'], 13, 5, 18, 16]);
+    mapRef.current.setLayoutProperty(LAYER_SECTION_LABEL, 'text-allow-overlap', false);
   }, [ready, isMobile]);
 
   // Apply seatable section filter from manifest — excludes concourse/compound sections.
