@@ -19,7 +19,7 @@ import type { Listing, SeatColors, SelectionState } from '../model/types';
 
 type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
 
-const MOBILE_MAP_HEIGHT = 240;
+const MOBILE_MAP_HEIGHT = 190;
 
 const LazyMapLibreVenue = lazy(async () => {
   const mod = await import('../../components/MapLibreVenue');
@@ -80,6 +80,9 @@ export function SeatMapRoot() {
     });
   }, []);
 
+  const layoutMode = useLayoutMode();
+  const isMobile = layoutMode === 'mobile';
+
   const navigateFn = useCallback((sel: SelectionState, zoom?: number) => {
     const map = mapInstanceRef.current;
     if (!map || !sel.sectionId) return;
@@ -92,18 +95,17 @@ export function SeatMapRoot() {
 
     if (sel.rowId) {
       const center = entry.rows[sel.rowId]?.center ?? entry.center;
-      const targetZoom = panOnly ? map.getZoom() : (zoom ?? SEAT_ZOOM_MIN);
+      const defaultZoom = isMobile ? ROW_ZOOM_MIN : SEAT_ZOOM_MIN;
+      const rawZoom = zoom ?? defaultZoom;
+      const targetZoom = panOnly ? map.getZoom() : (isMobile ? Math.min(rawZoom, ROW_ZOOM_MIN) : rawZoom);
       map.easeTo({ center, zoom: targetZoom, duration: 500, essential: true });
     } else {
-      const baseZoom = ROW_ZOOM_MIN + 2;
-      const targetZoom = panOnly ? map.getZoom() : (zoom ?? Math.max(baseZoom, map.getZoom()));
+      const baseZoom = isMobile ? ROW_ZOOM_MIN : ROW_ZOOM_MIN + 2;
+      const rawZoom = zoom ?? Math.max(baseZoom, map.getZoom());
+      const targetZoom = panOnly ? map.getZoom() : (isMobile ? Math.min(rawZoom, ROW_ZOOM_MIN) : rawZoom);
       map.easeTo({ center: entry.center, zoom: targetZoom, duration: 500, essential: true });
     }
-  }, [sectionCenters, config.initialDisplay, config.zoomedDisplay]);
-
-
-  const layoutMode = useLayoutMode();
-  const isMobile = layoutMode === 'mobile';
+  }, [sectionCenters, config.initialDisplay, config.zoomedDisplay, isMobile]);
 
   const controller = useSeatMapController({
     model,
@@ -182,6 +184,10 @@ export function SeatMapRoot() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewState.setShowControls]);
+
+  useEffect(() => {
+    mapInstanceRef.current?.resize();
+  }, [isMobile]);
 
   // --- Detail panel slide transition ---
   const isDetailOpen = viewState.viewMode === 'detail' && !!viewState.selectedListing;
@@ -346,36 +352,38 @@ export function SeatMapRoot() {
                   filteredPinsBySection={viewState.pinsBySection}
                 />
               </Suspense>
-              <div
-                className="absolute top-4 left-4 z-[40] flex gap-2"
-                style={{
-                  opacity: isMobile && showDetailOverlay ? 0 : 1,
-                  pointerEvents: isMobile && showDetailOverlay ? 'none' : 'auto',
-                }}
-              >
-                <button
-                  onClick={() => mapInstanceRef.current?.zoomIn()}
-                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
-                  aria-label="Zoom in"
-                >
-                  <Plus className="w-4 h-4 text-[#04092C]" />
-                </button>
-                <button
-                  onClick={() => mapInstanceRef.current?.zoomOut()}
-                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
-                  aria-label="Zoom out"
-                >
-                  <Minus className="w-4 h-4 text-[#04092C]" />
-                </button>
+              <div className="absolute top-4 left-4 z-[40] flex gap-2">
+                {!isMobile && (
+                  <>
+                    <button
+                      onClick={() => mapInstanceRef.current?.zoomIn()}
+                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                      aria-label="Zoom in"
+                    >
+                      <Plus className="w-4 h-4 text-[#04092C]" />
+                    </button>
+                    <button
+                      onClick={() => mapInstanceRef.current?.zoomOut()}
+                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                      aria-label="Zoom out"
+                    >
+                      <Minus className="w-4 h-4 text-[#04092C]" />
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => {
                     const map = mapInstanceRef.current;
                     viewState.clearSelectionState();
-                    // Immediately drop displayMode to sections so pins switch before the animation runs.
                     setCurrentScale(ROW_ZOOM_MIN - 1);
                     if (map) {
                       isResettingRef.current = true;
-                      map.fitBounds(VENUE_BOUNDS, { padding: isMobile ? 20 : 40, bearing: -57, duration: 600, essential: true });
+                      map.fitBounds(VENUE_BOUNDS, {
+                        padding: isMobile
+                          ? { top: -20, bottom: -20, left: 0, right: 0 }
+                          : 40,
+                        bearing: -57, duration: 600, essential: true,
+                      });
                       map.once('idle', () => {
                         isResettingRef.current = false;
                         setCurrentScale(map.getZoom());
@@ -399,7 +407,7 @@ export function SeatMapRoot() {
           {isMobile && (
             <div className="flex-1 relative overflow-hidden">
               <ListingsPanel
-                className="w-full h-full"
+                className="w-full h-full bg-white"
                 listings={viewState.listings}
                 selection={panelSelection}
                 hoverState={viewState.hoverState}

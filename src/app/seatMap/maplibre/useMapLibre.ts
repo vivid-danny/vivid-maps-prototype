@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Map as MaplibreMap } from 'maplibre-gl';
-import type { StyleSpecification, LngLatBoundsLike } from 'maplibre-gl';
+import type { PaddingOptions, StyleSpecification, LngLatBoundsLike } from 'maplibre-gl';
+
+type FitBoundsPadding = number | PaddingOptions;
 
 interface UseMapLibreOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -8,7 +10,7 @@ interface UseMapLibreOptions {
   bounds: LngLatBoundsLike;
   minZoom?: number;
   maxZoom?: number;
-  fitBoundsPadding?: number;
+  fitBoundsPadding?: FitBoundsPadding;
   onZoomChange?: (zoom: number) => void;
 }
 

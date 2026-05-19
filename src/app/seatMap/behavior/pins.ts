@@ -21,7 +21,7 @@ const DECLUTTER_BASE_DISTANCE: Record<DisplayMode, number> = {
 // Mobile initial scale (0.03) is 4x more zoomed out than desktop (0.12), so
 // pins need proportionally larger venue-unit separation to avoid overlapping on screen.
 const MOBILE_DECLUTTER_MULTIPLIER: Record<DisplayMode, number> = {
-  sections: 3,
+  sections: 1.5,
   rows: 2,
   seats: 1.5,
 };
