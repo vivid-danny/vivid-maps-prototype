@@ -78,7 +78,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
       )}
       {/* Quantity filter */}
       {onQuantityFilterChange && (
-        <div className="px-4 h-12 flex items-center bg-white">
+        <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3 mt-[10px]' : ' px-4'}`}>
           <select
             value={quantityFilter ?? 2}
             onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
@@ -91,7 +91,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
         </div>
       )}
       {/* Header */}
-      <div className="px-4 h-12 flex items-center pb-2 bg-white">
+      <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3' : ' px-4 pb-2'}`}>
         <h2 className="text-base font-semibold text-gray-900">
           {sortedListings.length} {sortedListings.length === 1 ? 'listing' : 'listings'}
           {selection.sectionId && (
