@@ -140,7 +140,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
       )}
       {/* Pill body */}
       <div
-        className="flex items-center gap-1 text-xs font-semibold leading-none px-[5px] py-1 rounded whitespace-nowrap text-center"
+        className="flex items-center gap-1 text-[10px] font-bold leading-none pl-0.5 pr-1 py-0.5 rounded whitespace-nowrap text-center"
         style={{
           background: appearance.backgroundColor,
           color: appearance.textColor,
@@ -148,7 +148,7 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
         }}
       >
         {showDealScore && (
-          <span className="rounded-sm bg-[#4CAF50] px-1 py-0.5 text-[10px] font-bold text-white">
+          <span className="rounded-[2px] bg-[#4CAF50] px-1 py-0.5 text-[8px] font-bold text-white">
             {dealScore.toFixed(1)}
           </span>
         )}
