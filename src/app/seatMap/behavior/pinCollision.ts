@@ -11,6 +11,9 @@ export interface ScreenPin {
 /** Default minimum screen-pixel distance between pin centers before they collide. */
 export const DEFAULT_MIN_PIXEL_DISTANCE = 60;
 
+/** Tighter threshold for mobile where pins render smaller. */
+export const MOBILE_MIN_PIXEL_DISTANCE = 47;
+
 /**
  * Given pins with screen-pixel positions, returns the IDs of pins that should
  * be hidden because they overlap a higher-priority pin.

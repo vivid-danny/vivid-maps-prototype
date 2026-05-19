@@ -11,7 +11,7 @@ import {
   MAPLIBRE_DECLUTTER_BASE_DISTANCE,
   splitSeatModePins,
 } from '../behavior/pins';
-import { computeCollisionHiddenPins, DEFAULT_MIN_PIXEL_DISTANCE } from '../behavior/pinCollision';
+import { computeCollisionHiddenPins, DEFAULT_MIN_PIXEL_DISTANCE, MOBILE_MIN_PIXEL_DISTANCE } from '../behavior/pinCollision';
 import type { ScreenPin } from '../behavior/pinCollision';
 import type { ResolvedPin } from '../behavior/pins';
 import type { PinDensityConfig } from '../config/types';
@@ -456,8 +456,7 @@ export function useMapPins({
       }
     }
 
-    // Mobile: show roughly 2/3 of pins; declutter already uses 3x distance so remaining pins are well-spaced
-    return isMobile ? pins.slice(0, Math.ceil(pins.length * 2 / 3)) : pins;
+    return pins;
   }, [model, sectionCenters, displayMode, zoomedDisplay, selectedListing, selection, isMobile, seatCoords, pinDensity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync markers to basePins (create/remove/update) — does NOT manage hover state.
@@ -783,7 +782,7 @@ export function useMapPins({
         });
       }
 
-      const hiddenIds = computeCollisionHiddenPins(screenPins, DEFAULT_MIN_PIXEL_DISTANCE);
+      const hiddenIds = computeCollisionHiddenPins(screenPins, isMobile ? MOBILE_MIN_PIXEL_DISTANCE : DEFAULT_MIN_PIXEL_DISTANCE);
       const previouslyHidden = collisionHiddenRef.current;
 
       for (const [id, entry] of markers) {

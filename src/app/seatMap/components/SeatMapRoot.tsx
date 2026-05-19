@@ -407,7 +407,7 @@ export function SeatMapRoot() {
           {isMobile && (
             <div className="flex-1 relative overflow-hidden">
               <ListingsPanel
-                className="w-full h-full"
+                className="w-full h-full bg-white"
                 listings={viewState.listings}
                 selection={panelSelection}
                 hoverState={viewState.hoverState}
