@@ -439,6 +439,30 @@ Timing note:
 
 - current panel hover propagation is effectively immediate
 
+### Pole position hover
+
+User action:
+
+- user scrolls the listing panel so a new card reaches the top of the visible area
+
+State result:
+
+- `hoverState = { listingId, sectionId, rowId, source: 'pole' }`
+
+Visible result:
+
+- corresponding listing highlights on the map (section, row, or seats depending on display mode)
+- the card itself shows hover styling
+
+Platform behavior:
+
+- desktop: pole position fires continuously but yields to explicit pointer hover; when pointer leaves, pole re-asserts
+- mobile: pole position is the only source of hover state (pointer hover is disabled)
+
+Timing note:
+
+- pole detection is throttled to one requestAnimationFrame per scroll event
+
 ## Pins And Tooltips
 
 The prototype uses pin overlays rather than a single universal tooltip system.
