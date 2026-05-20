@@ -276,6 +276,7 @@ export function SeatMapRoot() {
                   disableHover={isMobile}
                   quantityFilter={viewState.quantityFilter}
                   onQuantityFilterChange={viewState.setQuantityFilter}
+                  onPolePosition={viewState.handlePolePosition}
                 />
                 {showDetailOverlay && detailListing && (
                   <div
@@ -420,6 +421,7 @@ export function SeatMapRoot() {
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
                 showEventInfo={false}
+                onPolePosition={viewState.handlePolePosition}
               />
             </div>
           )}
