@@ -183,6 +183,7 @@ export function useSeatMapPrototypeViewState({
         listingId: listing.listingId,
         sectionId: listing.sectionId,
         rowId: listing.rowId ?? null,
+        source: 'pointer',
       });
     } else {
       setHoverState(clearHover());
@@ -191,7 +192,26 @@ export function useSeatMapPrototypeViewState({
 
   const handleHoverFromMap = useCallback((hover: HoverState) => {
     if (layoutMode === 'mobile') return;
-    setHoverState(hover);
+    setHoverState({ ...hover, source: 'pointer' });
+  }, [layoutMode]);
+
+  const handlePolePosition = useCallback((listing: Listing | null) => {
+    if (listing) {
+      setHoverState((prev) => {
+        if (layoutMode !== 'mobile' && prev.source === 'pointer') return prev;
+        return {
+          listingId: listing.listingId,
+          sectionId: listing.sectionId,
+          rowId: listing.rowId ?? null,
+          source: 'pole',
+        };
+      });
+    } else {
+      setHoverState((prev) => {
+        if (prev.source !== 'pole') return prev;
+        return { ...EMPTY_HOVER };
+      });
+    }
   }, [layoutMode]);
 
   const clearSelectionState = useCallback(() => {
@@ -226,5 +246,6 @@ export function useSeatMapPrototypeViewState({
     handleBackToListings,
     handleHoverFromPanel,
     handleHoverFromMap,
+    handlePolePosition,
   };
 }
