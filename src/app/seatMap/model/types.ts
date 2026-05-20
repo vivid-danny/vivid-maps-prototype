@@ -129,10 +129,13 @@ export const EMPTY_SELECTION: SelectionState = {
 
 // Hover state for bidirectional hover between listings panel and map
 // With unified listingId on all seats, we only need listingId for hover matching
+export type HoverSource = 'pointer' | 'pole';
+
 export interface HoverState {
   listingId: string | null;  // The listing being hovered (from panel or map)
   sectionId: string | null;  // For section-level hover
   rowId: string | null;      // For row-level hover
+  source?: HoverSource;      // Discriminator: pointer hover takes priority over pole-position
 }
 
 export const EMPTY_HOVER: HoverState = {
