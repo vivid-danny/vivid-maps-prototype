@@ -148,7 +148,10 @@ export const Pin = memo(function Pin({ price, x, y, isSelected, selectedColor = 
         }}
       >
         {showDealScore && (
-          <span className="rounded-[2px] bg-[#4CAF50] px-0.5 py-0.25 text-[8px] font-medium text-white">
+          <span
+            className="rounded-[2px] px-0.5 py-0.25 text-[8px] font-medium"
+            style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
+          >
             {dealScore.toFixed(1)}
           </span>
         )}

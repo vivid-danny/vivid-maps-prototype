@@ -62,7 +62,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
   });
 
   return (
-    <div className={`flex flex-col min-h-0 bg-gray-50 ${className}`}>
+    <div className={`flex flex-col min-h-0 bg-white ${className}`}>
       {/* Event info */}
       {showEventInfo && (
         <div className="px-4 py-3 flex items-center gap-3 bg-white">
@@ -82,7 +82,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
           <select
             value={quantityFilter ?? 2}
             onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-            className="w-full text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
+            className="w-full text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2.5 h-10 cursor-pointer"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
@@ -91,7 +91,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
         </div>
       )}
       {/* Header */}
-      <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3' : ' px-4 pb-2'}`}>
+      <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3' : ' px-4'}`}>
         <h2 className="text-base font-semibold text-gray-900">
           {sortedListings.length} {sortedListings.length === 1 ? 'listing' : 'listings'}
           {selection.sectionId && (
@@ -103,7 +103,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'price' | 'dealScore')}
-          className="ml-auto text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
+          className="ml-auto text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2.5 h-9 cursor-pointer"
         >
           <option value="price">Lowest price</option>
           <option value="dealScore">Deal score</option>
@@ -117,7 +117,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
       >
         {sortedListings.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
-            No listings available
+            {selection.sectionId ? 'No tickets in this section' : 'No tickets available'}
           </div>
         ) : (
           <div
