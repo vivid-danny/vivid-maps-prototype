@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
 import { ListingCard } from './ListingCard';
+import { usePolePosition } from './usePolePosition';
 
 interface ListingsPanelProps {
   className?: string;
@@ -18,11 +19,18 @@ interface ListingsPanelProps {
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
   showEventInfo?: boolean;
+  onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
+  const [containerMounted, setContainerMounted] = useState(false);
+
+  const scrollContainerCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    if (node) setContainerMounted(true);
+  }, []);
 
   // Filter listings based on selection
   const filteredListings = useMemo(() => {
@@ -60,6 +68,13 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
     paddingStart: 4,
     paddingEnd: 12,
     overscan: 5,
+  });
+
+  usePolePosition({
+    scrollContainer: containerMounted ? scrollContainerRef.current : null,
+    sortedListings,
+    enabled: !!onPolePosition,
+    onPoleChange: onPolePosition ?? (() => {}),
   });
 
   return (
@@ -128,7 +143,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
 
       {/* Scrollable virtualized list */}
       <div
-        ref={scrollContainerRef}
+        ref={scrollContainerCallbackRef}
         className="flex-1 overflow-y-auto px-3 no-scrollbar"
       >
         {sortedListings.length === 0 ? (
