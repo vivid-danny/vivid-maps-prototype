@@ -47,7 +47,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     isAvailable: true,
     isSelected,
     isPressed: !disableHover && localPressed,
-    isHovered: !disableHover && (isHovered || localHover),
+    isHovered: isHovered || (!disableHover && localHover),
   });
   const resolvedColor =
     state === 'selected' ? selectedColor :
