@@ -13,7 +13,10 @@ function DealScoreBadge({ score }: { score: number }) {
   else if (score >= 7) label = 'Good';
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-100 text-green-700">
+    <span
+      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded"
+      style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
+    >
       {score.toFixed(1)} {label}
     </span>
   );

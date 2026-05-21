@@ -71,3 +71,25 @@ Then add the new venue entry in:
 - [PROJECT.md](./PROJECT.md): current product and architecture summary
 - [INTERACTION.md](./INTERACTION.md): current interaction and visual-state behavior
 - [DETAIL_AVAILABILITY.md](./DETAIL_AVAILABILITY.md): row/seat availability workflow
+- [PRODUCT.md](./PRODUCT.md): brand personality, users, emotional goals, anti-references
+- [DESIGN.md](./DESIGN.md): colors, typography, spacing, component patterns
+
+## Design Context
+
+### Users
+Ticket buyers on VividSeats — desktop and mobile. Browsing or making a final purchase decision for a live event. They know what event they want; the map helps them decide where to sit. Emotional state: anticipation. The interface should match that gravity.
+
+### Brand Personality
+Sharp, premium, decisive. Clean geometry, considered spacing, unambiguous interactive states. GT Walsheim as the voice of the brand.
+
+### Aesthetic Direction
+Light mode throughout. The Vivid pink (`#CE3197`/`#D63384`) is the single accent — restrained to map fills and CTAs. All panel chrome is white/gray and recedes. The map is the hero; UI panels serve it.
+
+Anti-references: StubHub's flat utility gray, Ticketmaster's heavy dark mode, mobile game neon/gamification.
+
+### Design Principles
+1. **The map is the hero.** UI chrome recedes — panels, headers, and cards should never compete with venue geometry for attention.
+2. **Color carries meaning, not decoration.** Pink = available/branded, purple = selected, navy = neutral context. Don't add color for visual interest; it already has a job.
+3. **Decisive hierarchy.** Price, location, action — in that cognitive order. Users should never scan to find what they need.
+4. **Motion orients, it doesn't entertain.** Transitions communicate state changes. No bounce, no elastic, no flourish for its own sake.
+5. **Premium restraint.** Every element must justify its presence. Tighter is better than fuller. Silence is a design choice.

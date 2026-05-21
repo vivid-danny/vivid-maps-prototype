@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
 import { ListingCard } from './ListingCard';
+import { usePolePosition } from './usePolePosition';
 
 interface ListingsPanelProps {
   className?: string;
@@ -10,18 +12,22 @@ interface ListingsPanelProps {
   hoverState: HoverState;
   onSelectListing: (listing: Listing) => void;
   onHoverListing: (listing: Listing | null) => void;
-  selectedColor?: string;
-  hoverColor?: string;
-  pressedColor?: string;
   disableHover?: boolean;
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
   showEventInfo?: boolean;
+  onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
+  const [containerMounted, setContainerMounted] = useState(false);
+
+  const scrollContainerCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    if (node) setContainerMounted(true);
+  }, []);
 
   // Filter listings based on selection
   const filteredListings = useMemo(() => {
@@ -56,13 +62,20 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 80,
     gap: 8,
-    paddingStart: 12,
+    paddingStart: 4,
     paddingEnd: 12,
     overscan: 5,
   });
 
+  usePolePosition({
+    scrollContainer: containerMounted ? scrollContainerRef.current : null,
+    sortedListings,
+    enabled: !!onPolePosition,
+    onPoleChange: onPolePosition ?? (() => {}),
+  });
+
   return (
-    <div className={`flex flex-col min-h-0 bg-gray-50 ${className}`}>
+    <div className={`flex flex-col min-h-0 bg-white ${className}`}>
       {/* Event info */}
       {showEventInfo && (
         <div className="px-4 py-3 flex items-center gap-3 bg-white">
@@ -78,46 +91,61 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
       )}
       {/* Quantity filter */}
       {onQuantityFilterChange && (
-        <div className="px-4 h-12 flex items-center bg-white">
-          <select
-            value={quantityFilter ?? 2}
-            onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-            className="w-full text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
-            ))}
-          </select>
+        <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3 mt-[10px]' : ' px-3'}`}>
+          <div className="relative w-full">
+            <select
+              value={quantityFilter ?? 2}
+              onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
+              className="appearance-none w-full text-sm text-gray-700 bg-white rounded-md px-3 pr-7 h-9 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D63384] focus:border-[#D63384]"
+              style={{ border: '1px solid oklch(88% 0.01 320)' }}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+              style={{ color: 'oklch(60% 0.015 320)' }}
+            />
+          </div>
         </div>
       )}
       {/* Header */}
-      <div className="px-4 h-12 flex items-center pb-2 bg-white">
-        <h2 className="text-base font-semibold text-gray-900">
-          {sortedListings.length} {sortedListings.length === 1 ? 'listing' : 'listings'}
+      <div className={`flex items-center bg-white${disableHover ? ' px-3 pt-2 pb-3' : ' px-3 pt-2 pb-3'}`}>
+        <h2 className="text-base text-gray-900">
+          <span className="font-bold">{sortedListings.length}</span>
+          <span className="font-medium"> {sortedListings.length === 1 ? 'listing' : 'listings'}</span>
           {selection.sectionId && (
             <span className="font-normal text-gray-500">
               {' '}in {selection.rowId ? `Row ${selection.rowId.replace(/^[A-Z]+/, '')}` : `Section ${listings.find(l => l.sectionId === selection.sectionId)?.sectionLabel || selection.sectionId}`}
             </span>
           )}
         </h2>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as 'price' | 'dealScore')}
-          className="ml-auto text-xs text-gray-600 bg-transparent border border-gray-300 rounded px-2 py-2 cursor-pointer"
-        >
-          <option value="price">Lowest price</option>
-          <option value="dealScore">Deal score</option>
-        </select>
+        <div className="ml-auto relative shrink-0">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'price' | 'dealScore')}
+            className="appearance-none text-sm text-gray-700 bg-white rounded-md pl-3 pr-7 h-8 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D63384] focus:border-[#D63384]"
+            style={{ border: '1px solid oklch(88% 0.01 320)' }}
+          >
+            <option value="price">Lowest price</option>
+            <option value="dealScore">Deal score</option>
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+            style={{ color: 'oklch(60% 0.015 320)' }}
+          />
+        </div>
       </div>
 
       {/* Scrollable virtualized list */}
       <div
-        ref={scrollContainerRef}
+        ref={scrollContainerCallbackRef}
         className="flex-1 overflow-y-auto px-3 no-scrollbar"
       >
         {sortedListings.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
-            No listings available
+            {selection.sectionId ? 'No tickets in this section' : 'No tickets available'}
           </div>
         ) : (
           <div
@@ -148,9 +176,6 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
                     isHovered={listing.listingId === hoverState.listingId}
                     onClick={onSelectListing}
                     onHover={onHoverListing}
-                    selectedColor={selectedColor}
-                    hoverColor={hoverColor}
-                    pressedColor={pressedColor}
                     disableHover={disableHover}
                   />
                 </div>

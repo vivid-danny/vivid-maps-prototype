@@ -22,6 +22,13 @@
   }
 }
 
+@keyframes pinPoleEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
 /* ─── Detail Panel Animation ─────────────────────────────────── */
 /* Edit these variables to tune timing and easing for all states  */
 :root {

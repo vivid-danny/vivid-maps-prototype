@@ -1,10 +1,17 @@
 import { memo, useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
 import { useHoverIntent } from './useHoverIntent';
-import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
+import { formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
 const LISTING_CARD_PADDING = { top: 12, right: 20, bottom: 12, left: 12 };
+
+const CARD_COLORS = {
+  default:  { bg: '#FFFFFF', border: '#E0DCE3' },
+  hover:    { bg: '#F6F6FB', border: '#717488' },
+  pressed:  { bg: '#F6F6FB', border: '#717488' },
+  selected: { bg: '#F6F6FB', border: '#717488' },
+};
 
 interface ListingCardProps {
   listing: Listing;
@@ -12,13 +19,10 @@ interface ListingCardProps {
   isHovered: boolean;
   onClick: (listing: Listing) => void;
   onHover: (listing: Listing | null) => void;
-  selectedColor?: string;
-  hoverColor?: string;
-  pressedColor?: string;
   disableHover?: boolean;
 }
 
-function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
+function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
@@ -33,7 +37,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     hoverIntent.leave();
   };
 
-  const cardBase = 'flex items-center justify-between rounded border cursor-pointer transition-colors ';
+  const cardBase = 'flex items-center justify-between rounded-md border cursor-pointer transition-colors ';
   let cardClass = cardBase;
   const paddingStyle = {
     paddingTop: LISTING_CARD_PADDING.top,
@@ -41,21 +45,20 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     paddingBottom: LISTING_CARD_PADDING.bottom,
     paddingLeft: LISTING_CARD_PADDING.left,
   };
-  let cardStyle: CSSProperties;
 
   const state = resolveInteractionState({
     isAvailable: true,
     isSelected,
     isPressed: !disableHover && localPressed,
-    isHovered: !disableHover && (isHovered || localHover),
+    isHovered: isHovered || (!disableHover && localHover),
   });
-  const resolvedColor =
-    state === 'selected' ? selectedColor :
-    state === 'pressed'  ? pressedColor  :
-    state === 'hover'    ? hoverColor    : null;
-  cardStyle = resolvedColor
-    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80), borderColor: resolvedColor }
-    : { ...paddingStyle, backgroundColor: '#fff', borderColor: '#e5e7eb' };
+  const colors = state === 'available' ? CARD_COLORS.default : CARD_COLORS[state];
+  const cardStyle: CSSProperties = {
+    ...paddingStyle,
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+  };
+
   const locationLabel = listing.rowNumber === null
     ? `Section ${listing.sectionLabel}`
     : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;
@@ -75,7 +78,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
         <img
           src={listing.seatViewUrl}
           alt={`View from Section ${listing.sectionLabel}`}
-          className="w-18 h-18 rounded object-cover flex-shrink-0"
+          className="w-18 h-18 rounded-sm object-cover flex-shrink-0"
         />
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="text-sm font-medium text-gray-900">
@@ -87,14 +90,18 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
           {(listing.dealScore >= 6 || listing.perks.length > 0) && (
             <div className="flex flex-wrap gap-1 mt-2">
               {listing.dealScore >= 6 && (
-                <span className="text-[12px] leading-tight px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
+                <span
+                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded font-semibold"
+                  style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
+                >
                   {listing.dealScore.toFixed(1)}
                 </span>
               )}
               {listing.perks.map((perk) => (
                 <span
                   key={perk}
-                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded bg-gray-100 text-gray-500"
+                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: 'oklch(95% 0.008 320)', color: 'oklch(48% 0.015 320)' }}
                 >
                   {PERK_LABELS[perk]}
                 </span>
@@ -105,8 +112,8 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
       </div>
 
       {/* Right side: Price */}
-      <div className="text-lg font-bold text-gray-900">
-        {formatPrice(listing.price)} <span className="text-sm text-gray-500">ea.</span>
+      <div className="text-xl font-bold text-gray-900 shrink-0">
+        {formatPrice(listing.price)} <span className="text-sm font-normal text-gray-500">ea.</span>
       </div>
     </div>
   );

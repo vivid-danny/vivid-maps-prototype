@@ -190,11 +190,15 @@ function createMarkerEl({
   return { wrapper, inner };
 }
 
+const POLE_ENTER_ANIMATION = 'pinPoleEnter 150ms cubic-bezier(0.075, 0.82, 0.165, 1)';
+
 function upsertHoverPinMarker({
   current,
   map,
   pinData,
   interactive,
+  showSeatView = true,
+  animate = false,
   onSelect,
   displayMode,
   seatColors,
@@ -205,6 +209,8 @@ function upsertHoverPinMarker({
   map: MapLibreMap;
   pinData: PinRenderData;
   interactive: boolean;
+  showSeatView?: boolean;
+  animate?: boolean;
   onSelect: (selection: SelectionState) => void;
   displayMode: DisplayMode;
   seatColors: SeatColors;
@@ -222,7 +228,15 @@ function upsertHoverPinMarker({
   if (reusable) {
     reusable.marker.setLngLat(pinData.lngLat);
     reusable.marker.getElement().style.display = '';
-    renderPin(reusable.root, pinData.listing, true, false, seatColors);
+    const innerEl = reusable.marker.getElement().firstElementChild as HTMLElement;
+    if (animate) {
+      innerEl.style.animation = 'none';
+      void innerEl.offsetHeight;
+      innerEl.style.animation = POLE_ENTER_ANIMATION;
+    } else {
+      innerEl.style.animation = '';
+    }
+    renderPin(reusable.root, pinData.listing, true, false, seatColors, showSeatView);
     reusable.marker.getElement().style.zIndex = markerZIndex(true, false);
     reusable.isHovered = true;
     return;
@@ -235,8 +249,11 @@ function upsertHoverPinMarker({
       onSelect(buildPinSelection(pinData, displayMode, visualSeatIdsByListingId, visualRowIdByListingId));
     },
   });
+  if (animate) {
+    inner.style.animation = POLE_ENTER_ANIMATION;
+  }
   const root = createRoot(inner);
-  renderPin(root, pinData.listing, true, false, seatColors);
+  renderPin(root, pinData.listing, true, false, seatColors, showSeatView);
   const marker = new Marker({ element: wrapper }).setLngLat(pinData.lngLat).addTo(map);
   marker.getElement().style.zIndex = markerZIndex(true, false);
   current.set(HOVER_PIN_ID, { marker, root, isHovered: true, isSelected: false, interactive });
@@ -248,6 +265,7 @@ function renderPin(
   isHovered: boolean,
   isSelected: boolean,
   seatColors: SeatColors,
+  showSeatView = true,
 ): void {
   root.render(
     createElement(Pin, {
@@ -261,7 +279,7 @@ function renderPin(
       hoverColor: seatColors.pinHovered,
       pressedColor: seatColors.pinPressed,
       selectedColor: seatColors.pinSelected,
-      seatViewUrl: listing.seatViewUrl,
+      seatViewUrl: showSeatView ? listing.seatViewUrl : undefined,
       sectionLabel: listing.sectionLabel,
       rowNumber: listing.rowNumber,
       useTransition: true,
@@ -561,7 +579,9 @@ export function useMapPins({
       }
     }
 
-    // On-the-fly hover pin: show cheapest listing for a hovered section/row that has no static pin
+    // On-the-fly hover pin: show cheapest listing for a hovered section/row that has no static pin.
+    // For pole-position hover (mobile): show pin but non-interactive and without seat view.
+    const poleHover = hoverState.source === 'pole';
     if (hoverState.sectionId !== null && mapRef.current) {
       const sectionData = sectionCenters.get(hoverState.sectionId);
       const hoveredListing = hoverState.listingId
@@ -590,7 +610,9 @@ export function useMapPins({
               current,
               map: mapRef.current!,
               pinData: hoverPinData,
-              interactive: true,
+              interactive: !poleHover,
+              showSeatView: !poleHover,
+              animate: poleHover,
               onSelect: onSelectRef.current,
               displayMode: displayModeRef.current,
               seatColors: seatColorsRef.current,
@@ -626,6 +648,8 @@ export function useMapPins({
             map: mapRef.current!,
             pinData: hoverPinData,
             interactive: false,
+            showSeatView: !poleHover,
+            animate: poleHover,
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
@@ -663,7 +687,9 @@ export function useMapPins({
               current,
               map: mapRef.current!,
               pinData: hoverPinData,
-              interactive: true,
+              interactive: !poleHover,
+              showSeatView: !poleHover,
+              animate: poleHover,
               onSelect: onSelectRef.current,
               displayMode: displayModeRef.current,
               seatColors: seatColorsRef.current,
@@ -699,6 +725,8 @@ export function useMapPins({
             map: mapRef.current!,
             pinData: hoverPinData,
             interactive: false,
+            showSeatView: !poleHover,
+            animate: poleHover,
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
@@ -734,7 +762,9 @@ export function useMapPins({
             current,
             map: mapRef.current!,
             pinData: hoverPinData,
-            interactive: true,
+            interactive: !poleHover,
+            showSeatView: !poleHover,
+            animate: poleHover,
             onSelect: onSelectRef.current,
             displayMode: displayModeRef.current,
             seatColors: seatColorsRef.current,
