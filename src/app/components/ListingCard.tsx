@@ -18,7 +18,7 @@ interface ListingCardProps {
   disableHover?: boolean;
 }
 
-function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#7A1D59', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
+function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#F6F6FB', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
@@ -54,7 +54,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     state === 'pressed'  ? pressedColor  :
     state === 'hover'    ? hoverColor    : null;
   cardStyle = resolvedColor
-    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 80), borderColor: resolvedColor }
+    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 0), borderColor: resolvedColor }
     : { ...paddingStyle, backgroundColor: 'oklch(99.5% 0.005 320)', borderColor: 'oklch(91% 0.007 320)' };
   const locationLabel = listing.rowNumber === null
     ? `Section ${listing.sectionLabel}`

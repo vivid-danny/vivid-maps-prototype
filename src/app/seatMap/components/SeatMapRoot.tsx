@@ -270,9 +270,6 @@ export function SeatMapRoot() {
                   hoverState={viewState.hoverState}
                   onSelectListing={viewState.handleSelectFromPanel}
                   onHoverListing={viewState.handleHoverFromPanel}
-                  selectedColor={config.seatColors.selected}
-                  hoverColor={config.seatColors.hover}
-                  pressedColor={config.seatColors.pressed}
                   disableHover={isMobile}
                   quantityFilter={viewState.quantityFilter}
                   onQuantityFilterChange={viewState.setQuantityFilter}
@@ -413,9 +410,6 @@ export function SeatMapRoot() {
                 hoverState={viewState.hoverState}
                 onSelectListing={viewState.handleSelectFromPanel}
                 onHoverListing={viewState.handleHoverFromPanel}
-                selectedColor={config.seatColors.selected}
-                hoverColor={config.seatColors.hover}
-                pressedColor={config.seatColors.pressed}
                 disableHover={isMobile}
                 quantityFilter={viewState.quantityFilter}
                 onQuantityFilterChange={viewState.setQuantityFilter}
