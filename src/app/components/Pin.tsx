@@ -53,7 +53,7 @@ function resolvePinAppearance(params: {
       return {
         backgroundColor: selectedColor,
         textColor: '#000000',
-        pinMultiplier: 1.875,
+        pinMultiplier: 2.0,
         zIndex: 20,
         animation: useTransition ? undefined : 'pinSelectedIn 300ms cubic-bezier(0.075, 0.82, 0.165, 1)',
         filter: 'drop-shadow(0 6px 12px rgba(4, 9, 44, 0.40))',
@@ -63,7 +63,7 @@ function resolvePinAppearance(params: {
       return {
         backgroundColor: pressedColor,
         textColor: '#000000',
-        pinMultiplier: 1.875,
+        pinMultiplier: 2.0,
         zIndex: 20,
         animation: undefined,
         filter: 'drop-shadow(0 6px 12px rgba(4, 9, 44, 0.18))',
@@ -73,10 +73,10 @@ function resolvePinAppearance(params: {
       return {
         backgroundColor: hoverColor,
         textColor: '#FFFFFF',
-        pinMultiplier: 1.5,
+        pinMultiplier: 2.0,
         zIndex: 30,
         animation: useTransition ? undefined : 'pinHoverIn 200ms cubic-bezier(0.075, 0.82, 0.165, 1)',
-        showSeatView: seatViewUrl,
+        showSeatView: false,
       };
     default:
       return {

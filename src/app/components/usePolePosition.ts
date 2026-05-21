@@ -44,13 +44,13 @@ export function usePolePosition({
       return;
     }
 
-    const containerTop = scrollContainer.scrollTop;
-    const paddingStart = 12;
+    const containerRect = scrollContainer.getBoundingClientRect();
     let poleIndex: number | null = null;
 
     for (const card of cards) {
-      const cardTop = card.offsetTop - paddingStart;
-      if (cardTop + card.offsetHeight > containerTop) {
+      const cardRect = card.getBoundingClientRect();
+      const midpoint = cardRect.top + cardRect.height * 0.5;
+      if (midpoint > containerRect.top) {
         const idx = Number(card.getAttribute('data-index'));
         if (!Number.isNaN(idx)) {
           poleIndex = idx;
