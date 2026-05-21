@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DisplayMode } from '../model/types';
-import type { SeatMapConfig, LevelOverlays } from '../config/types';
+import type { SeatMapConfig } from '../config/types';
 import { THEME_IDS, THEME_LABELS } from '../config/themes';
 import type { ThemeId } from '../config/themes';
-
 
 interface PrototypeControlsProps {
   showControls: boolean;
@@ -27,53 +26,20 @@ function ToggleGroup<T extends string>({
   getLabel?: (v: T) => string;
 }) {
   return (
-    <div className="flex border border-gray-300 rounded overflow-hidden">
+    <div className="flex border border-gray-200 rounded-md overflow-hidden">
       {options.map((option) => (
         <button
           key={option}
           onClick={() => onChange(option)}
-          className={`flex-1 px-2 py-1 text-xs font-medium transition-colors capitalize ${
+          className={`flex-1 px-2 py-1.5 text-[11px] font-medium transition-colors duration-150 capitalize ${
             value === option
-              ? 'bg-gray-800 text-white'
-              : 'bg-white text-gray-600 hover:bg-gray-50'
+              ? 'bg-foreground text-white'
+              : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700'
           }`}
         >
           {getLabel ? getLabel(option) : option}
         </button>
       ))}
-    </div>
-  );
-}
-
-function SliderControl({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-  className,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <label className="text-xs text-gray-600 block mb-2">{label}</label>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full"
-      />
     </div>
   );
 }
@@ -142,7 +108,7 @@ function ColorControl({
         <button
           onClick={() => setOpen((o) => !o)}
           title={value}
-          className="w-6 h-6 rounded border border-gray-300 cursor-pointer overflow-hidden relative"
+          className="w-7 h-7 rounded-md border border-gray-200 cursor-pointer overflow-hidden relative transition-shadow hover:shadow-sm"
         >
           <div
             className="absolute inset-0"
@@ -157,12 +123,12 @@ function ColorControl({
         </button>
 
         {open && (
-          <div className="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded shadow-lg p-3 space-y-3 w-52">
+          <div className="absolute right-0 top-9 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-3 w-52">
             <input
               type="color"
               value={hex}
               onChange={(e) => onChange(buildColor(e.target.value, alpha))}
-              className="w-full h-8 cursor-pointer border border-gray-300 rounded"
+              className="w-full h-8 cursor-pointer border border-gray-200 rounded-md"
             />
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-400 font-mono">α</span>
@@ -183,7 +149,7 @@ function ColorControl({
               type="text"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="w-full text-xs px-2 py-1 border border-gray-300 rounded font-mono"
+              className="w-full text-xs px-2 py-1 border border-gray-200 rounded-md font-mono"
             />
           </div>
         )}
@@ -192,14 +158,15 @@ function ColorControl({
   );
 }
 
-function SectionHeader({ title, prodSource }: {
+function SectionHeader({ title, prodSource, first }: {
   title: string;
   prodSource?: string;
+  first?: boolean;
 }) {
   return (
-    <div className="mb-4">
-      <div className="text-xs font-bold text-black">{title}</div>
-      {prodSource && <div className="text-[10px] text-gray-400 font-mono">{prodSource}</div>}
+    <div className={first ? 'mb-3' : 'border-t border-gray-100 pt-6 mb-3'}>
+      <div className="text-[11px] font-bold text-foreground tracking-wide">{title}</div>
+      {prodSource && <div className="text-[10px] text-gray-400 font-mono mt-0.5">{prodSource}</div>}
     </div>
   );
 }
@@ -236,243 +203,231 @@ export function PrototypeControls({
         showControls ? 'w-96' : 'w-0 overflow-hidden border-r-0'
       }`}
     >
-      <div className="flex items-center justify-between h-12 border-b border-gray-200 px-4">
-        <h2 className="text-sm font-semibold text-gray-700">Prototype Controls</h2>
+      <div className="flex items-center justify-between h-12 border-b border-gray-200 px-5">
+        <h2 className="text-[13px] font-semibold text-foreground">Prototype Controls</h2>
         <button
           onClick={onResetConfig}
-          className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline transition-colors cursor-pointer"
         >
           Reset All
         </button>
       </div>
       <div
-        className={`px-6 py-6 overflow-y-auto h-[calc(100%-77px)] transition-opacity no-scrollbar ${
+        className={`px-5 py-5 overflow-y-auto h-[calc(100%-48px)] transition-opacity no-scrollbar ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-      <div className="flex border-b border-gray-200 mb-8">
-        {([
-          { id: 'controls', label: 'Interaction' },
-          { id: 'styles', label: 'Styles' },
-        ] as const).map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex-1 py-2 text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === id
-                ? 'text-gray-900 border-b-2 border-gray-900 -mb-px'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        <div className="flex border-b border-gray-200 mb-6">
+          {([
+            { id: 'controls', label: 'Interaction' },
+            { id: 'styles', label: 'Styles' },
+          ] as const).map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`px-4 py-1.5 text-[11px] font-medium transition-colors cursor-pointer ${
+                activeTab === id
+                  ? 'text-foreground border-b-2 border-foreground -mb-px'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-      {activeTab === 'controls' && (
-        <>
-          {/* Zoom Status */}
-          <div className="mb-6 p-3 bg-gray-50 rounded text-xs space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Zoom:</span>
-              <span className="font-mono">
-                {currentScale.toFixed(2)}x
-                <span className="text-gray-400 ml-1">({'\u2248'} prod {(currentScale - 8).toFixed(1)})</span>
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Mode:</span>
-              <span className="font-medium">{displayMode}</span>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <div className="text-xs font-bold text-black mb-2">Zoom</div>
-
-            <div className="space-y-3">
-              {/* Initial Display */}
-              <div className="mb-4">
-                <label className="text-xs text-gray-600 block mb-2">Initial Display</label>
-                <ToggleGroup
-                  options={DISPLAY_MODES}
-                  value={config.initialDisplay}
-                  onChange={(initialDisplay) => onConfigChange({ initialDisplay })}
-                />
+        {activeTab === 'controls' && (
+          <>
+            <div className="mb-6 p-3 bg-gray-50 rounded-md border border-gray-100 text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Zoom:</span>
+                <span className="font-mono tabular-nums">
+                  {currentScale.toFixed(2)}x
+                  <span className="text-gray-400 ml-1">({'\u2248'} prod {(currentScale - 8).toFixed(1)})</span>
+                </span>
               </div>
-
-              {/* Zoomed-In Display */}
-              <div className="mb-4">
-                <label className="text-xs text-gray-600 block mb-2">Zoomed-In Display</label>
-                <ToggleGroup
-                  options={DISPLAY_MODES}
-                  value={config.zoomedDisplay}
-                  onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
-                />
+              <div className="flex justify-between">
+                <span className="text-gray-500">Mode:</span>
+                <span className="font-medium capitalize">{displayMode}</span>
               </div>
-
             </div>
-          </div>
 
-        </>
-      )}
-
-      {activeTab === 'styles' && (
-        <>
-          {/* Theme */}
-          <div className="mb-6">
-            <label className="text-xs text-black font-bold block mb-2">Theme</label>
-            <ToggleGroup
-              options={THEME_IDS}
-              value={config.theme}
-              onChange={(theme: ThemeId) => onConfigChange({ theme })}
-              getLabel={(t) => THEME_LABELS[t]}
-            />
-          </div>
-
-          {/* DEFAULT_COLORS — production static map constants */}
-          <div className="mb-8">
-            <SectionHeader
-              title="DEFAULT_COLORS"
-              prodSource="Mapbox/constants.ts"
-            />
-            <div className="space-y-3">
-              <ColorControl
-                label="Section Label"
-                value={config.seatColors.labelDefault}
-                onChange={(value) => handleColorChange('labelDefault', value)}
-                prodRef="textColor"
-              />
-              <ColorControl
-                label="Section Stroke"
-                value={config.sectionStroke}
-                onChange={(value) => onConfigChange({ sectionStroke: value })}
-                prodRef="sectionStrokeColor"
-              />
-              <ColorControl
-                label="Row Stroke"
-                value={config.rowStrokeColor}
-                onChange={(value) => onConfigChange({ rowStrokeColor: value })}
-                prodRef="sectionNoInventoryFill"
-              />
-              <ColorControl
-                label="Unavailable Inventory"
-                value={config.seatColors.unavailable}
-                onChange={(value) => handleColorChange('unavailable', value)}
-              />
-            </div>
-          </div>
-
-          {/* Selection Overlays — per-level tuning */}
-          <div className="mb-8">
-            <SectionHeader title="Selection Overlays" />
-            <div className="space-y-3">
-              {(['section', 'row', 'seat'] as const).map((level) => (
-                <div key={level}>
-                  <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{level}</div>
-                  <div className="space-y-2 ml-2">
-                    <ColorControl
-                      label="Muted"
-                      value={config.overlays[level].muted}
-                      onChange={(value) => onConfigChange({
-                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], muted: value } },
-                      })}
-                    />
-                    <ColorControl
-                      label="Selected"
-                      value={config.overlays[level].selected}
-                      onChange={(value) => onConfigChange({
-                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selected: value } },
-                      })}
-                    />
-                    <ColorControl
-                      label="Hover"
-                      value={config.overlays[level].hover}
-                      onChange={(value) => onConfigChange({
-                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], hover: value } },
-                      })}
-                    />
-                    <ColorControl
-                      label="Outline"
-                      value={config.overlays[level].selectedOutline}
-                      onChange={(value) => onConfigChange({
-                        overlays: { ...config.overlays, [level]: { ...config.overlays[level], selectedOutline: value } },
-                      })}
-                    />
-                  </div>
+            <div className="mb-6">
+              <div className="text-[11px] font-bold text-foreground mb-3">Display Mode</div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1.5">Initial Display</label>
+                  <ToggleGroup
+                    options={DISPLAY_MODES}
+                    value={config.initialDisplay}
+                    onChange={(initialDisplay) => onConfigChange({ initialDisplay })}
+                  />
                 </div>
-              ))}
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1.5">Zoomed-In Display</label>
+                  <ToggleGroup
+                    options={DISPLAY_MODES}
+                    value={config.zoomedDisplay}
+                    onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
+                  />
+                </div>
+              </div>
             </div>
-            {/* Row overlays when seats are visible — softer values to avoid obscuring seat circles */}
-            <div className="mt-3">
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
-              <div className="space-y-2 ml-2">
+          </>
+        )}
+
+        {activeTab === 'styles' && (
+          <>
+            <div className="mb-6">
+              <label className="text-[11px] text-foreground font-bold block mb-2">Theme</label>
+              <ToggleGroup
+                options={THEME_IDS}
+                value={config.theme}
+                onChange={(theme: ThemeId) => onConfigChange({ theme })}
+                getLabel={(t) => THEME_LABELS[t]}
+              />
+            </div>
+
+            <div className="mb-6">
+              <SectionHeader
+                title="DEFAULT_COLORS"
+                prodSource="Mapbox/constants.ts"
+                first
+              />
+              <div className="space-y-3">
                 <ColorControl
-                  label="Row Fill"
-                  value={config.rowFillColor}
-                  onChange={(value) => onConfigChange({ rowFillColor: value })}
+                  label="Section Label"
+                  value={config.seatColors.labelDefault}
+                  onChange={(value) => handleColorChange('labelDefault', value)}
+                  prodRef="textColor"
                 />
                 <ColorControl
-                  label="Row Hover Override"
-                  value={config.overlays.row.hoverInSeats ?? config.overlays.row.hover}
-                  onChange={(value) => onConfigChange({
-                    overlays: { ...config.overlays, row: { ...config.overlays.row, hoverInSeats: value } },
-                  })}
+                  label="Section Stroke"
+                  value={config.sectionStroke}
+                  onChange={(value) => onConfigChange({ sectionStroke: value })}
+                  prodRef="sectionStrokeColor"
                 />
                 <ColorControl
-                  label="Row Selected Override"
-                  value={config.overlays.row.selectedInSeats ?? config.overlays.row.selected}
-                  onChange={(value) => onConfigChange({
-                    overlays: { ...config.overlays, row: { ...config.overlays.row, selectedInSeats: value } },
-                  })}
+                  label="Row Stroke"
+                  value={config.rowStrokeColor}
+                  onChange={(value) => onConfigChange({ rowStrokeColor: value })}
+                  prodRef="sectionNoInventoryFill"
                 />
                 <ColorControl
-                  label="Row Outline Selected"
-                  value={config.overlays.row.selectedOutlineInSeats ?? config.overlays.row.selectedOutline}
-                  onChange={(value) => onConfigChange({
-                    overlays: { ...config.overlays, row: { ...config.overlays.row, selectedOutlineInSeats: value } },
-                  })}
+                  label="Unavailable Inventory"
+                  value={config.seatColors.unavailable}
+                  onChange={(value) => handleColorChange('unavailable', value)}
                 />
               </div>
             </div>
-          </div>
 
-          {/* Theme Tokens — production design system */}
-          <div className="mb-8">
-            <SectionHeader
-              title="Theme Tokens"
-              prodSource="useVSTheme"
-            />
-            <div className="space-y-3">
-              <ColorControl
-                label="Background"
-                value={config.mapBackground}
-                onChange={(value) => onConfigChange({ mapBackground: value })}
-                prodRef="neutral[50]"
-              />
-              <ColorControl
-                label="Venue Fill"
-                value={config.venueFill}
-                onChange={(value) => onConfigChange({ venueFill: value })}
-                prodRef="onPrimary"
-              />
-              <ColorControl
-                label="Venue Stroke"
-                value={config.venueStroke}
-                onChange={(value) => onConfigChange({ venueStroke: value })}
-                prodRef="onSurfaceDisabled"
-              />
-              <ColorControl
-                label="Section Base"
-                value={config.sectionBase}
-                onChange={(value) => onConfigChange({ sectionBase: value })}
-                prodRef="neutral[100]"
-              />
+            <div className="mb-6">
+              <SectionHeader title="Selection Overlays" />
+              <div className="space-y-3">
+                {(['section', 'row', 'seat'] as const).map((level) => (
+                  <div key={level}>
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{level}</div>
+                    <div className="space-y-2 ml-2">
+                      <ColorControl
+                        label="Muted"
+                        value={config.overlays[level].muted}
+                        onChange={(value) => onConfigChange({
+                          overlays: { ...config.overlays, [level]: { ...config.overlays[level], muted: value } },
+                        })}
+                      />
+                      <ColorControl
+                        label="Selected"
+                        value={config.overlays[level].selected}
+                        onChange={(value) => onConfigChange({
+                          overlays: { ...config.overlays, [level]: { ...config.overlays[level], selected: value } },
+                        })}
+                      />
+                      <ColorControl
+                        label="Hover"
+                        value={config.overlays[level].hover}
+                        onChange={(value) => onConfigChange({
+                          overlays: { ...config.overlays, [level]: { ...config.overlays[level], hover: value } },
+                        })}
+                      />
+                      <ColorControl
+                        label="Outline"
+                        value={config.overlays[level].selectedOutline}
+                        onChange={(value) => onConfigChange({
+                          overlays: { ...config.overlays, [level]: { ...config.overlays[level], selectedOutline: value } },
+                        })}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3">
+                <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
+                <div className="space-y-2 ml-2">
+                  <ColorControl
+                    label="Row Fill"
+                    value={config.rowFillColor}
+                    onChange={(value) => onConfigChange({ rowFillColor: value })}
+                  />
+                  <ColorControl
+                    label="Row Hover Override"
+                    value={config.overlays.row.hoverInSeats ?? config.overlays.row.hover}
+                    onChange={(value) => onConfigChange({
+                      overlays: { ...config.overlays, row: { ...config.overlays.row, hoverInSeats: value } },
+                    })}
+                  />
+                  <ColorControl
+                    label="Row Selected Override"
+                    value={config.overlays.row.selectedInSeats ?? config.overlays.row.selected}
+                    onChange={(value) => onConfigChange({
+                      overlays: { ...config.overlays, row: { ...config.overlays.row, selectedInSeats: value } },
+                    })}
+                  />
+                  <ColorControl
+                    label="Row Outline Selected"
+                    value={config.overlays.row.selectedOutlineInSeats ?? config.overlays.row.selectedOutline}
+                    onChange={(value) => onConfigChange({
+                      overlays: { ...config.overlays, row: { ...config.overlays.row, selectedOutlineInSeats: value } },
+                    })}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
 
-        </>
-      )}
+            <div className="mb-6">
+              <SectionHeader
+                title="Theme Tokens"
+                prodSource="useVSTheme"
+              />
+              <div className="space-y-3">
+                <ColorControl
+                  label="Background"
+                  value={config.mapBackground}
+                  onChange={(value) => onConfigChange({ mapBackground: value })}
+                  prodRef="neutral[50]"
+                />
+                <ColorControl
+                  label="Venue Fill"
+                  value={config.venueFill}
+                  onChange={(value) => onConfigChange({ venueFill: value })}
+                  prodRef="onPrimary"
+                />
+                <ColorControl
+                  label="Venue Stroke"
+                  value={config.venueStroke}
+                  onChange={(value) => onConfigChange({ venueStroke: value })}
+                  prodRef="onSurfaceDisabled"
+                />
+                <ColorControl
+                  label="Section Base"
+                  value={config.sectionBase}
+                  onChange={(value) => onConfigChange({ sectionBase: value })}
+                  prodRef="neutral[100]"
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
-  </div>
   );
 }

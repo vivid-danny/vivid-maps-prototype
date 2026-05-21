@@ -354,14 +354,14 @@ export function SeatMapRoot() {
                   <>
                     <button
                       onClick={() => mapInstanceRef.current?.zoomIn()}
-                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 active:bg-gray-100 border border-gray-200/50 rounded-lg shadow-sm cursor-pointer transition-colors duration-100"
                       aria-label="Zoom in"
                     >
                       <Plus className="w-4 h-4 text-[#04092C]" />
                     </button>
                     <button
                       onClick={() => mapInstanceRef.current?.zoomOut()}
-                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer"
+                      className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 active:bg-gray-100 border border-gray-200/50 rounded-lg shadow-sm cursor-pointer transition-colors duration-100"
                       aria-label="Zoom out"
                     >
                       <Minus className="w-4 h-4 text-[#04092C]" />
@@ -387,7 +387,7 @@ export function SeatMapRoot() {
                       });
                     }
                   }}
-                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 active:bg-gray-200 rounded shadow-sm cursor-pointer transition-opacity duration-200"
+                  className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 active:bg-gray-100 border border-gray-200/50 rounded-lg shadow-sm cursor-pointer transition-all duration-150"
                   style={{
                     opacity: hasActiveSelection ? 1 : 0,
                     pointerEvents: hasActiveSelection ? 'auto' : 'none',
