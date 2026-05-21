@@ -1,10 +1,17 @@
 import { memo, useState, type CSSProperties } from 'react';
 import type { Listing } from '../seatMap/model/types';
 import { useHoverIntent } from './useHoverIntent';
-import { lightenColor, formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
+import { formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
 const LISTING_CARD_PADDING = { top: 12, right: 20, bottom: 12, left: 12 };
+
+const CARD_COLORS = {
+  default:  { bg: '#FFFFFF', border: '#E0DCE3' },
+  hover:    { bg: '#F6F6FB', border: '#717488' },
+  pressed:  { bg: '#F6F6FB', border: '#717488' },
+  selected: { bg: '#F6F6FB', border: '#717488' },
+};
 
 interface ListingCardProps {
   listing: Listing;
@@ -12,13 +19,10 @@ interface ListingCardProps {
   isHovered: boolean;
   onClick: (listing: Listing) => void;
   onHover: (listing: Listing | null) => void;
-  selectedColor?: string;
-  hoverColor?: string;
-  pressedColor?: string;
   disableHover?: boolean;
 }
 
-function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, selectedColor = '#312784', hoverColor = '#F6F6FB', pressedColor = '#3E0649', disableHover = false }: ListingCardProps) {
+function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, disableHover = false }: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
@@ -41,7 +45,6 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     paddingBottom: LISTING_CARD_PADDING.bottom,
     paddingLeft: LISTING_CARD_PADDING.left,
   };
-  let cardStyle: CSSProperties;
 
   const state = resolveInteractionState({
     isAvailable: true,
@@ -49,13 +52,13 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, se
     isPressed: !disableHover && localPressed,
     isHovered: isHovered || (!disableHover && localHover),
   });
-  const resolvedColor =
-    state === 'selected' ? selectedColor :
-    state === 'pressed'  ? pressedColor  :
-    state === 'hover'    ? hoverColor    : null;
-  cardStyle = resolvedColor
-    ? { ...paddingStyle, backgroundColor: lightenColor(resolvedColor, 0), borderColor: resolvedColor }
-    : { ...paddingStyle, backgroundColor: 'oklch(99.5% 0.005 320)', borderColor: 'oklch(91% 0.007 320)' };
+  const colors = state === 'available' ? CARD_COLORS.default : CARD_COLORS[state];
+  const cardStyle: CSSProperties = {
+    ...paddingStyle,
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+  };
+
   const locationLabel = listing.rowNumber === null
     ? `Section ${listing.sectionLabel}`
     : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;

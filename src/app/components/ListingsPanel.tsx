@@ -12,9 +12,6 @@ interface ListingsPanelProps {
   hoverState: HoverState;
   onSelectListing: (listing: Listing) => void;
   onHoverListing: (listing: Listing | null) => void;
-  selectedColor?: string;
-  hoverColor?: string;
-  pressedColor?: string;
   disableHover?: boolean;
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
@@ -22,7 +19,7 @@ interface ListingsPanelProps {
   onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, selectedColor, hoverColor, pressedColor, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
   const [containerMounted, setContainerMounted] = useState(false);
@@ -179,9 +176,6 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
                     isHovered={listing.listingId === hoverState.listingId}
                     onClick={onSelectListing}
                     onHover={onHoverListing}
-                    selectedColor={selectedColor}
-                    hoverColor={hoverColor}
-                    pressedColor={pressedColor}
                     disableHover={disableHover}
                   />
                 </div>
