@@ -9,12 +9,14 @@ const DEFAULTS = {
   initialDisplay: DEFAULT_SEAT_MAP_CONFIG.initialDisplay as DisplayMode,
   zoomedDisplay: DEFAULT_SEAT_MAP_CONFIG.zoomedDisplay as DisplayMode,
   theme: DEFAULT_SEAT_MAP_CONFIG.theme as ThemeId,
+  showConnectors: DEFAULT_SEAT_MAP_CONFIG.showConnectors,
 };
 
 export interface UrlParamValues {
   initialDisplay?: DisplayMode;
   zoomedDisplay?: DisplayMode;
   theme?: ThemeId;
+  showConnectors?: boolean;
 }
 
 function readUrlParams(): UrlParamValues {
@@ -37,6 +39,11 @@ function readUrlParams(): UrlParamValues {
     result.theme = theme as ThemeId;
   }
 
+  const showConnectors = params.get('showConnectors');
+  if (showConnectors === 'true' || showConnectors === 'false') {
+    result.showConnectors = showConnectors === 'true';
+  }
+
   return result;
 }
 
@@ -44,6 +51,7 @@ export function syncToUrl(values: {
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
   theme: ThemeId;
+  showConnectors: boolean;
 }) {
   if (typeof window === 'undefined') return;
   const params = new URLSearchParams();
@@ -51,6 +59,7 @@ export function syncToUrl(values: {
   if (values.initialDisplay !== DEFAULTS.initialDisplay) params.set('initialDisplay', values.initialDisplay);
   if (values.zoomedDisplay !== DEFAULTS.zoomedDisplay) params.set('zoomedDisplay', values.zoomedDisplay);
   if (values.theme !== DEFAULTS.theme) params.set('theme', values.theme);
+  if (values.showConnectors !== DEFAULTS.showConnectors) params.set('showConnectors', String(values.showConnectors));
 
   const search = params.toString();
   const newUrl = search ? `${window.location.pathname}?${search}` : window.location.pathname;

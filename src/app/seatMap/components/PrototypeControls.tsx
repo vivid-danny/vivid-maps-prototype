@@ -271,6 +271,16 @@ export function PrototypeControls({
                     onChange={(zoomedDisplay) => onConfigChange({ zoomedDisplay })}
                   />
                 </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.showConnectors}
+                      onChange={(e) => onConfigChange({ showConnectors: e.target.checked })}
+                    />
+                    Show seat connectors
+                  </label>
+                </div>
               </div>
             </div>
           </>

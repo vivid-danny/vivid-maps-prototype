@@ -21,6 +21,7 @@ export interface SeatMapConfig {
   initialDisplay: DisplayMode;
   zoomedDisplay: DisplayMode;
   connectorWidth: number;
+  showConnectors: boolean;
   sectionStrokeWidth: number;
   venueStrokeWidth: number;
   seatColors: SeatColors;

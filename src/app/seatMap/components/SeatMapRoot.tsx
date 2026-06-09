@@ -41,6 +41,7 @@ export function SeatMapRoot() {
     ...(INITIAL_URL_PARAMS.initialDisplay ? { initialDisplay: INITIAL_URL_PARAMS.initialDisplay } : {}),
     ...(INITIAL_URL_PARAMS.zoomedDisplay ? { zoomedDisplay: INITIAL_URL_PARAMS.zoomedDisplay } : {}),
     ...(INITIAL_URL_PARAMS.theme ? { theme: INITIAL_URL_PARAMS.theme, seatColors: THEMES[INITIAL_URL_PARAMS.theme] } : {}),
+    ...(INITIAL_URL_PARAMS.showConnectors !== undefined ? { showConnectors: INITIAL_URL_PARAMS.showConnectors } : {}),
   }), []);
   const { config, updateConfig, resetConfig: rawResetConfig } = useSeatMapConfig({
     initialConfig: startupConfig,
@@ -60,8 +61,9 @@ export function SeatMapRoot() {
       initialDisplay: config.initialDisplay,
       zoomedDisplay: config.zoomedDisplay,
       theme: config.theme,
+      showConnectors: config.showConnectors,
     });
-  }, [config.initialDisplay, config.zoomedDisplay, config.theme]);
+  }, [config.initialDisplay, config.zoomedDisplay, config.theme, config.showConnectors]);
 
   const handleMapReady = useCallback((map: MaplibreMap) => {
     mapInstanceRef.current = map;
@@ -334,6 +336,7 @@ export function SeatMapRoot() {
                   onHover={viewState.handleHoverFromMap}
                   isMobile={isMobile}
                   zoomedDisplay={config.zoomedDisplay}
+                  showConnectors={config.showConnectors}
                   pinDensity={config.pinDensity}
                   venueFill={config.venueFill}
                   venueStroke={config.venueStroke}
