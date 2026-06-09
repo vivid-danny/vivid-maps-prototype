@@ -71,6 +71,7 @@ interface MapLibreVenueProps {
   onHover: (hover: HoverState) => void;
   isMobile: boolean;
   zoomedDisplay: DisplayMode;
+  showConnectors: boolean;
   pinDensity: SeatMapConfig['pinDensity'];
   venueFill: string;
   venueStroke: string;
@@ -112,6 +113,7 @@ export function MapLibreVenue({
   onHover,
   isMobile,
   zoomedDisplay,
+  showConnectors,
   pinDensity,
   venueFill,
   venueStroke,
@@ -280,7 +282,7 @@ export function MapLibreVenue({
   const seatCoords = useSeatCoordinates({ seatsUrl: assets.seatsUrl, detailSourcesLoaded });
 
   // Listing connector lines — LineStrings connecting seats in the same listing
-  useListingConnectors({ mapRef, ready, listings: effectiveModel.listings, coordsBySeatId: seatCoords });
+  useListingConnectors({ mapRef, ready, listings: effectiveModel.listings, coordsBySeatId: seatCoords, showConnectors });
 
   // Zoom changes are now reported directly from useMapLibre's map event listener,
   // bypassing React state entirely to avoid re-rendering MapLibreVenue on every frame.

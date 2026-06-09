@@ -12,6 +12,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     initialDisplay: 'sections',
     zoomedDisplay: 'seats',
     connectorWidth: 3,
+    showConnectors: true,
     sectionStrokeWidth: 16,
     venueStrokeWidth: 2,
     pinDensity: { sections: 0.15, rows: 0.20, seatsBackground: 0.06 },
