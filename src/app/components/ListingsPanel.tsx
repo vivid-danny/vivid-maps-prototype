@@ -13,13 +13,10 @@ interface ListingsPanelProps {
   onSelectListing: (listing: Listing) => void;
   onHoverListing: (listing: Listing | null) => void;
   disableHover?: boolean;
-  quantityFilter?: number;
-  onQuantityFilterChange?: (qty: number) => void;
-  showEventInfo?: boolean;
   onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
   const [containerMounted, setContainerMounted] = useState(false);
@@ -76,40 +73,6 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
 
   return (
     <div className={`flex flex-col min-h-0 bg-white ${className}`}>
-      {/* Event info */}
-      {showEventInfo && (
-        <div className="px-4 py-3 flex items-center gap-3 bg-white">
-          <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs Baltimore Orioles</div>
-            <div className="text-xs text-gray-500 mt-0.5">Oriole Park at Camden Yards in Baltimore, MD</div>
-            <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
-          </div>
-        </div>
-      )}
-      {/* Quantity filter */}
-      {onQuantityFilterChange && (
-        <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3 mt-[10px]' : ' px-3'}`}>
-          <div className="relative w-full">
-            <select
-              value={quantityFilter ?? 2}
-              onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-              className="appearance-none w-full text-sm text-gray-700 bg-white rounded-md px-3 pr-7 h-9 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D63384] focus:border-[#D63384]"
-              style={{ border: '1px solid oklch(88% 0.01 320)' }}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-              style={{ color: 'oklch(60% 0.015 320)' }}
-            />
-          </div>
-        </div>
-      )}
       {/* Header */}
       <div className={`flex items-center bg-white${disableHover ? ' px-3 pt-2 pb-3' : ' px-3 pt-2 pb-3'}`}>
         <h2 className="text-base text-gray-900">

@@ -2,6 +2,11 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { ListingsPanel } from '../../components/ListingsPanel';
+import { SiteHeader } from '../../components/chrome/SiteHeader';
+import { EventDetails } from '../../components/chrome/EventDetails';
+import { FilterChips } from '../../components/chrome/FilterChips';
+import { DateSelector } from '../../components/chrome/DateSelector';
+import { ZonePanel } from '../../components/chrome/ZonePanel';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { createDefaultSeatMapConfig } from '../config/defaults';
 import { getDealColor, getZoneColor, THEMES } from '../config/themes';
@@ -239,21 +244,24 @@ export function SeatMapRoot() {
   );
 
   return (
-    <div className="size-full flex">
-      <PrototypeControls
-        showControls={viewState.showControls}
-        currentScale={displayZoom}
-        displayMode={controller.displayMode}
-        config={config}
-        resetVersion={controlsResetVersion}
-        onConfigChange={updateConfig}
-        onResetConfig={handleResetAll}
-      />
+    <div className="size-full flex flex-col">
+      {!isMobile && <SiteHeader />}
 
-      <div
-        className="flex-1 min-w-0 flex"
-        style={{ backgroundColor: config.mapBackground }}
-      >
+      <div className="flex-1 min-h-0 flex">
+        <PrototypeControls
+          showControls={viewState.showControls}
+          currentScale={displayZoom}
+          displayMode={controller.displayMode}
+          config={config}
+          resetVersion={controlsResetVersion}
+          onConfigChange={updateConfig}
+          onResetConfig={handleResetAll}
+        />
+
+        <div
+          className="flex-1 min-w-0 flex"
+          style={{ backgroundColor: config.mapBackground }}
+        >
         <div
           className={`flex ${
             isMobile
@@ -263,18 +271,24 @@ export function SeatMapRoot() {
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="h-full shrink-0 p-4" style={{ width: 482 }}>
-              <div className="w-full h-full rounded-xl overflow-hidden shadow-sm relative">
+            <div className="h-full shrink-0 p-4" style={{ width: 480 }}>
+              <div className="w-full h-full rounded-xl overflow-hidden shadow-sm relative flex flex-col bg-white">
+                <div className="shrink-0 flex flex-col gap-3 px-4 pt-4 pb-3 border-b border-gray-100">
+                  <EventDetails eventInfo={model.eventInfo} variant="desktop" />
+                  <FilterChips
+                    quantityFilter={viewState.quantityFilter}
+                    onQuantityFilterChange={viewState.setQuantityFilter}
+                  />
+                  <DateSelector />
+                </div>
                 <ListingsPanel
-                  className="w-full h-full"
+                  className="flex-1 min-h-0 w-full"
                   listings={viewState.listings}
                   selection={panelSelection}
                   hoverState={viewState.hoverState}
                   onSelectListing={viewState.handleSelectFromPanel}
                   onHoverListing={viewState.handleHoverFromPanel}
                   disableHover={isMobile}
-                  quantityFilter={viewState.quantityFilter}
-                  onQuantityFilterChange={viewState.setQuantityFilter}
                 />
                 {showDetailOverlay && detailListing && (
                   <div
@@ -300,17 +314,22 @@ export function SeatMapRoot() {
             </div>
           )}
 
+          {/* Desktop: Filter by Zone panel */}
+          {!isMobile && (
+            <div className="h-full shrink-0 py-4 pr-4">
+              <div
+                className="h-full rounded-xl overflow-hidden shadow-sm bg-white"
+                style={{ width: 186 }}
+              >
+                <ZonePanel variant="desktop" />
+              </div>
+            </div>
+          )}
+
           {/* Mobile: event info header */}
           {isMobile && (
-            <div className="px-4 py-3 flex items-center gap-3 bg-white border-b border-gray-200 shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-lg">C</span>
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs St. Louis Cardinals</div>
-                <div className="text-xs text-gray-500 mt-0.5">Wrigley Field · Chicago, IL</div>
-                <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
-              </div>
+            <div className="border-b border-gray-200 shrink-0">
+              <EventDetails eventInfo={model.eventInfo} variant="mobile" />
             </div>
           )}
 
@@ -403,22 +422,28 @@ export function SeatMapRoot() {
             </div>
           </div>
 
-          {/* Mobile: listings panel */}
+          {/* Mobile: filters + zone chips + listings panel */}
           {isMobile && (
-            <div className="flex-1 relative overflow-hidden">
-              <ListingsPanel
-                className="w-full h-full bg-white"
-                listings={viewState.listings}
-                selection={panelSelection}
-                hoverState={viewState.hoverState}
-                onSelectListing={viewState.handleSelectFromPanel}
-                onHoverListing={viewState.handleHoverFromPanel}
-                disableHover={isMobile}
-                quantityFilter={viewState.quantityFilter}
-                onQuantityFilterChange={viewState.setQuantityFilter}
-                showEventInfo={false}
-                onPolePosition={viewState.handlePolePosition}
-              />
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white">
+              <div className="shrink-0 flex flex-col gap-2 px-4 pt-3 pb-2 border-b border-gray-100">
+                <FilterChips
+                  quantityFilter={viewState.quantityFilter}
+                  onQuantityFilterChange={viewState.setQuantityFilter}
+                />
+                <ZonePanel variant="mobile" />
+              </div>
+              <div className="flex-1 min-h-0 relative overflow-hidden">
+                <ListingsPanel
+                  className="w-full h-full bg-white"
+                  listings={viewState.listings}
+                  selection={panelSelection}
+                  hoverState={viewState.hoverState}
+                  onSelectListing={viewState.handleSelectFromPanel}
+                  onHoverListing={viewState.handleHoverFromPanel}
+                  disableHover={isMobile}
+                  onPolePosition={viewState.handlePolePosition}
+                />
+              </div>
             </div>
           )}
 
@@ -443,6 +468,7 @@ export function SeatMapRoot() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
