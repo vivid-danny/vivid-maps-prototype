@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Map as MaplibreMap } from 'maplibre-gl';
 import type { PaddingOptions, StyleSpecification, LngLatBoundsLike } from 'maplibre-gl';
+import { VENUE_BEARING } from './constants';
+import { fitVenue } from './fitVenue';
 
 type FitBoundsPadding = number | PaddingOptions;
 
@@ -29,7 +31,7 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
       container: containerRef.current,
       style,
       bounds,
-      fitBoundsOptions: { padding: fitBoundsPadding, bearing: -57 },
+      fitBoundsOptions: { padding: fitBoundsPadding, bearing: VENUE_BEARING },
       minZoom,
       maxZoom,
       attributionControl: false,
@@ -43,6 +45,9 @@ export function useMapLibre({ containerRef, style, bounds, minZoom = 3, maxZoom 
     (window as any).__map = map;
 
     map.on('load', () => {
+      // The constructor's fitBounds only fits the bbox envelope; tighten to the
+      // venue's rotated silhouette so it fills the container by default.
+      fitVenue(map, { padding: fitBoundsPadding });
       onZoomChangeRef.current?.(map.getZoom());
       setReady(true);
     });

@@ -15,7 +15,8 @@ import { MAP_REGISTRY } from '../mock/mapRegistry';
 import { clearUrlParams, INITIAL_URL_PARAMS, syncToUrl } from '../state/useUrlParams';
 import { useSeatMapController } from '../state/useSeatMapController';
 import { useVenueManifest } from '../maplibre/useVenueManifest';
-import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN, VENUE_BOUNDS } from '../maplibre/constants';
+import { ROW_ZOOM_MIN, SEAT_ZOOM_MIN } from '../maplibre/constants';
+import { fitVenue } from '../maplibre/fitVenue';
 import { useSeatMapPrototypeViewState } from '../state/useSeatMapPrototypeViewState';
 import { useLayoutMode } from '../state/useLayoutMode';
 import { PrototypeControls } from './PrototypeControls';
@@ -268,7 +269,7 @@ export function SeatMapRoot() {
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="h-full shrink-0 p-4" style={{ width: 512 }}>
+            <div className="h-full shrink-0 p-4" style={{ width: '35%' }}>
               <div className="w-full h-full rounded-lg overflow-hidden relative flex flex-col gap-4 bg-white p-4">
                 <div className="shrink-0 flex flex-col gap-4">
                   <EventDetails eventInfo={model.eventInfo} variant="desktop" />
@@ -401,12 +402,7 @@ export function SeatMapRoot() {
                     setCurrentScale(ROW_ZOOM_MIN - 1);
                     if (map) {
                       isResettingRef.current = true;
-                      map.fitBounds(VENUE_BOUNDS, {
-                        padding: isMobile
-                          ? { top: -20, bottom: -20, left: 0, right: 0 }
-                          : 40,
-                        bearing: -57, duration: 600, essential: true,
-                      });
+                      fitVenue(map, { padding: isMobile ? 0 : 40, duration: 600 });
                       map.once('idle', () => {
                         isResettingRef.current = false;
                         setCurrentScale(map.getZoom());
