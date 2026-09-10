@@ -4,7 +4,7 @@ import { useHoverIntent } from './useHoverIntent';
 import { formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
 
-const LISTING_CARD_PADDING = { top: 12, right: 20, bottom: 12, left: 12 };
+const LISTING_CARD_PADDING = { top: 8, right: 16, bottom: 8, left: 8 };
 
 const CARD_COLORS = {
   default:  { bg: '#FFFFFF', border: '#E0DCE3' },
@@ -112,8 +112,11 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, di
       </div>
 
       {/* Right side: Price */}
-      <div className="text-xl font-bold text-gray-900 shrink-0">
-        {formatPrice(listing.price)} <span className="text-sm font-normal text-gray-500">ea.</span>
+      <div className="flex shrink-0 flex-col items-end">
+        <div className="text-xl font-bold text-gray-900">
+          {formatPrice(listing.price)} <span className="text-sm font-normal text-gray-500">ea.</span>
+        </div>
+        <span className="text-small font-normal text-ink-secondary">Fees Incl.</span>
       </div>
     </div>
   );

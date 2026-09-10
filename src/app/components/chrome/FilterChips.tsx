@@ -10,7 +10,7 @@ interface FilterChipsProps {
 
 /** Figma <Select>: 32px min-height, gray/200 border, 4px radius, centered label + chevron. */
 const SELECT_CHIP =
-  'flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded border border-line bg-white px-3 py-1 text-small text-ink';
+  'flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded border border-line bg-white px-3 py-1 text-small font-normal text-ink';
 
 /** Static, non-interactive select chip (price / perks). Visual only. */
 function StaticChip({ label }: { label: string }) {

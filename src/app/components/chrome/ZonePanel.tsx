@@ -23,14 +23,14 @@ const ZONES: { label: string; color: string }[] = [
 
 /** Figma <Button> w/ zone-color start icon: 32px min-height, gray/200 border, 4px radius. */
 const ZONE_BUTTON =
-  'flex min-h-8 items-center gap-1 rounded border border-line bg-white px-3 py-1 text-caption text-ink';
+  'flex min-h-8 items-center gap-1 rounded border border-line bg-white px-3 py-1 text-caption font-normal text-ink';
 
 function ZoneDot({ color }: { color: string }) {
-  // Figma: 20px icon box masked to 17px wide (offset -3px), 18px circle.
+  // 14px swatch centered in the 17px icon slot.
   return (
     <span aria-hidden className="relative h-5 w-[17px] shrink-0">
       <span
-        className="absolute left-[-2px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
+        className="absolute left-[1.5px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full"
         style={{ backgroundColor: color }}
       />
     </span>

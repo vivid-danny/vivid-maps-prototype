@@ -1,6 +1,6 @@
 import { Icon } from './Icon';
 
-const NAV_LINKS = ['Trending', 'Sports', 'Concerts', 'Theater & Comedy'];
+const NAV_LINKS = ['Explore', 'Trending', 'Sports', 'Concerts', 'Theater & Comedy'];
 
 /**
  * Static production page chrome (global banner + navbar), matched 1:1 to the
@@ -32,17 +32,19 @@ export function SiteHeader() {
           </div>
         </div>
 
-        {/* Navigation — Body/Regular */}
-        <div className="flex items-center justify-end gap-6 text-body text-ink">
+        {/* Navigation — production nav: Medium links, circular flag + currency, account icon */}
+        <div className="flex items-center justify-end gap-6 text-body font-medium text-ink">
           {NAV_LINKS.map((link) => (
             <span key={link} className="whitespace-nowrap">
               {link}
             </span>
           ))}
-          <span className="whitespace-nowrap">🇨🇦 CAD</span>
           <span className="flex items-center gap-2 whitespace-nowrap">
-            <Icon name="user" />
-            My Account
+            <img src="/icons/flag-us.svg" alt="" aria-hidden draggable={false} className="h-5 w-5 shrink-0" />
+            USD
+          </span>
+          <span aria-label="My Account" className="flex items-center">
+            <Icon name="user" size={24} glyph={18} />
           </span>
         </div>
       </nav>
