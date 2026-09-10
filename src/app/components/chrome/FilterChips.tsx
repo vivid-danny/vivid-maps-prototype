@@ -1,45 +1,68 @@
-import { ChevronDown } from 'lucide-react';
+import { Icon, SelectChevron } from './Icon';
 
 interface FilterChipsProps {
   className?: string;
+  variant?: 'desktop' | 'mobile';
   /** Existing quantity filter — kept fully wired via the "Tickets" chip. */
   quantityFilter?: number;
   onQuantityFilterChange?: (qty: number) => void;
 }
 
-const CHIP_BORDER = '1px solid oklch(88% 0.01 320)';
-const CHEVRON_COLOR = 'oklch(60% 0.015 320)';
+/** Figma <Select>: 32px min-height, gray/200 border, 4px radius, centered label + chevron. */
+const SELECT_CHIP =
+  'flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded border border-line bg-white px-3 py-1 text-small text-ink';
 
-/** Static, non-interactive filter chip (price / perks). Visual only. */
+/** Static, non-interactive select chip (price / perks). Visual only. */
 function StaticChip({ label }: { label: string }) {
   return (
-    <button
-      type="button"
-      className="flex h-9 flex-1 items-center justify-between gap-2 rounded-md bg-white px-3 text-sm text-gray-700"
-      style={{ border: CHIP_BORDER }}
-    >
+    <button type="button" className={SELECT_CHIP}>
       <span className="truncate">{label}</span>
-      <ChevronDown className="h-3.5 w-3.5 shrink-0" style={{ color: CHEVRON_COLOR }} />
+      <SelectChevron />
     </button>
   );
 }
 
 /**
- * The price / tickets / perks filter row. Price and Perks are static styled
- * chips; the Tickets chip is the existing quantity filter, unchanged in behavior.
+ * The main filter row. Price and Perks are static chips; the Tickets chip is
+ * the existing quantity filter — the native <select> is laid transparently over
+ * the styled chip so behavior is unchanged while visuals match Figma exactly.
  */
-export function FilterChips({ className, quantityFilter, onQuantityFilterChange }: FilterChipsProps) {
+export function FilterChips({
+  className,
+  variant = 'desktop',
+  quantityFilter,
+  onQuantityFilterChange,
+}: FilterChipsProps) {
+  const qty = quantityFilter ?? 2;
+  const isMobile = variant === 'mobile';
+
   return (
-    <div className={`flex items-center gap-2 bg-white ${className ?? ''}`}>
-      <StaticChip label="$28 – $1,350" />
+    <div className={`flex h-8 items-center gap-2 ${className ?? ''}`}>
+      {isMobile && (
+        <button
+          type="button"
+          aria-label="Filters"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-line bg-white"
+        >
+          <Icon name="filter" />
+        </button>
+      )}
+
+      <StaticChip label="$28 - $1,350" />
 
       {onQuantityFilterChange ? (
-        <div className="relative flex-1">
+        <div
+          className={`relative ${SELECT_CHIP} has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-[#D63384]`}
+        >
+          <span className="truncate">
+            {qty} {qty === 1 ? 'Ticket' : 'Tickets'}
+          </span>
+          <SelectChevron />
           <select
-            value={quantityFilter ?? 2}
+            aria-label="Ticket quantity"
+            value={qty}
             onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-            className="h-9 w-full cursor-pointer appearance-none rounded-md bg-white pl-3 pr-7 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#D63384]"
-            style={{ border: CHIP_BORDER }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>
@@ -47,16 +70,12 @@ export function FilterChips({ className, quantityFilter, onQuantityFilterChange 
               </option>
             ))}
           </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-            style={{ color: CHEVRON_COLOR }}
-          />
         </div>
       ) : (
         <StaticChip label="2 Tickets" />
       )}
 
-      <StaticChip label="Perks" />
+      {!isMobile && <StaticChip label="Perks" />}
     </div>
   );
 }

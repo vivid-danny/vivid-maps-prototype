@@ -199,7 +199,7 @@ export function PrototypeControls({
 
   return (
     <div
-      className={`shrink-0 h-full border-r border-gray-200 transition-all duration-300 ${
+      className={`shrink-0 h-full bg-white border-r border-gray-200 transition-all duration-300 ${
         showControls ? 'w-96' : 'w-0 overflow-hidden border-r-0'
       }`}
     >

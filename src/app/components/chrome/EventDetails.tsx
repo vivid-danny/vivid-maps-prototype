@@ -1,4 +1,4 @@
-import { ChevronLeft, Info } from 'lucide-react';
+import { Icon } from './Icon';
 import type { EventInfo } from '../../seatMap/model/types';
 
 interface EventDetailsProps {
@@ -17,45 +17,50 @@ function shortLocation(address: string): string | null {
 }
 
 /**
- * Static event-info block (team tile + event name, venue/location, date),
- * matched to the Figma `<production details>`. Data-driven from `model.eventInfo`.
- * `desktop` renders inside the listing-panel header; `mobile` adds a back chevron.
+ * Event-info block matched to the Figma <production details>. Data-driven
+ * from `model.eventInfo`.
+ *  - desktop: 64px image · Body/Bold title · Small venue + date w/ info icon
+ *  - mobile:  back chevron · Small/Bold title · Caption venue + date
  */
 export function EventDetails({ eventInfo, variant = 'desktop', onBack }: EventDetailsProps) {
   const { eventName, venueName, venueAddress, eventDate } = eventInfo;
   const location = shortLocation(venueAddress);
   const venueLine = location ? `${venueName} in ${location}` : venueName;
-  const initial = eventName.trim().charAt(0).toUpperCase() || 'V';
 
-  const isMobile = variant === 'mobile';
-
-  return (
-    <div className={`flex items-center gap-3 bg-white ${isMobile ? 'px-4 py-3' : ''}`}>
-      {isMobile && (
+  if (variant === 'mobile') {
+    return (
+      <div className="flex items-center gap-2 bg-white py-3 pl-2.5 pr-3">
         <button
           type="button"
           onClick={onBack}
           aria-label="Back"
-          className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#04092C] hover:bg-gray-50"
+          className="flex h-6 w-6 shrink-0 items-center justify-end"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <Icon name="chevron-left" size={18} glyph={18} />
         </button>
-      )}
-
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#0e3386]">
-        <span className="text-lg font-bold text-white">{initial}</span>
-      </div>
-
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-semibold leading-tight text-gray-900">
-            {eventName}
-          </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-small font-bold text-ink">{eventName}</p>
+          <p className="truncate text-caption text-ink-secondary">{venueLine}</p>
+          <p className="truncate text-caption text-ink-secondary">{eventDate}</p>
         </div>
-        <div className="mt-0.5 truncate text-xs text-gray-500">{venueLine}</div>
-        <div className="flex items-center gap-1 text-xs text-gray-500">
-          <span>{eventDate}</span>
-          <Info className="h-3 w-3 text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <img
+        src="/event-placeholder.svg"
+        alt=""
+        className="h-16 w-16 shrink-0 rounded object-cover"
+        draggable={false}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-body font-bold text-ink">{eventName}</p>
+        <p className="truncate text-small text-ink-secondary">{venueLine}</p>
+        <div className="flex items-center text-small text-ink-secondary">
+          <span className="truncate">{eventDate}</span>
+          <Icon name="info" size={18} glyph={12} />
         </div>
       </div>
     </div>

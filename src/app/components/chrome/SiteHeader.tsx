@@ -1,56 +1,47 @@
-import { ChevronDown, Search, User } from 'lucide-react';
+import { Icon } from './Icon';
 
 const NAV_LINKS = ['Trending', 'Sports', 'Concerts', 'Theater & Comedy'];
 
 /**
- * Static production-style page chrome (promo bar + top nav), matched to the
- * Vivid Seats event page. Deliberately inert — no real search, navigation,
- * currency, or auth. Its job is to make the prototype read as vividseats.com.
- * Desktop only; on mobile the event-details header takes the top slot instead.
+ * Static production page chrome (global banner + navbar), matched 1:1 to the
+ * Figma <navbar> (42px banner + 76px nav). Deliberately inert — no search,
+ * navigation, currency, or auth. Desktop only.
  */
 export function SiteHeader() {
   return (
-    <header className="shrink-0">
-      {/* Promo / trust banner */}
-      <div className="flex h-10 items-center justify-center bg-[#04092C] text-white">
-        <span className="text-xs font-medium">
-          100 million sold, 100% Buyer Guarantee.{' '}
-          <span className="font-bold underline underline-offset-2">Learn More.</span>
-        </span>
+    <header className="shrink-0 border-b border-line bg-white">
+      {/* Global banner — Caption/Medium on text/primary */}
+      <div className="flex items-center justify-center bg-ink py-3">
+        <p className="whitespace-nowrap text-caption font-medium text-white">
+          100 million sold, 100% Buyer Guarantee. Learn More.
+        </p>
       </div>
 
-      {/* Nav bar */}
-      <nav
-        aria-label="Main"
-        className="flex h-[70px] items-center gap-8 bg-white px-11"
-        style={{ borderBottom: '1px solid #efeff6' }}
-      >
-        <img src="/vslogo.svg" alt="Vivid Seats" width={152} className="shrink-0" />
-
-        {/* Search (inert) */}
-        <div
-          aria-hidden
-          className="flex h-11 w-[345px] shrink-0 items-center gap-2 rounded-full px-4 text-gray-500"
-          style={{ backgroundColor: '#f6f6fb' }}
-        >
-          <Search className="h-[18px] w-[18px]" />
-          <span className="text-sm">Search by artist, team, or venue</span>
+      <nav aria-label="Main" className="flex min-h-[76px] items-center justify-between px-6 py-4">
+        {/* Logo + search */}
+        <div className="flex items-center gap-10">
+          <img src="/vslogo.svg" alt="Vivid Seats" width={156} className="shrink-0" />
+          <div
+            aria-hidden
+            className="flex w-[343px] shrink-0 items-center gap-2 rounded-full bg-surface-50 px-4 py-2.5"
+          >
+            <Icon name="search" />
+            <span className="whitespace-nowrap text-body text-ink-muted">
+              Search by artist, team, or venue
+            </span>
+          </div>
         </div>
 
-        {/* Right cluster */}
-        <div className="ml-auto flex items-center gap-7 text-[#04092C]">
+        {/* Navigation — Body/Regular */}
+        <div className="flex items-center justify-end gap-6 text-body text-ink">
           {NAV_LINKS.map((link) => (
-            <span key={link} className="text-base font-medium">
+            <span key={link} className="whitespace-nowrap">
               {link}
             </span>
           ))}
-          <span className="flex items-center gap-1 text-base font-medium">
-            <span aria-hidden>🇨🇦</span>
-            CAD
-            <ChevronDown className="h-4 w-4" />
-          </span>
-          <span className="flex items-center gap-1.5 text-base font-medium">
-            <User className="h-[22px] w-[22px]" strokeWidth={1.8} />
+          <span className="whitespace-nowrap">🇨🇦 CAD</span>
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            <Icon name="user" />
             My Account
           </span>
         </div>

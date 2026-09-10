@@ -4,41 +4,48 @@ interface ZonePanelProps {
 }
 
 /**
- * Static "Filter by Zone" legend. Non-functional — purely a visual match for
- * the Figma zone panel. Colors are drawn from the app's zone palette
- * (`ZONE_TIER_COLORS` / fallback hues in `seatMap/config/themes.ts`) so the
- * legend reads consistently with the branded map styling.
+ * Static "Filter by Zone" legend matched to the Figma <zone filters>.
+ * Non-functional — purely visual. Colors are the exact Figma zone swatches.
  */
 const ZONES: { label: string; color: string }[] = [
-  { label: 'Terrace Outfield', color: '#5BC4C4' },
-  { label: 'Home Plate', color: '#9B6FC0' },
-  { label: 'First Base Box', color: '#D45196' },
-  { label: 'Mezzanine', color: '#E07C4F' },
-  { label: 'Third Base Box', color: '#6BBF6B' },
-  { label: 'Home Plate Box', color: '#4C85D0' },
-  { label: 'Left Field', color: '#C9A44C' },
-  { label: 'Infield Mezzanine', color: '#B99872' },
-  { label: 'Bleachers', color: '#30C096' },
-  { label: 'Field Box Infield', color: '#E0658F' },
-  { label: 'Outfield', color: '#8FB4D6' },
+  { label: 'Terrace Outfield', color: '#99E3FF' },
+  { label: 'Home Plate', color: '#9959FF' },
+  { label: 'First Base Box', color: '#D0A7F8' },
+  { label: 'Mezzanine', color: '#FB8080' },
+  { label: 'Third Base Box', color: '#84F8B4' },
+  { label: 'Home Plate Box', color: '#8294AF' },
+  { label: 'Left Field', color: '#CA2811' },
+  { label: 'Infield Mezzanine', color: '#EC3E30' },
+  { label: 'Bleachers', color: '#AB8197' },
+  { label: 'Field Box Infield', color: '#5AAD58' },
+  { label: 'Outfield', color: '#D9C154' },
 ];
+
+/** Figma <Button> w/ zone-color start icon: 32px min-height, gray/200 border, 4px radius. */
+const ZONE_BUTTON =
+  'flex min-h-8 items-center gap-1 rounded border border-line bg-white px-3 py-1 text-caption text-ink';
+
+function ZoneDot({ color }: { color: string }) {
+  // Figma: 20px icon box masked to 17px wide (offset -3px), 18px circle.
+  return (
+    <span aria-hidden className="relative h-5 w-[17px] shrink-0">
+      <span
+        className="absolute left-[-2px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+    </span>
+  );
+}
 
 export function ZonePanel({ className, variant = 'desktop' }: ZonePanelProps) {
   if (variant === 'mobile') {
     return (
-      <div className={`no-scrollbar flex gap-2 overflow-x-auto bg-white ${className ?? ''}`}>
+      <div className={`no-scrollbar flex items-center gap-2 overflow-x-auto ${className ?? ''}`}>
         {ZONES.map((zone) => (
-          <span
-            key={zone.label}
-            className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-gray-700"
-            style={{ border: '1px solid oklch(88% 0.01 320)' }}
-          >
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: zone.color }}
-            />
-            {zone.label}
-          </span>
+          <button key={zone.label} type="button" className={`${ZONE_BUTTON} shrink-0`}>
+            <ZoneDot color={zone.color} />
+            <span className="whitespace-nowrap">{zone.label}</span>
+          </button>
         ))}
       </div>
     );
@@ -46,21 +53,14 @@ export function ZonePanel({ className, variant = 'desktop' }: ZonePanelProps) {
 
   return (
     <div className={`flex h-full flex-col bg-white ${className ?? ''}`}>
-      <div className="px-4 pb-3 pt-4">
-        <h2 className="text-base font-semibold text-gray-900">Filter by Zone</h2>
+      <div className="flex items-center border-b border-line-thin p-4">
+        <h2 className="truncate text-small font-bold text-ink">Filter by Zone</h2>
       </div>
-      <div className="flex flex-col gap-1 px-2 pb-4">
+      <div className="flex flex-col gap-2 p-4">
         {ZONES.map((zone) => (
-          <button
-            key={zone.label}
-            type="button"
-            className="flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <span
-              className="h-3.5 w-3.5 shrink-0 rounded-full"
-              style={{ backgroundColor: zone.color }}
-            />
-            <span className="truncate">{zone.label}</span>
+          <button key={zone.label} type="button" className={`${ZONE_BUTTON} w-full text-left`}>
+            <ZoneDot color={zone.color} />
+            <span className="min-w-0 flex-1 truncate">{zone.label}</span>
           </button>
         ))}
       </div>

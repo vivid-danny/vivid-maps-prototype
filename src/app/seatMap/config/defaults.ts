@@ -41,7 +41,7 @@ export function createDefaultSeatMapConfig(): SeatMapConfig {
     venueFill: '#FFFFFF',         // production: onPrimary
     venueStroke: '#A0A2B3',       // production: onSurfaceDisabled
     sectionStroke: '#d3d3dc',     // production: sectionStrokeColor
-    mapBackground: '#F6F6FB',     // production: neutral[50]
+    mapBackground: '#EFEFF6',     // production: neutral[100] — matches page/panel background
     sectionBase: '#EFEFF6',       // production: neutral[100]
     seatColors: {
       available: '#CE3197',
