@@ -155,9 +155,7 @@ export function MapLibreVenue({
     containerRef,
     style,
     bounds: VENUE_BOUNDS,
-    fitBoundsPadding: isMobile
-      ? { top: -20, bottom: -15, left: 0, right: 0 }
-      : 40,
+    fitBoundsPadding: isMobile ? 0 : 40,
     minZoom: isMobile ? 10 : 12,
     maxZoom: isMobile ? 17 : 18,
     onZoomChange,

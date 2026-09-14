@@ -1,6 +1,6 @@
 :root {
   --font-size: 16px;
-  --background: #ffffff;
+  --background: #EFEFF6;
   --foreground: #030213;
   --border: rgba(0, 0, 0, 0.1);
   --font-weight-medium: 500;
@@ -12,6 +12,19 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-border: var(--border);
+  /* Vivid Seats design-system tokens (Figma variables) */
+  --color-ink: #04092C;            /* text/primary, gray/600 */
+  --color-ink-secondary: #474B5E;  /* gray/500 */
+  --color-ink-muted: #717488;      /* gray/400 */
+  --color-line: #D3D3DC;           /* gray/200 */
+  --color-line-thin: #EFEFF6;      /* gray/100 */
+  --color-surface-50: #F6F6FB;     /* gray/50 */
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-small: 14px;
+  --text-small--line-height: 21px;
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
 }
 
 @layer base {
@@ -25,6 +38,10 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Grayscale AA to match Figma's rendering. Without this, macOS browsers
+       default to subpixel AA, which visually thickens GT Walsheim. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   html {

@@ -31,7 +31,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
         <TicketDetailPerks listing={listing} perks={listing.perks} />
         {listing.quantityAvailable > 1 && (
           <div className="p-6 border-t border-gray-100">
-            <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
               Seated Together
             </h4>
             <p className="text-xs text-gray-500">
@@ -45,7 +45,7 @@ export function TicketDetail({ listing, eventInfo, layoutMode, initialQuantity, 
         <TicketDetailEventInfo eventInfo={eventInfo} />
         {listing.isSectionUnmapped && (
           <div className="p-6 border-t border-gray-100">
-            <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
+            <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Notes</h4>
             <p className="text-xs text-gray-500">
               {"We don't recognize the row(s) listed for this ticket, so we're displaying it in the last row of this section."}
             </p>

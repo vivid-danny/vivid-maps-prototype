@@ -28,7 +28,7 @@ export function TicketDetailPerks({ listing, perks }: TicketDetailPerksProps) {
 
   return (
     <div className="p-6 border-t border-gray-100">
-      <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+      <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
         Seat Perks
       </h4>
       <div className="mt-2 space-y-2">

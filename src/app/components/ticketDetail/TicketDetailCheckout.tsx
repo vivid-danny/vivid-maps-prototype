@@ -22,7 +22,7 @@ export function TicketDetailCheckout({ quantityAvailable, initialQuantity, class
           </option>
         ))}
       </select>
-      <button className="w-1/2 h-10 rounded bg-[#D63384] hover:bg-[#C22575] active:bg-[#A91D63] text-white text-sm font-semibold cursor-pointer transition-colors">
+      <button className="w-1/2 h-10 rounded bg-[#D63384] hover:bg-[#C22575] active:bg-[#A91D63] text-white text-sm font-bold cursor-pointer transition-colors">
         Checkout
       </button>
     </div>

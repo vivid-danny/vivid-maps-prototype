@@ -14,7 +14,7 @@ function DealScoreBadge({ score }: { score: number }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded"
+      className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded"
       style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
     >
       {score.toFixed(1)} {label}
@@ -56,7 +56,7 @@ export function TicketDetailInfo({ listing }: TicketDetailInfoProps) {
     <div className="p-6 space-y-2">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-base font-semibold text-gray-900">
+          <h3 className="text-base font-bold text-gray-900">
             {locationLabel}
           </h3>
           <p className="text-sm text-gray-500">

@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Listing, SelectionState, HoverState } from '../seatMap/model/types';
 import { ListingCard } from './ListingCard';
@@ -13,13 +12,10 @@ interface ListingsPanelProps {
   onSelectListing: (listing: Listing) => void;
   onHoverListing: (listing: Listing | null) => void;
   disableHover?: boolean;
-  quantityFilter?: number;
-  onQuantityFilterChange?: (qty: number) => void;
-  showEventInfo?: boolean;
   onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, quantityFilter, onQuantityFilterChange, showEventInfo = true, onPolePosition }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
   const [containerMounted, setContainerMounted] = useState(false);
@@ -62,7 +58,7 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 80,
     gap: 8,
-    paddingStart: 4,
+    paddingStart: 0,
     paddingEnd: 12,
     overscan: 5,
   });
@@ -76,72 +72,43 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
 
   return (
     <div className={`flex flex-col min-h-0 bg-white ${className}`}>
-      {/* Event info */}
-      {showEventInfo && (
-        <div className="px-4 py-3 flex items-center gap-3 bg-white">
-          <div className="w-12 h-12 rounded-lg bg-[#0e3386] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-gray-900 text-sm leading-tight">Chicago Cubs vs Baltimore Orioles</div>
-            <div className="text-xs text-gray-500 mt-0.5">Oriole Park at Camden Yards in Baltimore, MD</div>
-            <div className="text-xs text-gray-500">Wed, Apr 9 at 7:05 PM</div>
-          </div>
-        </div>
-      )}
-      {/* Quantity filter */}
-      {onQuantityFilterChange && (
-        <div className={`h-12 flex items-center bg-white${disableHover ? ' px-3 mt-[10px]' : ' px-3'}`}>
-          <div className="relative w-full">
-            <select
-              value={quantityFilter ?? 2}
-              onChange={(e) => onQuantityFilterChange(Number(e.target.value))}
-              className="appearance-none w-full text-sm text-gray-700 bg-white rounded-md px-3 pr-7 h-9 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D63384] focus:border-[#D63384]"
-              style={{ border: '1px solid oklch(88% 0.01 320)' }}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={n}>{n} {n === 1 ? 'ticket' : 'tickets'}</option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-              style={{ color: 'oklch(60% 0.015 320)' }}
-            />
-          </div>
-        </div>
-      )}
-      {/* Header */}
-      <div className={`flex items-center bg-white${disableHover ? ' px-3 pt-2 pb-3' : ' px-3 pt-2 pb-3'}`}>
-        <h2 className="text-base text-gray-900">
-          <span className="font-bold">{sortedListings.length}</span>
-          <span className="font-medium"> {sortedListings.length === 1 ? 'listing' : 'listings'}</span>
+      {/* Header — Figma listings header: 24px row, Small/Bold count + borderless sort */}
+      <div className="flex h-6 shrink-0 items-center gap-2 bg-white mb-4">
+        <h2 className="min-w-0 flex-1 truncate text-small font-bold text-ink">
+          {sortedListings.length} {sortedListings.length === 1 ? 'Listing' : 'Listings'}
           {selection.sectionId && (
-            <span className="font-normal text-gray-500">
+            <span className="font-normal text-ink-secondary">
               {' '}in {selection.rowId ? `Row ${selection.rowId.replace(/^[A-Z]+/, '')}` : `Section ${listings.find(l => l.sectionId === selection.sectionId)?.sectionLabel || selection.sectionId}`}
             </span>
           )}
         </h2>
-        <div className="ml-auto relative shrink-0">
+        {/* Sort: styled label + Figma sort icon, with the native <select> laid transparently over it */}
+        <div className="relative flex shrink-0 items-center gap-1 rounded text-small text-ink has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-[#D63384]">
+          <span className="whitespace-nowrap">{sortBy === 'price' ? 'Lowest Price' : 'Deal Score'}</span>
+          <span aria-hidden className="relative h-6 w-2 shrink-0">
+            <img
+              src="/icons/sort.svg"
+              alt=""
+              draggable={false}
+              className="absolute left-[-1px] top-1/2 h-[10px] w-[6px] -translate-y-1/2"
+            />
+          </span>
           <select
+            aria-label="Sort listings"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'price' | 'dealScore')}
-            className="appearance-none text-sm text-gray-700 bg-white rounded-md pl-3 pr-7 h-8 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#D63384] focus:border-[#D63384]"
-            style={{ border: '1px solid oklch(88% 0.01 320)' }}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           >
-            <option value="price">Lowest price</option>
-            <option value="dealScore">Deal score</option>
+            <option value="price">Lowest Price</option>
+            <option value="dealScore">Deal Score</option>
           </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-            style={{ color: 'oklch(60% 0.015 320)' }}
-          />
         </div>
       </div>
 
       {/* Scrollable virtualized list */}
       <div
         ref={scrollContainerCallbackRef}
-        className="flex-1 overflow-y-auto px-3 no-scrollbar"
+        className="flex-1 overflow-y-auto no-scrollbar"
       >
         {sortedListings.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
