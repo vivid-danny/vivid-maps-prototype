@@ -269,7 +269,7 @@ export function SeatMapRoot() {
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="h-full shrink-0 p-4" style={{ width: '35%' }}>
+            <div className="h-full shrink-0 p-4" style={{ width: '35%', maxWidth: '37rem' }}>
               <div className="w-full h-full rounded-lg overflow-hidden relative flex flex-col gap-4 bg-white p-4">
                 <div className="shrink-0 flex flex-col gap-4">
                   <EventDetails eventInfo={model.eventInfo} variant="desktop" />

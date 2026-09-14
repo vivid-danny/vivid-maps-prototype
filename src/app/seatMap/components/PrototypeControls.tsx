@@ -204,7 +204,7 @@ export function PrototypeControls({
       }`}
     >
       <div className="flex items-center justify-between h-12 border-b border-gray-200 px-5">
-        <h2 className="text-[13px] font-semibold text-foreground">Prototype Controls</h2>
+        <h2 className="text-[13px] font-bold text-foreground">Prototype Controls</h2>
         <button
           onClick={onResetConfig}
           className="text-xs text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline transition-colors cursor-pointer"
@@ -336,7 +336,7 @@ export function PrototypeControls({
               <div className="space-y-3">
                 {(['section', 'row', 'seat'] as const).map((level) => (
                   <div key={level}>
-                    <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{level}</div>
+                    <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">{level}</div>
                     <div className="space-y-2 ml-2">
                       <ColorControl
                         label="Muted"
@@ -371,7 +371,7 @@ export function PrototypeControls({
                 ))}
               </div>
               <div className="mt-3">
-                <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
+                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Row (in Seats Mode)</div>
                 <div className="space-y-2 ml-2">
                   <ColorControl
                     label="Row Fill"

@@ -91,7 +91,7 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, di
             <div className="flex flex-wrap gap-1 mt-2">
               {listing.dealScore >= 6 && (
                 <span
-                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded font-semibold"
+                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded font-bold"
                   style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
                 >
                   {listing.dealScore.toFixed(1)}

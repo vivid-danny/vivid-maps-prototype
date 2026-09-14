@@ -38,6 +38,10 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Grayscale AA to match Figma's rendering. Without this, macOS browsers
+       default to subpixel AA, which visually thickens GT Walsheim. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   html {

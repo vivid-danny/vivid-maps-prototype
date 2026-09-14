@@ -36,18 +36,22 @@ export function Icon({ name, size = 20, glyph, className }: IconProps) {
 }
 
 /**
- * Figma's "Masked Icon" for <Select>: an 8px-wide slot with the 20px chevron
- * box offset -8px, so the glyph sits tight against the label.
+ * Chevron for <Select>-style chips. Drawn inline rather than loaded from
+ * public/icons so it renders as a crisp stroked caret and inherits currentColor.
  */
 export function SelectChevron() {
   return (
-    <span aria-hidden className="relative h-5 w-2 shrink-0">
-      <img
-        src="/icons/chevron-down.svg"
-        alt=""
-        draggable={false}
-        className="absolute left-[-5px] top-1/2 h-[14px] w-[14px] -translate-y-1/2"
-      />
-    </span>
+    <svg
+      aria-hidden
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-3 w-3 shrink-0"
+    >
+      <path d="M2.5 4.5 6 8l3.5-3.5" />
+    </svg>
   );
 }
