@@ -2,7 +2,6 @@ export type IconName =
   | 'search'
   | 'user'
   | 'info'
-  | 'chevron-down'
   | 'chevron-left'
   | 'plus'
   | 'minus'
