@@ -5,7 +5,6 @@ import { ListingsPanel } from '../../components/ListingsPanel';
 import { SiteHeader } from '../../components/chrome/SiteHeader';
 import { EventDetails } from '../../components/chrome/EventDetails';
 import { FilterChips } from '../../components/chrome/FilterChips';
-import { ZonePanel } from '../../components/chrome/ZonePanel';
 import { Icon } from '../../components/chrome/Icon';
 import { TicketDetail } from '../../components/ticketDetail/TicketDetail';
 import { createDefaultSeatMapConfig } from '../config/defaults';
@@ -269,7 +268,7 @@ export function SeatMapRoot() {
         >
           {/* Desktop: sidebar panel (listings + detail overlay) */}
           {!isMobile && (
-            <div className="h-full shrink-0 p-4" style={{ width: '35%', maxWidth: '37rem' }}>
+            <div className="h-full shrink-0 p-4" style={{ width: '40%', maxWidth: '40rem' }}>
               <div className="w-full h-full rounded-lg overflow-hidden relative flex flex-col gap-4 bg-white p-4">
                 <div className="shrink-0 flex flex-col gap-4">
                   <EventDetails eventInfo={model.eventInfo} variant="desktop" />
@@ -307,18 +306,6 @@ export function SeatMapRoot() {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Desktop: Filter by Zone panel */}
-          {!isMobile && (
-            <div className="h-full shrink-0 py-4 pr-4">
-              <div
-                className="h-full rounded-lg overflow-hidden bg-white"
-                style={{ width: 186 }}
-              >
-                <ZonePanel variant="desktop" />
               </div>
             </div>
           )}
@@ -422,16 +409,15 @@ export function SeatMapRoot() {
             </div>
           </div>
 
-          {/* Mobile: filters + zone chips + listings panel */}
+          {/* Mobile: filters + listings panel */}
           {isMobile && (
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white">
-              <div className="shrink-0 flex flex-col gap-3 px-3 pt-3 pb-3">
+              <div className="shrink-0 px-3 pt-3 pb-3">
                 <FilterChips
                   variant="mobile"
                   quantityFilter={viewState.quantityFilter}
                   onQuantityFilterChange={viewState.setQuantityFilter}
                 />
-                <ZonePanel variant="mobile" />
               </div>
               <div className="flex-1 min-h-0 relative overflow-hidden px-3">
                 <ListingsPanel
