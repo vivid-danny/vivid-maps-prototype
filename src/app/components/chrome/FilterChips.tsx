@@ -10,12 +10,12 @@ interface FilterChipsProps {
 
 /** Figma <Select>: 32px min-height, gray/200 border, 4px radius, centered label + chevron. */
 const SELECT_CHIP =
-  'flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded border border-line bg-white px-3 py-1 text-small font-normal text-ink';
+  'flex min-h-8 min-w-0 items-center justify-center gap-1 rounded border border-line bg-white px-3 py-1 text-small font-normal text-ink';
 
-/** Static, non-interactive select chip (price / perks). Visual only. */
-function StaticChip({ label }: { label: string }) {
+/** Static, non-interactive select chip (price / perks / zones). Visual only. */
+function StaticChip({ label, sizing }: { label: string; sizing: string }) {
   return (
-    <button type="button" className={SELECT_CHIP}>
+    <button type="button" className={`${SELECT_CHIP} ${sizing}`}>
       <span className="truncate">{label}</span>
       <SelectChevron />
     </button>
@@ -23,9 +23,12 @@ function StaticChip({ label }: { label: string }) {
 }
 
 /**
- * The main filter row. Price and Perks are static chips; the Tickets chip is
- * the existing quantity filter — the native <select> is laid transparently over
+ * The main filter row. Price, Perks and Zones are static chips; the Tickets chip
+ * is the existing quantity filter — the native <select> is laid transparently over
  * the styled chip so behavior is unchanged while visuals match Figma exactly.
+ *
+ * Desktop distributes the chips evenly across the row. Mobile can't fit them, so
+ * the row scrolls horizontally and chips keep their intrinsic width.
  */
 export function FilterChips({
   className,
@@ -35,9 +38,14 @@ export function FilterChips({
 }: FilterChipsProps) {
   const qty = quantityFilter ?? 2;
   const isMobile = variant === 'mobile';
+  const sizing = isMobile ? 'shrink-0' : 'flex-1';
 
   return (
-    <div className={`flex h-8 items-center gap-2 ${className ?? ''}`}>
+    <div
+      className={`flex h-8 items-center gap-2 ${
+        isMobile ? 'no-scrollbar overflow-x-auto' : ''
+      } ${className ?? ''}`}
+    >
       {isMobile && (
         <button
           type="button"
@@ -48,11 +56,11 @@ export function FilterChips({
         </button>
       )}
 
-      <StaticChip label="$28 - $1,350" />
+      <StaticChip label="$28 - $1,350" sizing={sizing} />
 
       {onQuantityFilterChange ? (
         <div
-          className={`relative ${SELECT_CHIP} has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-[#D63384]`}
+          className={`relative ${SELECT_CHIP} ${sizing} has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-[#D63384]`}
         >
           <span className="truncate">
             {qty} {qty === 1 ? 'Ticket' : 'Tickets'}
@@ -72,10 +80,12 @@ export function FilterChips({
           </select>
         </div>
       ) : (
-        <StaticChip label="2 Tickets" />
+        <StaticChip label="2 Tickets" sizing={sizing} />
       )}
 
-      {!isMobile && <StaticChip label="Perks" />}
+      {!isMobile && <StaticChip label="Perks" sizing={sizing} />}
+
+      <StaticChip label="Zones" sizing={sizing} />
     </div>
   );
 }
