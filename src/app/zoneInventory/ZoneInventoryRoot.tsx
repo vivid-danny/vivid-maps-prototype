@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EventDetails } from '../components/chrome/EventDetails';
 import { SiteHeader } from '../components/chrome/SiteHeader';
 import { useLayoutMode } from '../seatMap/state/useLayoutMode';
 import { ZONE_LISTINGS } from './data/listings';
-import { buildPanelModel, lowestPriceByShape } from './logic/visibility';
+import { buildPanelModel, zoneShapeIds } from './logic/visibility';
+import { buildPins } from './logic/pins';
 import { PRICE_RANGES, ZoneFilters } from './components/ZoneFilters';
 import { ZoneListingsPanel } from './components/ZoneListingsPanel';
+import { ZonePanel } from './components/ZonePanel';
 import { ZoneVenueMap } from './components/ZoneVenueMap';
+import { ZoneTicketDetail } from './components/ticketDetail/ZoneTicketDetail';
 import type { EventInfo } from '../seatMap/model/types';
-import type { Filters, SortBy, ZoneListing } from './types';
+import type { Filters, SortBy, ZoneId, ZoneListing } from './types';
 
 const EVENT_INFO: EventInfo = {
   eventName: 'Italy vs. Spain — UEFA Nations League',
@@ -30,6 +33,9 @@ const DEMO_STATES: Array<{ id: string; label: string; shapeIds: string[] }> = [
 
 const MOBILE_MAP_HEIGHT = 300;
 
+/** Mirrors the base prototype's detail animation states. */
+type DetailPhase = 'closed' | 'entering' | 'open' | 'exiting';
+
 export function ZoneInventoryRoot() {
   const viewportMode = useLayoutMode();
   const [forceMobile, setForceMobile] = useState(false);
@@ -39,7 +45,12 @@ export function ZoneInventoryRoot() {
   // prototype's controls panel.
   const [showStates, setShowStates] = useState(false);
   const [selectedShapeIds, setSelectedShapeIds] = useState<string[]>([]);
+  /** Zones picked from the chips. A zone and a section are competing answers
+   *  to "where", so selecting either clears the other. */
+  const [pickedZoneIds, setPickedZoneIds] = useState<ZoneId[]>([]);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+  const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
+  const [hoveredZoneId, setHoveredZoneId] = useState<ZoneId | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('price');
   const [priceRangeIndex, setPriceRangeIndex] = useState(0);
@@ -58,30 +69,174 @@ export function ZoneInventoryRoot() {
   }, [quantity, priceRangeIndex]);
 
   const panelModel = useMemo(
-    () => buildPanelModel(ZONE_LISTINGS, selectedShapeIds, filters, sortBy),
-    [selectedShapeIds, filters, sortBy],
+    () => buildPanelModel(ZONE_LISTINGS, selectedShapeIds, filters, sortBy, pickedZoneIds),
+    [selectedShapeIds, filters, sortBy, pickedZoneIds],
   );
 
-  const pinPrices = useMemo(() => lowestPriceByShape(ZONE_LISTINGS, filters), [filters]);
+  // The map draws one selection; a zone chip simply contributes all its shapes.
+  const mapSelectedShapeIds = useMemo(
+    () => (selectedShapeIds.length > 0 ? selectedShapeIds : zoneShapeIds(pickedZoneIds)),
+    [selectedShapeIds, pickedZoneIds],
+  );
 
-  const handleToggleShape = useCallback((shapeId: string, additive: boolean) => {
+  /**
+   * What the pointer is currently pointing at, as shapes. A card lights up where
+   * it is — its section, or its whole zone when the seller never named one. A
+   * zone chip lights up the zone it names. Only one can be hovered at a time,
+   * but they feed the same layers either way.
+   */
+  const hoverShapeIds = useMemo(() => {
+    if (hoveredZoneId !== null) return zoneShapeIds([hoveredZoneId]);
+    if (hoveredListingId === null) return [];
+    const listing = ZONE_LISTINGS.find((l) => l.listingId === hoveredListingId);
+    if (!listing) return [];
+    if (listing.shapeId) return [listing.shapeId];
+    return listing.zoneId ? zoneShapeIds([listing.zoneId]) : [];
+  }, [hoveredZoneId, hoveredListingId]);
+
+  /**
+   * Zones the current highlight covers whole. These collapse to one pin: a
+   * region-wide highlight wants one price for the region, not one per section.
+   */
+  const collapsedZoneIds = useMemo(() => {
+    const zones = new Set<ZoneId>(pickedZoneIds);
+    if (hoveredZoneId) zones.add(hoveredZoneId);
+    if (hoveredListingId) {
+      const listing = ZONE_LISTINGS.find((l) => l.listingId === hoveredListingId);
+      // A hovered card with no section highlights its whole zone, so its pins
+      // collapse the same way a hovered chip's do.
+      if (listing && !listing.shapeId && listing.zoneId) zones.add(listing.zoneId);
+    }
+    return [...zones];
+  }, [pickedZoneIds, hoveredZoneId, hoveredListingId]);
+
+  const pins = useMemo(
+    () => buildPins(ZONE_LISTINGS, filters, {
+      selectedShapeIds,
+      collapsedZoneIds,
+      selectedListingId,
+    }),
+    [filters, selectedShapeIds, collapsedZoneIds, selectedListingId],
+  );
+
+  /** Sections multi-select the same way zone chips do: each click toggles. */
+  const handleToggleShape = useCallback((shapeId: string) => {
     setSelectedListingId(null);
-    setSelectedShapeIds((current) => {
-      if (!additive) return [shapeId];
-      return current.includes(shapeId)
+    setPickedZoneIds([]);
+    setSelectedShapeIds((current) =>
+      current.includes(shapeId)
         ? current.filter((id) => id !== shapeId)
-        : [...current, shapeId];
-    });
+        : [...current, shapeId],
+    );
   }, []);
 
   const handleClearSelection = useCallback(() => {
     setSelectedShapeIds([]);
+    setPickedZoneIds([]);
     setSelectedListingId(null);
   }, []);
 
-  const handleSelectListing = useCallback((listing: ZoneListing) => {
-    setSelectedListingId(listing.listingId);
+  const handleToggleZone = useCallback((zoneId: ZoneId) => {
+    setSelectedListingId(null);
+    setSelectedShapeIds([]);
+    setPickedZoneIds((current) =>
+      current.includes(zoneId) ? current.filter((id) => id !== zoneId) : [...current, zoneId],
+    );
   }, []);
+
+  /**
+   * Picking a listing says where it is as well as opening it: the section when
+   * the seller gave one, the whole zone when they didn't. Picking the same
+   * listing again closes the detail, as the base prototype does.
+   */
+  const handleSelectListing = useCallback((listing: ZoneListing) => {
+    setSelectedListingId((current) => (current === listing.listingId ? null : listing.listingId));
+    if (listing.shapeId) {
+      setSelectedShapeIds([listing.shapeId]);
+      setPickedZoneIds([]);
+    } else if (listing.zoneId) {
+      setSelectedShapeIds([]);
+      setPickedZoneIds([listing.zoneId]);
+    }
+  }, []);
+
+  const handleHoverListing = useCallback((listing: ZoneListing | null) => {
+    if (isMobile) return;
+    setHoveredListingId(listing?.listingId ?? null);
+  }, [isMobile]);
+
+  const handleHoverZone = useCallback((zoneId: ZoneId | null) => {
+    if (isMobile) return;
+    setHoveredZoneId(zoneId);
+  }, [isMobile]);
+
+  // Narrowing to mobile mid-hover would otherwise strand the wash on the map,
+  // since the handlers stop firing before they can clear themselves.
+  useEffect(() => {
+    if (!isMobile) return;
+    setHoveredListingId(null);
+    setHoveredZoneId(null);
+  }, [isMobile]);
+
+  /*
+   * Detail open/close, mirroring the base prototype. `lastListingRef` keeps the
+   * listing mounted through the exit animation, which would otherwise unmount
+   * before `detailSlideOut` finishes.
+   */
+  const selectedListing = useMemo(
+    () => ZONE_LISTINGS.find((l) => l.listingId === selectedListingId) ?? null,
+    [selectedListingId],
+  );
+  const isDetailOpen = selectedListing !== null;
+  const [detailPhase, setDetailPhase] = useState<DetailPhase>('closed');
+  const lastListingRef = useRef<ZoneListing | null>(null);
+  if (selectedListing) lastListingRef.current = selectedListing;
+
+  useEffect(() => {
+    if (isDetailOpen) {
+      setDetailPhase('entering');
+      return;
+    }
+    setDetailPhase((prev) => {
+      if (prev === 'open') return 'exiting';
+      if (prev === 'entering') return 'closed'; // interrupted mid-enter: instant close
+      return prev;
+    });
+  }, [isDetailOpen]);
+
+  const handleDetailAnimationEnd = (event: React.AnimationEvent) => {
+    // `.detail-content`'s own animation bubbles; only react to this element's.
+    if (event.target !== event.currentTarget) return;
+    if (detailPhase === 'entering') setDetailPhase('open');
+    if (detailPhase === 'exiting') setDetailPhase('closed');
+  };
+
+  const showDetailOverlay = detailPhase !== 'closed';
+  const detailListing = selectedListing ?? lastListingRef.current;
+  const detailShapeIds = useMemo(() => {
+    if (!detailListing) return [];
+    if (detailListing.shapeId) return [detailListing.shapeId];
+    return detailListing.zoneId ? zoneShapeIds([detailListing.zoneId]) : [];
+  }, [detailListing]);
+
+  const detailOverlay = showDetailOverlay && detailListing && (
+    <div
+      className={`absolute inset-0 detail-panel--${detailPhase}`}
+      onAnimationEnd={handleDetailAnimationEnd}
+    >
+      <div key={detailListing.listingId} className="detail-content h-full w-full">
+        <ZoneTicketDetail
+          className="h-full w-full"
+          listing={detailListing}
+          highlightShapeIds={detailShapeIds}
+          eventInfo={EVENT_INFO}
+          layoutMode={isMobile ? 'mobile' : 'desktop'}
+          initialQuantity={quantity}
+          onBack={() => setSelectedListingId(null)}
+        />
+      </div>
+    </div>
+  );
 
   const activeStateId = useMemo(() => {
     const key = [...selectedShapeIds].sort().join('|');
@@ -99,6 +254,7 @@ export function ZoneInventoryRoot() {
           type="button"
           onClick={() => {
             setSelectedShapeIds(state.shapeIds);
+            setPickedZoneIds([]);
             setSelectedListingId(null);
           }}
           className={`rounded border px-2.5 py-1 text-caption transition-colors ${
@@ -126,6 +282,7 @@ export function ZoneInventoryRoot() {
       model={panelModel}
       selectedListingId={selectedListingId}
       onSelectListing={handleSelectListing}
+      onHoverListing={handleHoverListing}
       sortBy={sortBy}
       onSortByChange={setSortBy}
     />
@@ -133,16 +290,18 @@ export function ZoneInventoryRoot() {
 
   const map = (
     <ZoneVenueMap
-      selectedShapeIds={selectedShapeIds}
-      pinPrices={pinPrices}
+      selectedShapeIds={mapSelectedShapeIds}
+      hoverShapeIds={hoverShapeIds}
+      pins={pins}
       onToggleShape={handleToggleShape}
+      onPickZone={handleToggleZone}
       onClearSelection={handleClearSelection}
       isMobile={isMobile}
     />
   );
 
   const content = isMobile ? (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
       <div className="shrink-0 border-b border-line-thin">
         <EventDetails eventInfo={EVENT_INFO} variant="mobile" onBack={handleClearSelection} />
       </div>
@@ -150,7 +309,7 @@ export function ZoneInventoryRoot() {
         {map}
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-3 pt-3">
-        <div className="shrink-0 pb-3">
+        <div className="flex shrink-0 flex-col gap-3 pb-3">
           <ZoneFilters
             variant="mobile"
             filters={filters}
@@ -158,14 +317,22 @@ export function ZoneInventoryRoot() {
             onQuantityChange={setQuantity}
             onPriceRangeChange={setPriceRangeIndex}
           />
+          <ZonePanel
+            variant="mobile"
+            selectedZoneIds={pickedZoneIds}
+            onToggleZone={handleToggleZone}
+            onHoverZone={handleHoverZone}
+          />
         </div>
         {panel}
       </div>
+      {/* Outside the listings column: on mobile the detail covers the map too. */}
+      {detailOverlay && <div className="absolute inset-0 z-[60]">{detailOverlay}</div>}
     </div>
   ) : (
     <div className="flex h-full w-full overflow-hidden">
       <div className="h-full shrink-0 p-4" style={{ width: '40%', maxWidth: '34rem' }}>
-        <div className="flex h-full w-full flex-col gap-4 overflow-hidden rounded-lg bg-white p-4">
+        <div className="relative flex h-full w-full flex-col gap-4 overflow-hidden rounded-lg bg-white p-4">
           <div className="flex shrink-0 flex-col gap-4">
             <EventDetails eventInfo={EVENT_INFO} variant="desktop" />
             <ZoneFilters
@@ -176,6 +343,16 @@ export function ZoneInventoryRoot() {
             />
           </div>
           {panel}
+          {detailOverlay}
+        </div>
+      </div>
+      <div className="h-full shrink-0 py-4 pr-4">
+        <div className="h-full overflow-hidden rounded-lg bg-white" style={{ width: 186 }}>
+          <ZonePanel
+            selectedZoneIds={pickedZoneIds}
+            onToggleZone={handleToggleZone}
+            onHoverZone={handleHoverZone}
+          />
         </div>
       </div>
       <div className="h-full min-w-0 flex-1">{map}</div>

@@ -3,7 +3,7 @@ import { ZONE_LISTINGS } from '../data/listings';
 import {
   buildPanelModel,
   displayRow,
-  lowestPriceByShape,
+  zoneShapeIds,
   zoneSiblingShapeIds,
 } from './visibility';
 import type { Filters, ZoneListing } from '../types';
@@ -158,13 +158,6 @@ describe('sort', () => {
     expect(ids(byDeal.all!)).not.toEqual(ids(byPrice.all!));
     expect(byDeal.all).toHaveLength(byPrice.all!.length);
   });
-
-  it('leaves pin prices alone', () => {
-    const pins = lowestPriceByShape(ZONE_LISTINGS, NO_FILTER);
-    expect(pins.get('119')).toBe(
-      Math.min(...ZONE_LISTINGS.filter((l) => l.shapeId === '119').map((l) => l.price)),
-    );
-  });
 });
 
 describe('filters', () => {
@@ -187,14 +180,6 @@ describe('map support', () => {
     expect(siblings).not.toContain('219');
   });
 
-  it('prices pins from exact-section listings only', () => {
-    const pins = lowestPriceByShape(ZONE_LISTINGS, NO_FILTER);
-    expect(pins.has('121')).toBe(false); // no exact listings → no pin
-    expect(pins.has('VIP2')).toBe(false);
-    expect(pins.get('119')).toBe(
-      Math.min(...ZONE_LISTINGS.filter((l) => l.shapeId === '119').map((l) => l.price)),
-    );
-  });
 });
 
 describe('unreliable rows', () => {
@@ -205,5 +190,69 @@ describe('unreliable rows', () => {
     expect(displayRow('TBD')).toBeNull();
     expect(displayRow(null)).toBeNull();
     expect(displayRow('12')).toBe('12');
+  });
+});
+
+describe('zone picked from the chips', () => {
+  it('scopes the list to the zone as one flat group, not two tiers', () => {
+    const model = buildPanelModel(ZONE_LISTINGS, [], NO_FILTER, 'price', [
+      'longside-lower-central',
+    ]);
+
+    // Flat: tiering separates "the section you picked" from the rest of its
+    // zone, and when the zone IS the pick there is no remainder to separate.
+    expect(model.exact).toBeNull();
+    expect(model.alsoInZone).toBeNull();
+    expect(model.all).not.toBeNull();
+    expect(model.all!.every((l) => l.zoneId === 'longside-lower-central')).toBe(true);
+    expect(model.all!.length).toBe(model.totalVisible);
+    expect(model.resultsHeader).toEqual({
+      count: `${model.totalVisible} listings`,
+      detail: 'in Longside Lower Central',
+    });
+  });
+
+  it('merges several picked zones under one header', () => {
+    const model = buildPanelModel(ZONE_LISTINGS, [], NO_FILTER, 'price', ['vip', 'shortside-lower']);
+    const zones = new Set(model.all!.map((l) => l.zoneId));
+    expect(zones).toEqual(new Set(['vip', 'shortside-lower']));
+    expect(model.resultsHeader.detail).toBe('in these zones');
+  });
+
+  it('includes both sectioned and zone-only inventory from the zone', () => {
+    const model = buildPanelModel(ZONE_LISTINGS, [], NO_FILTER, 'price', [
+      'longside-lower-central',
+    ]);
+    expect(model.all!.some((l) => l.shapeId !== null)).toBe(true);
+    expect(model.all!.some((l) => l.shapeId === null)).toBe(true);
+  });
+
+  it('yields to an explicit section selection', () => {
+    // A zone and a section inside it are competing answers to "where", so the
+    // root clears one when the other is set; the model honours sections first.
+    const model = buildPanelModel(ZONE_LISTINGS, ['119'], NO_FILTER, 'price', [
+      'longside-lower-central',
+    ]);
+    expect(model.all).toBeNull();
+    expect(model.exact!.header).toEqual({ count: '9 listings', detail: 'in Section 119' });
+  });
+});
+
+describe('zoneShapeIds', () => {
+  it('returns every shape in the given zones', () => {
+    const vip = zoneShapeIds(['vip']);
+    expect(vip).toContain('VIP1');
+    expect(vip).toContain('VIP2');
+    expect(vip).toContain('AU4-VIP');
+    // AU4 is split between two zones, so only the VIP half belongs here.
+    expect(vip).not.toContain('AU4-SU');
+  });
+
+  it('is the superset the sibling helper subtracts the selection from', () => {
+    const all = zoneShapeIds(['longside-lower-central']);
+    const siblings = zoneSiblingShapeIds(['119']);
+    expect(all).toContain('119');
+    expect(siblings).not.toContain('119');
+    expect(new Set(siblings)).toEqual(new Set(all.filter((id) => id !== '119')));
   });
 });

@@ -44,6 +44,7 @@ interface ZoneListingsPanelProps {
   model: PanelModel;
   selectedListingId: string | null;
   onSelectListing: (listing: ZoneListing) => void;
+  onHoverListing: (listing: ZoneListing | null) => void;
   sortBy: SortBy;
   onSortByChange: (sortBy: SortBy) => void;
 }
@@ -100,11 +101,13 @@ function Group({
   selectedListingId,
   lowestPriceLabels,
   onSelectListing,
+  onHoverListing,
 }: {
   group: ListingGroup;
   selectedListingId: string | null;
   lowestPriceLabels: Map<string, string>;
   onSelectListing: (listing: ZoneListing) => void;
+  onHoverListing: (listing: ZoneListing | null) => void;
 }) {
   return (
     <section className="flex flex-col">
@@ -118,6 +121,7 @@ function Group({
             isSelected={listing.listingId === selectedListingId}
             lowestPriceLabel={lowestPriceLabels.get(listing.listingId) ?? null}
             onSelect={onSelectListing}
+            onHover={onHoverListing}
           />
         ))}
       </div>
@@ -135,6 +139,7 @@ export function ZoneListingsPanel({
   model,
   selectedListingId,
   onSelectListing,
+  onHoverListing,
   sortBy,
   onSortByChange,
 }: ZoneListingsPanelProps) {
@@ -164,6 +169,7 @@ export function ZoneListingsPanel({
                 isSelected={listing.listingId === selectedListingId}
                 lowestPriceLabel={lowestPriceLabels.get(listing.listingId) ?? null}
                 onSelect={onSelectListing}
+                onHover={onHoverListing}
               />
             ))}
           </div>
@@ -174,6 +180,7 @@ export function ZoneListingsPanel({
             group={model.exact}
             selectedListingId={selectedListingId}
             lowestPriceLabels={lowestPriceLabels}
+            onHoverListing={onHoverListing}
             onSelectListing={onSelectListing}
           />
         )}
@@ -183,6 +190,7 @@ export function ZoneListingsPanel({
             group={model.alsoInZone}
             selectedListingId={selectedListingId}
             lowestPriceLabels={lowestPriceLabels}
+            onHoverListing={onHoverListing}
             onSelectListing={onSelectListing}
           />
         )}

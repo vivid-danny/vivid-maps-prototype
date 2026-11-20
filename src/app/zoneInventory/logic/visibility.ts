@@ -77,6 +77,11 @@ function plural(n: number): string {
   return `${n} ${n === 1 ? 'listing' : 'listings'}`;
 }
 
+/** "in Longside Lower Central" for one zone, "in these zones" for several. */
+function zoneDetail(zoneIds: ZoneId[]): string {
+  return zoneIds.length === 1 ? `in ${ZONE_NAME[zoneIds[0]!]}` : 'in these zones';
+}
+
 /** Zones that contain at least one selected section. */
 export function selectedZoneIds(selectedShapeIds: string[]): ZoneId[] {
   const zones: ZoneId[] = [];
@@ -87,19 +92,22 @@ export function selectedZoneIds(selectedShapeIds: string[]): ZoneId[] {
   return zones;
 }
 
+/** Every shape in the given zones. Selecting a zone chip selects all of these. */
+export function zoneShapeIds(zoneIds: ZoneId[]): string[] {
+  const ids: string[] = [];
+  for (const zoneId of zoneIds) {
+    for (const shape of SHAPES_BY_ZONE.get(zoneId) ?? []) ids.push(shape.shapeId);
+  }
+  return ids;
+}
+
 /**
  * Shapes that should be lightly tinted: everything else in every touched zone.
  * Zones can be non-contiguous, so this can span opposite ends of the plan.
  */
 export function zoneSiblingShapeIds(selectedShapeIds: string[]): string[] {
   const selected = new Set(selectedShapeIds);
-  const siblings: string[] = [];
-  for (const zoneId of selectedZoneIds(selectedShapeIds)) {
-    for (const shape of SHAPES_BY_ZONE.get(zoneId) ?? []) {
-      if (!selected.has(shape.shapeId)) siblings.push(shape.shapeId);
-    }
-  }
-  return siblings;
+  return zoneShapeIds(selectedZoneIds(selectedShapeIds)).filter((id) => !selected.has(id));
 }
 
 export function buildPanelModel(
@@ -107,9 +115,28 @@ export function buildPanelModel(
   selectedShapeIds: string[],
   filters: Filters,
   sortBy: SortBy = 'price',
+  pickedZoneIds: ZoneId[] = [],
 ): PanelModel {
   const visible = listings.filter((l) => isDisplayable(l) && passesFilters(l, filters));
   const byRank = comparator(sortBy);
+
+  /*
+   * A zone picked from the chips scopes the list but does not tier it. Tiering
+   * exists to separate "the section you picked" from "the rest of its zone", and
+   * when the zone IS the pick there is no remainder to separate out — both
+   * groups would be headed "in Longside Lower Central", which says nothing.
+   */
+  if (selectedShapeIds.length === 0 && pickedZoneIds.length > 0) {
+    const zoneSet = new Set(pickedZoneIds);
+    const all = visible.filter((l) => l.zoneId && zoneSet.has(l.zoneId)).sort(byRank);
+    return {
+      exact: null,
+      alsoInZone: null,
+      all,
+      resultsHeader: { count: plural(all.length), detail: zoneDetail(pickedZoneIds) },
+      totalVisible: all.length,
+    };
+  }
 
   if (selectedShapeIds.length === 0) {
     const all = [...visible].sort(byRank);
@@ -149,9 +176,8 @@ export function buildPanelModel(
     ? { tier: 1, header: exactHeader, listings: tier1 }
     : null;
 
-  const zoneDetail = zones.length === 1 ? `in ${ZONE_NAME[zones[0]!]}` : 'in these zones';
   const alsoInZone: ListingGroup | null = tier2.length > 0
-    ? { tier: 2, header: { count: plural(tier2.length), detail: zoneDetail }, listings: tier2 }
+    ? { tier: 2, header: { count: plural(tier2.length), detail: zoneDetail(zones) }, listings: tier2 }
     : null;
 
   const total = tier1.length + tier2.length;
@@ -165,23 +191,3 @@ export function buildPanelModel(
   };
 }
 
-/**
- * Lowest price per section shape, for the map pins. Zone-only listings have no
- * section, so they can never contribute to a pin — a section with no exact
- * listings simply has no pin, and stays selectable.
- */
-export function lowestPriceByShape(
-  listings: ZoneListing[],
-  filters: Filters,
-): Map<string, number> {
-  const lowest = new Map<string, number>();
-  for (const listing of listings) {
-    if (!listing.shapeId || !isDisplayable(listing)) continue;
-    if (!passesFilters(listing, filters)) continue;
-    const current = lowest.get(listing.shapeId);
-    if (current === undefined || listing.price < current) {
-      lowest.set(listing.shapeId, listing.price);
-    }
-  }
-  return lowest;
-}

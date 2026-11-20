@@ -21,6 +21,8 @@ import {
   toLngLat,
 } from '../data/venue';
 import { zoneSiblingShapeIds } from '../logic/visibility';
+import type { ZonePin } from '../logic/pins';
+import type { ZoneId } from '../types';
 
 const COLORS = {
   background: '#EFEFF6',
@@ -64,17 +66,26 @@ function formatPinPrice(cents: number): string {
 
 interface ZoneVenueMapProps {
   selectedShapeIds: string[];
-  /** Lowest exact-section price per shape. A shape absent here gets no pin. */
-  pinPrices: Map<string, number>;
-  onToggleShape: (shapeId: string, additive: boolean) => void;
+  /**
+   * Shapes to wash from outside the map — hovering a listing card lights up its
+   * section, or every section of its zone when the seller gave no section.
+   */
+  hoverShapeIds?: string[];
+  /** Price pins to draw. A zone under a highlight arrives as a single pin. */
+  pins: ZonePin[];
+  onToggleShape: (shapeId: string) => void;
+  /** A grouped pin stands for a zone, so clicking it picks the whole zone. */
+  onPickZone: (zoneId: ZoneId) => void;
   onClearSelection: () => void;
   isMobile: boolean;
 }
 
 export function ZoneVenueMap({
   selectedShapeIds,
-  pinPrices,
+  hoverShapeIds,
+  pins,
   onToggleShape,
+  onPickZone,
   onClearSelection,
   isMobile,
 }: ZoneVenueMapProps) {
@@ -105,8 +116,8 @@ export function ZoneVenueMap({
   const [hoveredShapeId, setHoveredShapeId] = useState<string | null>(null);
 
   // Handlers live in a ref so the map's own listeners never need rebinding.
-  const handlersRef = useRef({ onToggleShape, onClearSelection });
-  handlersRef.current = { onToggleShape, onClearSelection };
+  const handlersRef = useRef({ onToggleShape, onClearSelection, onPickZone });
+  handlersRef.current = { onToggleShape, onClearSelection, onPickZone };
 
   const siblingShapeIds = useMemo(
     () => zoneSiblingShapeIds(selectedShapeIds),
@@ -253,8 +264,7 @@ export function ZoneVenueMap({
       event.preventDefault();
       const shapeId = event.features?.[0]?.properties?.shapeId as string | undefined;
       if (!shapeId) return;
-      const original = event.originalEvent;
-      handlersRef.current.onToggleShape(shapeId, original.shiftKey || original.metaKey);
+      handlersRef.current.onToggleShape(shapeId);
     });
 
     map.on('click', (event) => {
@@ -305,9 +315,14 @@ export function ZoneVenueMap({
 
     const hasSelection = selectedShapeIds.length > 0;
     const inZone = [...selectedShapeIds, ...siblingShapeIds];
-    // Selection outranks hover, so a selected shape never takes the wash.
-    const hovered =
-      hoveredShapeId && !selectedShapeIds.includes(hoveredShapeId) ? [hoveredShapeId] : [];
+    /*
+     * Pointer hover on the map and hover driven from the listing panel feed the
+     * same layers — one is a single shape, the other can be a whole zone, and
+     * the filter takes an array either way. Selection outranks both, so a
+     * selected shape never takes the wash.
+     */
+    const hovered = [...(hoverShapeIds ?? []), ...(hoveredShapeId ? [hoveredShapeId] : [])]
+      .filter((id) => !selectedShapeIds.includes(id));
 
     map.setFilter('section-selected-fill', hasSelection ? inShapes(selectedShapeIds) : EMPTY_FILTER);
     map.setFilter('section-selected-outline', hasSelection ? inShapes(selectedShapeIds) : EMPTY_FILTER);
@@ -330,7 +345,7 @@ export function ZoneVenueMap({
         : [COLORS.labelOnSelected]),
     ] as unknown as maplibregl.DataDrivenPropertyValueSpecification<maplibregl.ColorSpecification>;
     map.setPaintProperty('section-label', 'text-color', labelColor);
-  }, [ready, selectedShapeIds, siblingShapeIds, pinPrices, hoveredShapeId]);
+  }, [ready, selectedShapeIds, siblingShapeIds, hoveredShapeId, hoverShapeIds]);
 
   // Switching layout changes the container's aspect ratio, so the venue has to
   // be re-fitted or the plan ends up cropped at mobile width.
@@ -392,7 +407,11 @@ export function ZoneVenueMap({
     };
   }, [ready, refreshPinVisibility]);
 
-  // Price pins: one per section that has at least one exact-section listing.
+  /*
+   * Price pins. The pin list arrives already grouped — a zone under a highlight
+   * is one entry, not one per section — so this effect only has to place and
+   * style what it is given, keyed on `pin.key` so markers survive re-grouping.
+   */
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
@@ -401,19 +420,20 @@ export function ZoneVenueMap({
     const inZone = new Set([...selectedShapeIds, ...siblingShapeIds]);
     const hasSelection = selectedShapeIds.length > 0;
     const markers = markersRef.current;
+    const live = new Set(pins.map((pin) => pin.key));
 
-    for (const [shapeId, marker] of markers) {
-      if (!pinPrices.has(shapeId)) {
+    for (const [key, marker] of markers) {
+      if (!live.has(key)) {
         marker.remove();
-        markers.delete(shapeId);
+        markers.delete(key);
       }
     }
 
-    for (const [shapeId, price] of pinPrices) {
-      const shape = SHAPE_BY_ID.get(shapeId);
+    for (const pin of pins) {
+      const shape = SHAPE_BY_ID.get(pin.anchorShapeId);
       if (!shape) continue;
 
-      let marker = markers.get(shapeId);
+      let marker = markers.get(pin.key);
       if (!marker) {
         const element = document.createElement('button');
         element.type = 'button';
@@ -428,43 +448,57 @@ export function ZoneVenueMap({
         element.append(body);
         element.addEventListener('click', (event) => {
           event.stopPropagation();
-          handlersRef.current.onToggleShape(shapeId, event.shiftKey || event.metaKey);
+          // Read the target off the element so re-grouping can't stale it.
+          const encoded = element.dataset.target;
+          if (!encoded) return;
+          const [kind, id] = encoded.split(':');
+          if (kind === 'zone') handlersRef.current.onPickZone(id as ZoneId);
+          else handlersRef.current.onToggleShape(id!);
         });
-        const [cx, cy] = shapeCenter(shape);
-        // 'bottom' puts the tail tip on the section centre, as in the base prototype.
+        // The position has to be set before adding, or the marker has no
+        // lngLat for the first collision pass to project.
+        // 'bottom' puts the tail tip on the section centre, as in the base.
+        const [x, y] = shapeCenter(shape);
         marker = new maplibregl.Marker({ element, anchor: 'bottom' })
-          .setLngLat(toLngLat(cx, cy))
+          .setLngLat(toLngLat(x, y))
           .addTo(map);
-        markers.set(shapeId, marker);
+        markers.set(pin.key, marker);
       }
 
+      // The anchor can move between renders when the cheapest listing changes.
+      const [cx, cy] = shapeCenter(shape);
+      marker.setLngLat(toLngLat(cx, cy));
+
       const element = marker.getElement();
-      element.querySelector('.zi-pin__price')!.textContent = formatPinPrice(price);
-      const state = selected.has(shapeId)
+      element.querySelector('.zi-pin__price')!.textContent = formatPinPrice(pin.price);
+      element.dataset.target =
+        pin.target.kind === 'zone' ? `zone:${pin.target.zoneId}` : `shape:${pin.target.shapeId}`;
+
+      const isSelected = pin.target.kind === 'shape'
+        ? selected.has(pin.target.shapeId)
+        : selected.size === 0;
+      const state = isSelected
         ? 'selected'
-        : hasSelection && !inZone.has(shapeId)
+        : hasSelection && !inZone.has(pin.anchorShapeId)
           ? 'muted'
           : 'default';
       element.dataset.state = state;
       // Selected pins sit above their neighbours, as in the base prototype.
       element.style.zIndex = state === 'selected' ? '20' : '10';
-      element.setAttribute(
-        'aria-label',
-        `Section ${shape.sectionLabel}, from ${formatPinPrice(price)}`,
-      );
-      pinMetaRef.current.set(shapeId, {
-        price,
+      element.setAttribute('aria-label', `${pin.name}, from ${formatPinPrice(pin.price)}`);
+      pinMetaRef.current.set(pin.key, {
+        price: pin.price,
         isSelected: state === 'selected',
         isMuted: state === 'muted',
       });
     }
 
-    for (const shapeId of [...pinMetaRef.current.keys()]) {
-      if (!markers.has(shapeId)) pinMetaRef.current.delete(shapeId);
+    for (const key of [...pinMetaRef.current.keys()]) {
+      if (!markers.has(key)) pinMetaRef.current.delete(key);
     }
 
     refreshPinVisibility();
-  }, [ready, pinPrices, selectedShapeIds, siblingShapeIds, isMobile, refreshPinVisibility]);
+  }, [ready, pins, selectedShapeIds, siblingShapeIds, isMobile, refreshPinVisibility]);
 
   /** Reset clears the selection and refits, matching the base prototype. */
   const resetView = useCallback(() => {
@@ -526,7 +560,7 @@ export function ZoneVenueMap({
       </div>
       {!isMobile && (
         <p className="pointer-events-none absolute bottom-3 left-4 z-10 text-caption text-ink-muted">
-          {VENUE.shapes.length} sections · shift-click to select more than one
+          {VENUE.shapes.length} sections · click to select more than one
         </p>
       )}
     </div>

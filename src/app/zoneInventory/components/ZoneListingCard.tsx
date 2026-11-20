@@ -1,5 +1,6 @@
 import { memo, type CSSProperties } from 'react';
-import { ZONE_COLOR, ZONE_NAME } from '../data/venue';
+import { ZONE_COLOR } from '../data/venue';
+import { listingTitle } from '../logic/labels';
 import { displayRow } from '../logic/visibility';
 import type { ZoneListing } from '../types';
 import { MetaLine } from '../../components/listingRow/MetaLine';
@@ -7,10 +8,6 @@ import { PriceStack } from '../../components/listingRow/PriceStack';
 
 function formatPrice(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString('en-US')}`;
-}
-
-function sectionName(label: string | null): string | null {
-  return label === null ? null : `Section ${label}`;
 }
 
 const CARD_COLORS = {
@@ -24,6 +21,8 @@ interface ZoneListingCardProps {
   /** Cheapest in its section, or in its zone when the seller gave no section. */
   lowestPriceLabel: string | null;
   onSelect: (listing: ZoneListing) => void;
+  /** Lights up this listing's section — or its whole zone — on the map. */
+  onHover: (listing: ZoneListing | null) => void;
 }
 
 /**
@@ -38,21 +37,13 @@ function ZoneListingCardInner({
   isSelected,
   lowestPriceLabel,
   onSelect,
+  onHover,
 }: ZoneListingCardProps) {
   const row = displayRow(listing.row);
   // `isDisplayable` filters out unmatched zones upstream, so this never renders.
   const zoneId = listing.zoneId;
   if (zoneId === null) return null;
-  /*
-   * The title is whatever location the seller actually gave, widest part first:
-   * zone, then section. A missing part is omitted rather than labelled as
-   * missing, so zone-only inventory simply stops at the zone. The zone itself is
-   * always there — `isDisplayable` drops anything whose zone text matched
-   * nothing, so no listing reaches a card without one.
-   */
-  const title = [ZONE_NAME[zoneId], sectionName(listing.sectionLabel)]
-    .filter(Boolean)
-    .join(', ');
+  const title = listingTitle(listing);
   const colors = isSelected ? CARD_COLORS.active : CARD_COLORS.default;
   const rowStyle: CSSProperties = {
     backgroundColor: colors.bg,
@@ -65,6 +56,10 @@ function ZoneListingCardInner({
     <button
       type="button"
       onClick={() => onSelect(listing)}
+      onMouseEnter={() => onHover(listing)}
+      onMouseLeave={() => onHover(null)}
+      onFocus={() => onHover(listing)}
+      onBlur={() => onHover(null)}
       className="group flex h-20 w-full cursor-pointer rounded-sm text-left transition-colors hover:bg-surface-50"
       style={rowStyle}
     >
