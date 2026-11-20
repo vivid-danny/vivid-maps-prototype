@@ -25,6 +25,8 @@
   --text-small--line-height: 21px;
   --text-caption: 12px;
   --text-caption--line-height: 18px;
+  --text-footnote: 10px;
+  --text-footnote--line-height: 15px;
 }
 
 @layer base {

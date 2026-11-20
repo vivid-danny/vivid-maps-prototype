@@ -7,6 +7,8 @@ import { usePolePosition } from './usePolePosition';
 interface ListingsPanelProps {
   className?: string;
   listings: Listing[];
+  /** sectionId -> zone color, for each card's accent bar. */
+  zoneColorBySectionId: Map<string, string>;
   selection: SelectionState;
   hoverState: HoverState;
   onSelectListing: (listing: Listing) => void;
@@ -15,7 +17,7 @@ interface ListingsPanelProps {
   onPolePosition?: (listing: Listing | null) => void;
 }
 
-export function ListingsPanel({ className, listings, selection, hoverState, onSelectListing, onHoverListing, disableHover, onPolePosition }: ListingsPanelProps) {
+export function ListingsPanel({ className, listings, zoneColorBySectionId, selection, hoverState, onSelectListing, onHoverListing, disableHover, onPolePosition }: ListingsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<'price' | 'dealScore'>('price');
   const [containerMounted, setContainerMounted] = useState(false);
@@ -52,6 +54,27 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
     }
     return sorted;
   }, [filteredListings, sortBy]);
+
+  /**
+   * Production flags the cheapest listing in each section. Nothing in the model
+   * carries that, so derive it from the unfiltered list — the flag describes the
+   * section, not the current filter, so it must not change as the panel narrows.
+   */
+  const lowestInSection = useMemo(() => {
+    const cheapest = new Map<string, Listing>();
+    const counts = new Map<string, number>();
+    for (const listing of listings) {
+      counts.set(listing.sectionId, (counts.get(listing.sectionId) ?? 0) + 1);
+      const current = cheapest.get(listing.sectionId);
+      if (!current || listing.price < current.price) cheapest.set(listing.sectionId, listing);
+    }
+    // "Lowest" says nothing when there is nothing to be lowest than.
+    return new Set(
+      [...cheapest.entries()]
+        .filter(([sectionId]) => (counts.get(sectionId) ?? 0) > 1)
+        .map(([, listing]) => listing.listingId),
+    );
+  }, [listings]);
 
   const virtualizer = useVirtualizer({
     count: sortedListings.length,
@@ -141,6 +164,8 @@ export function ListingsPanel({ className, listings, selection, hoverState, onSe
                     listing={listing}
                     isSelected={listing.listingId === selection.listingId}
                     isHovered={listing.listingId === hoverState.listingId}
+                    accentColor={zoneColorBySectionId.get(listing.sectionId) ?? null}
+                    isLowestInSection={lowestInSection.has(listing.listingId)}
                     onClick={onSelectListing}
                     onHover={onHoverListing}
                     disableHover={disableHover}

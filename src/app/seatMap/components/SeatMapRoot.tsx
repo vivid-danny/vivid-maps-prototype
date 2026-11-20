@@ -144,6 +144,20 @@ export function SeatMapRoot() {
     setControlsResetVersion((prev) => prev + 1);
   }, [resetConfig, resetViewState]);
 
+  /**
+   * The row's accent bar only earns its place when the map is painting the same
+   * zone colors — under the branded or deal theme it would be a color with no
+   * referent, so the rows go bare instead.
+   */
+  const zoneColorBySectionId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (config.theme !== 'zone') return map;
+    for (const section of model.sections) {
+      if (section.zone) map.set(section.sectionId, getZoneColor(section.zone));
+    }
+    return map;
+  }, [config.theme, model.sections]);
+
   // For zone/deal themes: build per-section SeatColors with overridden available/connector
   const seatColorsBySection = useMemo(() => {
     if (config.theme !== 'zone' && config.theme !== 'deal') return null;
@@ -280,6 +294,7 @@ export function SeatMapRoot() {
                 <ListingsPanel
                   className="flex-1 min-h-0 w-full"
                   listings={viewState.listings}
+                  zoneColorBySectionId={zoneColorBySectionId}
                   selection={panelSelection}
                   hoverState={viewState.hoverState}
                   onSelectListing={viewState.handleSelectFromPanel}
@@ -423,6 +438,7 @@ export function SeatMapRoot() {
                 <ListingsPanel
                   className="w-full h-full bg-white"
                   listings={viewState.listings}
+                  zoneColorBySectionId={zoneColorBySectionId}
                   selection={panelSelection}
                   hoverState={viewState.hoverState}
                   onSelectListing={viewState.handleSelectFromPanel}

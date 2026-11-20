@@ -3,29 +3,49 @@ import type { Listing } from '../seatMap/model/types';
 import { useHoverIntent } from './useHoverIntent';
 import { formatPrice, PERK_LABELS } from '../seatMap/behavior/utils';
 import { resolveInteractionState } from '../seatMap/behavior/visualState';
+import { MetaLine } from './listingRow/MetaLine';
+import { PriceStack } from './listingRow/PriceStack';
 
-const LISTING_CARD_PADDING = { top: 8, right: 16, bottom: 8, left: 8 };
-
-const CARD_COLORS = {
-  default:  { bg: '#FFFFFF', border: '#E0DCE3' },
-  hover:    { bg: '#F6F6FB', border: '#717488' },
-  pressed:  { bg: '#F6F6FB', border: '#717488' },
-  selected: { bg: '#F6F6FB', border: '#717488' },
+/**
+ * Production's listing row: an 80px band whose left edge is a zone-colored
+ * accent bar, then the seat view, then the text block, then the price lane.
+ * The row's border sits on the thumbnail and the two text columns rather than
+ * wrapping the whole card, so the accent bar reads as the card's edge.
+ */
+const CARD_COLORS: Record<string, { bg: string; border: string }> = {
+  available: { bg: '#FFFFFF', border: '#D3D3DC' },
+  hover:     { bg: '#F6F6FB', border: '#717488' },
+  pressed:   { bg: '#F6F6FB', border: '#717488' },
+  selected:  { bg: '#F6F6FB', border: '#717488' },
 };
 
 interface ListingCardProps {
   listing: Listing;
   isSelected: boolean;
   isHovered: boolean;
+  /** Zone color for the accent bar, or null when the map isn't zone-colored. */
+  accentColor: string | null;
+  /** Cheapest listing in its section; drives production's green line. */
+  isLowestInSection?: boolean;
   onClick: (listing: Listing) => void;
   onHover: (listing: Listing | null) => void;
   disableHover?: boolean;
 }
 
-function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, disableHover = false }: ListingCardProps) {
+function ListingCardInner({
+  listing,
+  isSelected,
+  isHovered,
+  accentColor,
+  isLowestInSection = false,
+  onClick,
+  onHover,
+  disableHover = false,
+}: ListingCardProps) {
   const hoverIntent = useHoverIntent<Listing | null>(disableHover ? undefined : onHover, null);
   const [localHover, setLocalHover] = useState(false);
   const [localPressed, setLocalPressed] = useState(false);
+
   const handleMouseEnter = () => {
     setLocalHover(true);
     hoverIntent.enter(listing);
@@ -37,31 +57,23 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, di
     hoverIntent.leave();
   };
 
-  const cardBase = 'flex items-center justify-between rounded-md border cursor-pointer transition-colors ';
-  let cardClass = cardBase;
-  const paddingStyle = {
-    paddingTop: LISTING_CARD_PADDING.top,
-    paddingRight: LISTING_CARD_PADDING.right,
-    paddingBottom: LISTING_CARD_PADDING.bottom,
-    paddingLeft: LISTING_CARD_PADDING.left,
-  };
-
   const state = resolveInteractionState({
     isAvailable: true,
     isSelected,
     isPressed: !disableHover && localPressed,
     isHovered: isHovered || (!disableHover && localHover),
   });
-  const colors = state === 'available' ? CARD_COLORS.default : CARD_COLORS[state];
-  const cardStyle: CSSProperties = {
-    ...paddingStyle,
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
-  };
+  const colors = CARD_COLORS[state] ?? CARD_COLORS.available!;
 
-  const locationLabel = listing.rowNumber === null
-    ? `Section ${listing.sectionLabel}`
-    : `Section ${listing.sectionLabel}, Row ${listing.rowNumber}`;
+  const rowStyle: CSSProperties = {
+    backgroundColor: colors.bg,
+    // Without an accent bar the row still needs a left edge to close it.
+    borderLeft: accentColor ? `6px solid ${accentColor}` : `1px solid ${colors.border}`,
+  };
+  const edgeStyle: CSSProperties = { borderColor: colors.border };
+
+  // The row lives on the meta line now, so the title names the section only.
+  const locationLabel = `Section ${listing.sectionLabel}`;
 
   return (
     <div
@@ -70,54 +82,45 @@ function ListingCardInner({ listing, isSelected, isHovered, onClick, onHover, di
       onMouseLeave={disableHover ? undefined : handleMouseLeave}
       onMouseDown={disableHover ? undefined : () => setLocalPressed(true)}
       onMouseUp={disableHover ? undefined : () => setLocalPressed(false)}
-      className={cardClass}
-      style={cardStyle}
+      className="relative flex h-20 cursor-pointer rounded-sm transition-colors"
+      style={rowStyle}
     >
-      {/* Left side: Image + Section, Row, Tickets, Perks */}
-      <div className="flex items-center gap-4 min-w-0">
+      {/* Seat view — a fixed lane so the text block starts on the same line in every row */}
+      <div className="h-full w-[100px] shrink-0 border-y" style={edgeStyle}>
         <img
           src={listing.seatViewUrl}
           alt={`View from Section ${listing.sectionLabel}`}
-          className="w-18 h-18 rounded-sm object-cover flex-shrink-0"
+          className="h-full w-full object-cover"
         />
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-sm font-medium text-gray-900">
-            {locationLabel}
-          </span>
-          <span className="text-sm text-gray-500">
-            {listing.quantityAvailable} {listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}
-          </span>
-          {(listing.dealScore >= 6 || listing.perks.length > 0) && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {listing.dealScore >= 6 && (
-                <span
-                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded font-bold"
-                  style={{ backgroundColor: 'oklch(92% 0.07 145)', color: 'oklch(35% 0.12 145)' }}
-                >
-                  {listing.dealScore.toFixed(1)}
-                </span>
-              )}
-              {listing.perks.map((perk) => (
-                <span
-                  key={perk}
-                  className="text-[12px] leading-tight px-1.5 py-0.5 rounded"
-                  style={{ backgroundColor: 'oklch(95% 0.008 320)', color: 'oklch(48% 0.015 320)' }}
-                >
-                  {PERK_LABELS[perk]}
-                </span>
-              ))}
-            </div>
+      </div>
+
+      <div className="flex min-w-0 grow items-center overflow-hidden border-y" style={edgeStyle}>
+        {/* Fixed three-line block: the title lane stays put whether or not the
+            green line is there, which a centered variable-height block breaks. */}
+        <div className="flex h-[54px] min-w-0 flex-col pl-2">
+          <p className="truncate text-small font-medium text-ink">{locationLabel}</p>
+          <MetaLine
+            parts={[
+              listing.rowNumber === null ? null : { text: `Row ${listing.rowNumber}`, bold: true },
+              {
+                text: `${listing.quantityAvailable} ${listing.quantityAvailable === 1 ? 'ticket' : 'tickets'}`,
+              },
+              ...listing.perks.map((perk) => ({ text: PERK_LABELS[perk] })),
+            ]}
+          />
+          {isLowestInSection && (
+            <p className="truncate text-caption font-medium text-[#008442]">
+              Lowest Price in Section
+            </p>
           )}
         </div>
       </div>
 
-      {/* Right side: Price */}
-      <div className="flex shrink-0 flex-col items-end">
-        <div className="text-xl font-bold text-gray-900">
-          {formatPrice(listing.price)} <span className="text-sm font-normal text-gray-500">ea.</span>
-        </div>
-        <span className="text-small font-normal text-ink-secondary">Fees Incl.</span>
-      </div>
+      <PriceStack
+        price={formatPrice(listing.price)}
+        dealScore={listing.dealScore}
+        borderColor={colors.border}
+      />
     </div>
   );
 }

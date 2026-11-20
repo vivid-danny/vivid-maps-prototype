@@ -35,6 +35,7 @@ describe('rowless listing copy', () => {
         listing={createListing({ isUnmapped: true })}
         isSelected={false}
         isHovered={false}
+        accentColor="#D45196"
         onClick={() => undefined}
         onHover={() => undefined}
       />,
