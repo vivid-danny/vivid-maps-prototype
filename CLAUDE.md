@@ -71,6 +71,7 @@ Then add the new venue entry in:
 - [PROJECT.md](./PROJECT.md): current product and architecture summary
 - [INTERACTION.md](./INTERACTION.md): current interaction and visual-state behavior
 - [DETAIL_AVAILABILITY.md](./DETAIL_AVAILABILITY.md): row/seat availability workflow
+- [ZONE_INVENTORY.md](./ZONE_INVENTORY.md): zone-only listing tiers (the `/zones` prototype)
 - [PRODUCT.md](./PRODUCT.md): brand personality, users, emotional goals, anti-references
 - [DESIGN.md](./DESIGN.md): colors, typography, spacing, component patterns
 

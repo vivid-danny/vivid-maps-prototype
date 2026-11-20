@@ -88,3 +88,81 @@ html, body, #root {
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* ─── Zone-inventory prototype: map price pins ───────────────── */
+/*
+ * Matched to the base prototype's Pin, measured from the running app:
+ *   default  — #1a1a2e / #FFFFFF, 10px bold, 4px radius, 4px padding, 1.25x
+ *   hover    — #2A2E31 / #FFFFFF at 1.8x
+ *   selected — #FFFFFF / #000000 at 1.8x with a drop shadow
+ * Scale lives on .zi-pin__body because MapLibre owns the root's transform.
+ */
+.zi-pin {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: 'GT Walsheim', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.zi-pin__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 1.8 / 1.25 — the base's selected multiplier over its default. */
+  transform-origin: center bottom;
+  transition: transform 200ms cubic-bezier(0.075, 0.82, 0.165, 1),
+    filter 200ms ease, opacity 200ms ease;
+}
+.zi-pin__price {
+  padding: 4px;
+  border-radius: 4px;
+  background: #1a1a2e;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+.zi-pin__tail {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #1a1a2e;
+  transition: border-top-color 200ms ease;
+}
+
+.zi-pin:hover .zi-pin__body {
+  transform: scale(1.44);
+}
+.zi-pin:hover .zi-pin__price {
+  background: #2A2E31;
+}
+.zi-pin:hover .zi-pin__tail {
+  border-top-color: #2A2E31;
+}
+
+.zi-pin[data-state='selected'] .zi-pin__body {
+  transform: scale(1.44);
+  filter: drop-shadow(0 6px 12px rgba(4, 9, 44, 0.4));
+}
+.zi-pin[data-state='selected'] .zi-pin__price {
+  background: #FFFFFF;
+  color: #000000;
+}
+.zi-pin[data-state='selected'] .zi-pin__tail {
+  border-top-color: #FFFFFF;
+}
+
+/*
+ * The base has no muted pin, and white is already spoken for by selected, so
+ * out-of-zone pins recede on opacity alone rather than inventing a colour.
+ */
+.zi-pin[data-state='muted'] .zi-pin__body {
+  opacity: 0.4;
+}
+.zi-pin[data-state='muted']:hover .zi-pin__body {
+  opacity: 1;
+}
